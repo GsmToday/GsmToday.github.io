@@ -91,11 +91,11 @@ https://www.git-tower.com/learn/git/ebook/cn/command-line/advanced-topics/submod
 
 https://git-scm.com/book/zh/v2/Git-%E5%B7%A5%E5%85%B7-%E5%AD%90%E6%A8%A1%E5%9D%97
 
-[0]: git-submodule/archi.png
-[1]: git-submodule/1.png
-[2]: git-submodule/2.png
-[4]: git-submodule/4.png
-[5]: git-submodule/5.png
-[7]: git-submodule/7.png
-[8]: git-submodule/8.png
-[9]: git-submodule/9.png
+[0]: archi.png
+[1]: 1.png
+[2]: 2.png
+[4]: 4.png
+[5]: 5.png
+[7]: 7.png
+[8]: 8.png
+[9]: 9.png

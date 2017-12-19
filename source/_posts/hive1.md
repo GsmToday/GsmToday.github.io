@@ -325,4 +325,4 @@ private CommandProcessorResponse createProcessorResponse(int ret) {
 
 
 
-  [2]: hive1/hivea1.png
+  [2]: hivea1.png

@@ -54,7 +54,7 @@ vmid是待监测的目标java程序标识符，可用 _jps_ 和Linux系统下的
 
 <div align = center>
 
-![](jvm-debug/jstat%20gcutil.jpg)
+![](jstat%20gcutil.jpg)
 
 </div>
 
@@ -62,7 +62,7 @@ vmid是待监测的目标java程序标识符，可用 _jps_ 和Linux系统下的
 
 <div align = center>
 
-![](jvm-debug/jstat%20gc.jpg)
+![](jstat%20gc.jpg)
 
 </div>
 
@@ -72,7 +72,7 @@ vmid是待监测的目标java程序标识符，可用 _jps_ 和Linux系统下的
 
 <div align = center>
 
-![](jvm-debug/jstat%20gcnew.jpg)
+![](jstat%20gcnew.jpg)
 
 </div>
 
@@ -80,7 +80,7 @@ vmid是待监测的目标java程序标识符，可用 _jps_ 和Linux系统下的
 
 <div align = center>
 
-![](jvm-debug/jstat%20gcnewcapacity.jpg)
+![](jstat%20gcnewcapacity.jpg)
 
 </div>
 
@@ -108,7 +108,7 @@ jstack在分析死锁，阻塞等性能问题上非常有用，根据打印的�
 
 <div align = center>
 
-![](jvm-debug/jstack.jpg)
+![](jstack.jpg)
 
 </div>
 
@@ -130,7 +130,7 @@ jstack在分析死锁，阻塞等性能问题上非常有用，根据打印的�
 
 <div align = center>
 
-![](jvm-debug/waitstate.jpg)
+![](waitstate.jpg)
 
 </div>
 

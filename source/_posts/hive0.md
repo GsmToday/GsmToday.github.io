@@ -352,5 +352,5 @@ private void printHeader(Driver qp, PrintStream out) {
 ```
 
 
-  [1]: hive0/1.jpg
-  [2]: hive0/2.jpg
+  [1]: 1.jpg
+  [2]: 2.jpg
