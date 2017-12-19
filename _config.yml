@@ -78,5 +78,5 @@ theme: icarus
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repository: git@github.com:gsmtoday/gsmtoday.github.io.git
+  repository: https://github.com/GsmToday/GsmToday.github.io.git
   branch: master

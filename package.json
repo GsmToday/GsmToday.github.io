@@ -6,6 +6,12 @@
     "version": "3.4.3"
   },
   "dependencies": {
+    "gulp": "^3.9.1",
+    "gulp-clean-css": "^2.0.11",
+    "gulp-htmlclean": "^2.7.6",
+    "gulp-htmlmin": "^2.0.0",
+    "gulp-imagemin": "^3.0.1",
+    "gulp-uglify": "^1.5.4",
     "hexo": "^3.2.0",
     "hexo-asset-image": "git+https://github.com/CodeFalling/hexo-asset-image.git",
     "hexo-deployer-git": "^0.3.1",
@@ -17,5 +23,11 @@
     "hexo-renderer-marked": "^0.3.0",
     "hexo-renderer-stylus": "^0.3.3",
     "hexo-server": "^0.2.0"
+  },
+  "devDependencies": {
+    "gulp-clean-css": "^3.9.0",
+    "gulp-htmlclean": "^2.7.16",
+    "gulp-htmlmin": "^3.0.0",
+    "gulp-uglify": "^3.0.0"
   }
 }
