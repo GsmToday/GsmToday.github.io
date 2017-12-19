@@ -19,7 +19,7 @@ tags:
 
 BeyondCorp是一个零信任模型，它认为公司网络安全的一个重要的大前提是无论内网和外网都是不安全的。与传统的边界安全模型不同，BeyondCorp不是以用户的物理登录地点或者用户使用的网络作为访问服务的判定标准(无论员工是在家or在公司or咖啡店)，其访问策略是建立在设备信息(device)、状态(state)和关联用户(associated user)的基础上，更偏向用户行为和设备状态的分析。企业资源的所有访问都是完全验证，充分授权，并根据设备状态和用户凭证完全加密。BeyondCorp针对公司不同资源实现了不同粒度的访问控制。这样做的结果就实现了所有谷歌员工可以在任何网络下工作，根本不需要VPN.
 
-![BeyondCorp架构](beyondcorp-md/architecture.jpg)
+![BeyondCorp架构](architecture.jpg)
 
 ## 架构 Architecture
 
@@ -53,9 +53,9 @@ Data Processing数据处理步骤为：
 2. 统计数据相关性. 来自不同数据源的数据需要被统一成为这个设备的唯一的数据记录。
 3. 当输入的数据被融合为一个统一的数据记录后，Trusted Inferer被通知去触发重评估。
  
-<img src="beyondcorp-md/dataprocesspipeline.jpg" width = "300" height = "300" alt="数据处理流程" align=center />
+<img src="dataprocesspipeline.jpg" width = "300" height = "300" alt="数据处理流程" align=center />
 
-<img src="beyondcorp-md/flow.jpg" width = "600" height = "300" alt="图片名称" align=流程图 />
+<img src="flow.jpg" width = "600" height = "300" alt="图片名称" align=流程图 />
 
 ## 网络建设 - 内网和外网几乎没有区别
 ** 不再相信内网-公司内部网络建设:**. BeyondCorp将公司内部访问和远程访问等同，并在Google大楼内部建立了一个无特权网络（unprivileged network）. 所有谷歌大楼内办公的设备都连接这个无特权网络。对于有线和无线接入，谷歌使用RADIUS（远端用户拨入验证服务）服务器将设备分配到合适的网络。
@@ -74,7 +74,7 @@ Data Processing数据处理步骤为：
     4. 设备拥有一个足够的信任级别 
     5. 当以上1-4条件满足后，请求才会传递到coderreview后端。
 
-![流程图](beyondcorp-md/flow.jpg)
+![流程图](flow.jpg)
 
 ## 参考
 1. http://www.tomsitpro.com/articles/google-beyondcorp-future-network-security,1-3229.html
