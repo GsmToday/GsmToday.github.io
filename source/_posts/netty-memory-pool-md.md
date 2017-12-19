@@ -47,7 +47,7 @@ Netty内存池的实现参考了jemalloc的原理，关于jemalloc的介绍可�
 
 <div align = center>
 
-![Global](netty_memory_pool/global.jpg)
+![Global](global.jpg)
 
 </div>
 

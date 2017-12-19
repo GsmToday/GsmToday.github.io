@@ -73,7 +73,7 @@ public class Sequence {
 }    
 ```
 算法流程如图:  
-![procedure](multithread/procedure.png)
+![procedure](procedure.png)
 
 ## 总结
 同一台机器的并发冲突可以使用synchronize。

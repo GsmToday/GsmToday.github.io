@@ -21,7 +21,7 @@ MyBatis Generator (下文简称MGB)是Mybatis官方推出的MyBatis和iBatis代�
 - MyBatis/iBatis SQL Map XML 文件(具体sql代码)。
 - mapper 文件(相当于DAO，定义操作数据库的java接口)
 
-![mgb](mybatis/1.jpg.png)
+![mgb](1.jpg.png)
 ## 1. 使用mybatis-generator实现CRUD
 ### 1.1. 下载MGB JAR
 [MBG下载地址](http://repo1.maven.org/maven2/org/mybatis/generator/mybatis-generator-core/)
@@ -173,7 +173,7 @@ context元素用于指定生成POJO对象的环境，例如指定连接的数据
 
 添加到如下路径
 
-![directory](mybatis/generatorDir.png)
+![directory](generatorDir.png)
 
 ### 1.3. 生成mybatis-generator-maven-plugin
 在domain的pom文件中添加mybatis-generator的maven plugin插件。
@@ -200,7 +200,7 @@ context元素用于指定生成POJO对象的环境，例如指定连接的数据
 ```
 
 使用idea的maven插件直接快速生成, 对domain进行 `mvn clean`,`mvn package`。会发现maven 生成了一个 MGB的一个插件
-![plugins](mybatis/mbgplugin.png)
+![plugins](mbgplugin.png)
 
 ## 1.4. MGB生成代码
 

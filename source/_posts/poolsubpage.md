@@ -79,7 +79,7 @@ private int findNextAvail0(int i, long bits) {
 
 <div align = center>
 
-![chunk example](poolsubpage/subpage.jpg)  
+![chunk example](subpage.jpg)  
 
 </div>
 

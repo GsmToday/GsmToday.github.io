@@ -44,7 +44,7 @@ ChunkSize = pageSize*2<sup>maxOrder</sup>, 也就是Page的个数是2的幂次�
 
 ### 表示方式
 Netty使用了一个数组memoryMap来表示这个完全二叉树，数组元素的语义与二叉树拓扑结构的对应关系如下图:   
-![empty chunk](poolchunk/emptychunk.jpg)  
+![empty chunk](emptychunk.jpg)  
 
 详细的来说，数组下标表示二叉树中各节点的编号id，数组元素内容表示当前节点可分配内存的子节点（即未分配）在二叉树中的深度。根据i节点在memoryMap中的取值不同，它可以有一下三种语义：
 1. memoryMap[i] = depth_of_i 当前节点及其所有子节点都可以用来分配
@@ -134,7 +134,7 @@ private byte value(int id) {
 更直观的来看，如下图:
 <div align=center>
 
-![chunk example](poolchunk/chunkexample.jpg)  
+![chunk example](chunkexample.jpg)  
 
 </div>   
 

@@ -23,7 +23,7 @@ PoolArena 内部对chunk与subpage的内存组织方式如下图：
 
 <div align = center>
 
-![PoolArena](poolarena/PoolArena.jpg)
+![PoolArena](PoolArena.jpg)
 
 </div>
 
@@ -229,7 +229,7 @@ shift的计算方式与{% post_link poolsubpage Netty内存管理-PoolSubpage %}
 
 <div align = center>
 
-![example](poolarena/example.jpg)  
+![example](example.jpg)  
 
 </div>
 

@@ -131,7 +131,7 @@ List<String> goodsNameList = skuList.stream()
 <!-- <div align = center> -->
 
 <!-- ![lambda迭代](lambda/iteration.jpg) -->
-<img src="lambda/iteration.jpg" width = "500" height = "300" alt="内部遍历vs外部遍历" align=center />
+<img src="iteration.jpg" width = "500" height = "300" alt="内部遍历vs外部遍历" align=center />
 
 <!-- </div> -->
 

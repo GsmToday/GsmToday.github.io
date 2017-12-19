@@ -243,7 +243,7 @@ JVM中将对象的引用分为了四种类型，不同的对象引用类型会�
 
 
 
-[1]: jvmOutline/jvm1.png
-[2]: jvmOutline/jvm2.png
-[3]: jvmOutline/jvm3.png
-[4]: jvmOutline/jvm4.png
+[1]: jvm1.png
+[2]: jvm2.png
+[3]: jvm3.png
+[4]: jvm4.png
