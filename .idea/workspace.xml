@@ -1,18 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1336fca0-5bd8-483c-ae10-c44f6f6feccf" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/jvmOutline.md" afterPath="$PROJECT_DIR$/source/_posts/jvmOutline.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/lambda.md" afterPath="$PROJECT_DIR$/source/_posts/lambda.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/multithread.md" afterPath="$PROJECT_DIR$/source/_posts/multithread.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/mybatis.md" afterPath="$PROJECT_DIR$/source/_posts/mybatis.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/netty-memory-pool-md.md" afterPath="$PROJECT_DIR$/source/_posts/netty-memory-pool-md.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/poolarena.md" afterPath="$PROJECT_DIR$/source/_posts/poolarena.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/poolchunk.md" afterPath="$PROJECT_DIR$/source/_posts/poolchunk.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/poolsubpage.md" afterPath="$PROJECT_DIR$/source/_posts/poolsubpage.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/reorder.md" afterPath="$PROJECT_DIR$/source/_posts/reorder.md" />
-    </list>
+    <list default="true" id="1336fca0-5bd8-483c-ae10-c44f6f6feccf" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -48,6 +37,13 @@
   <component name="GradleLocalSettings">
     <option name="externalProjectsViewState">
       <projects_view />
+    </option>
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/.deploy_git/2016/11/06/book-programtic-programer/index.html" />
+      </list>
     </option>
   </component>
   <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
