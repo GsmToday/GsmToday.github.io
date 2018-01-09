@@ -2,7 +2,7 @@
 title: About
 date: 2017-07-30 10:10:21
 comments: false
-banner: index/we.JPG
+banner: index/us.jpg
 ---
 
 
