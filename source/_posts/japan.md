@@ -10,8 +10,6 @@ categories: Travelling
 之所以这次旅行的目的地选择了日本，实在也是一个不得已的选择。无奈世界大山大河虽美好，但不再和平。思来想去只有亚洲还算相对岁月静好，霓虹国又尚未去过，一行人对日本文化也很感兴趣，于是筹划前往。这次一行九天，大阪进东京出，在大阪体验拉面文化，迷失在京都千年神社，邂逅奈良神鹿，筑地市场品尝最新鲜的海鲜，在六本木之丘的52层高的大楼鸟瞰东京夜景，鸭川跑道上驻足希望偶遇村上春树...一直认为旅行占生活中很重要一部分，和老友相聚，接触陌生的人和景色去放空自己。虽无法从庸俗的日常彻底抽离，不过也算离“诗和远方”又近了一步。
 
 <!-- more -->
-ss
-<img src="IMG_6522.JPG" width = "600" height = "300" alt="鸭川跑道上看京都日落" align="" />
 
 飞机抵达大阪当天晚上，欣欣然用Google地图搜到附近一家拉面，名字有趣 -- “无铁砲”，发现时间虽已过晚上九点，拉面店门口依然有人排队，谷歌搜索店名原来这家是远近驰名的名店，顿时觉得赚到。点了份豚骨拉面，拉面汤特别浓郁，配上店家上来的小菜和冰水，简直一解旅途劳顿。
 <img src="IMG_5995.JPG" width = "600" height = "300" alt="" align= />
@@ -31,7 +29,7 @@ ss
 <img src="IMG_6134.JPG" width = "600" height = "150" alt="" align= />
 <img src="IMG_6135.JPG" width = "600" height = "150" alt="" align= />
 
-大阪城，海贼王海军总部的原型。
+雨中的大阪城，海贼王海军总部的原型。
 <img src="IMG_6115.JPG" width = "600" height = "150" alt="大阪城" align= />
 
 京都是日本历史最悠久的城市之一，在这里最吸引游客的就要属各个神社了。伏见稻荷大社是有1300年历史的神社，神社里面伫立着大大小小一千多个鸟居，一眼望去还是蛮震撼的。
@@ -42,7 +40,7 @@ ss
 <img src="IMG_6235.JPG" width = "600" height = "150" alt="" align= />
 <img src="IMG_6468.JPG" width = "600" height = "100" alt="" align= />
 
-<img src="IMG_6535.JPG" width = "600" height = "100" alt="" align= />
+<img src="IMG_6535.JPG" width = "600" height = "100" alt="八坂神社的角落" align= />
 <img src="IMG_6539.JPG" width = "600" height = "100" alt="金阁寺" align= />
 <img src="IMG_7527.JPG" width = "600" height = "150" alt="龙安寺的枯山水" align= />
 
@@ -62,7 +60,7 @@ ss
 <img src="IMG_6543.JPG" width = "600" height = "150" alt="" align= />
 <img src="IMG_7526.JPG" width = "600" height = "150" alt="" align= />
 
-筑地市场是东京最大的海鲜交易市场，这里凌晨三点会开始金枪鱼拍卖。这里买的海鲜都是当天捕捞到的最新鲜食材所做。
+筑地市场是东京最大的海鲜交易市场，这里凌晨三点会开始金枪鱼拍卖。大大小小的料理店遍布在筑地市场，料理所用的海鲜都是当天捕捞到的最新鲜食材所做。
 <img src="IMG_6651.JPG" width = "600" height = "300" alt="" align= />
 <img src="IMG_6652.JPG" width = "600" height = "300" alt="" align= />
 
@@ -78,4 +76,4 @@ ss
 
 地点 ： 日本 - 大阪，京都，奈良，东京
 
-人物 ： with @mikloo@鹏哥
+人物 ： with @mikloo@鹏哥@小东尼
