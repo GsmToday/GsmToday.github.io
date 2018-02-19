@@ -17,7 +17,8 @@ categories: Netty
 <!-- more -->
 # I/O模型发展
 ## 早期的Socket API实现网络编程
-[Ref](https://www.zhihu.com/question/24322387)1. Server端创建一个ServerSocket, 绑定一个端口，监听`listen()`此端口上的连接请求
+[Ref](https://www.zhihu.com/question/24322387)
+1. Server端创建一个ServerSocket, 绑定一个端口，监听`listen()`此端口上的连接请求
 2. 服务器使用`accept（）`并阻塞直到一个连接请求建立。随后返回一个新的socket用于客户端和服务端之间的通信
 3. 一系列客户端请求这个端口
 4. 启动一个新线程处理连接
@@ -40,15 +41,15 @@ NIO包提供了一种Selector-非阻塞IO模型。它使用了**事件通知**AP
 ![selector](selector.jpg)
 
 # Netty 简介
-我们先来看看Netty之前的服务器网络通信框架都有哪些:
+我们先来看看Netty之前的**服务器网络通信框架模型**都有哪些:
 1.最基本的是使用阻塞I/O服务器单线程逐个处理连接请求。
 2.接着发展为使用多线程处理请求。一旦一个连接建立成功后，创建一个单独的线程处理其I/O操作。显然这种通信框架在高并发下线程数激增，服务器难以支撑。
 3.接着网络通信框架发展为使用线程池处理请求，将请求放入线程池的任务队列，避免大量的线程造成的切换代价。
 4.Reactor模式 - Reactor单线程模型-多线程模型-主从模型([更多关于Reactor模式Ref](http://www.infoq.com/cn/articles/netty-threading-model))
-<img src="reactor.jpg" width = "500" height = "300" alt="server&client" align=reactor多线程模式 />
+<img src="reactor.jpg" width = "500" height = "300" alt="reactor多线程模式" align=reactor多线程模式 />
 
 
-现在来讲讲Netty, Netty使用了三种Reactor线程模型。Netty提供了一个异步的事件驱动的网络通信框架，支持快速地开发可维护的高性能面向协议的服务器和客户端。
+现在来讲讲Netty, Netty使用了三种Reactor线程模型。Netty提供了一个<font color = "red">异步的事件驱动的网络通信框架，支持快速地开发可维护的高性能面向协议的服务器和客户端</font>。
 
 Netty是建立在NIO基础之上，在NIO之上又提供了更高层次的抽象。在Netty里面，Accept连接可以使用单独的线程池去处理，读写操作又是另外的线程池来处理。当然，Accept连接和读写操作也可以使用同一个线程池来进行处理。而请求处理逻辑既可以使用单独的线程池进行处理，也可以跟放在读写线程一块处理。线程池中的每一个线程都是NIO线程。用户可以根据实际情况进行组装，构造出满足系统需求的并发模型。
 
