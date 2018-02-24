@@ -3,6 +3,7 @@ title: RocketMQ源码分析1--Remoting
 toc: true
 banner: /images/dophin.png
 date: 2018-02-19 11:14:03
+author: GSM
 tags:
   - RocketMQ
 categories: 消息队列
