@@ -12,21 +12,20 @@ categories: 消息队列
 
 <!-- more -->
 
-在分布式应用中，不可避免的一个问题就是跨进程的通信，此问题基本都通过RPC调用来解决. RocketMQ的通信模块（remoting）无疑也是通过RPC实现的Producer、Consumer与Broker之间的通信。在讲解RocketMQ的通信模块之前，先来说关于[高性能RPC调用三个重要主题]([http://www.infoq.com/cn/articles/netty-high-performance])。
+在分布式应用中，不可避免的一个问题就是跨进程的通信，此问题基本都通过RPC调用来解决。RocketMQ的通信模块无疑也是通过RPC实现的Producer、Consumer与Broker之间的通信。在讲解RocketMQ的通信模块之前，先来说关于[高性能RPC调用三个重要主题]([http://www.infoq.com/cn/articles/netty-high-performance])。
 * 传输
 因为RPC的本质是进程间通信，采用什么样的IO通信模型在很大程度上决定了通信的性能。
 * 协议
 在网络通信传输过程中，因为发送端和接收端通常不能保证两边使用的是相同的编程语言，即使都是相同语言，也有可能CPU位数不一样，也会造成数据出错。另外因为数据包都是连在一起发送的，没法做消息区分。所以通常需要约定一个**通信协议**，协议规定好数据流中每个字节的含义。发送端要保证按照协议组装好数据流，接收端按照协议规定读出里面的数据。网络通信传输的是字节码，需要对消息进行编解码。
 
+协议指RPC调用在网络传输中约定的数据封装方式，通常包括三部分：**编解码**，**消息头**，**消息体**。常见的消息体编解码方式是**序列化**。消息头负责存储方便编码以及方便扩展的元信息，例如语言版本，响应码等等。
 * 线程
 当通信消息传输完毕之后，通过什么样的线程模型处理线程请求也很重要。常见的模型有Reactor单线程模型，Reactor多线程模型以及Reactor主从模型。虽然单路复用的思想是一个线程handle多个连接，尽量减少线程切换的开销。但是如果客户端请求量大，很可能单线程处理不过来请求导致请求积压响应变慢。因此Reactor多线程模型就是IO操作和非IO操作分开。非IO的线程称为工作线程，客户端的请求直接被丢到线程池中，客户端发送请求不会堵塞。
 
 接着我们来讲讲RocketMQ是怎么解决通信协议的“传输”、“协议”以及“线程”的。
 ## 传输
-简单来说，RocketMQ的remoting模块通过Netty实现了IO单路复用的Reactor通信模型。
-
-在RocketMQ启动NameServer的时候，会执行NameServer初始化并启动Netty通信的服务端(NettyRemotingServer). 首先服务端通信对象RemotingServer启动`this.remotingServer.start();
-`start()方法会启动NettyRemotingServer的Netty服务端并初始化一个channel。
+简单来说，RocketMQ的remoting模块通过Netty实现了IO单路复用的Reactor通信模型。在RocketMQ启动NameServer的时候，会执行NameServer初始化以及服务端通信对象RemotingServer的启动操作`this.remotingServer.start();
+`. start()方法会启动NettyRemotingServer的Netty服务端并初始化一个channel。
 ```java
    ServerBootstrap childHandler =
             this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
@@ -54,21 +53,20 @@ categories: 消息队列
                     }
                 });
 ```
-可以看出这里启动了Netty的服务端，是Netty的[Reactor IO模型的体现](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。EventLoopGroupBoss负责IO的连接，EventLoopGroupSelector负责连接的处理操作。在启动服务端的同时，会初始化一个channel, 并赋予channel注册到一个默认的defaultEventExecutorGroup.
+这里启动了Netty的服务端，可以看出是Netty的[Reactor模型的体现](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。EventLoopGroupBoss负责IO的连接，EventLoopGroupSelector负责连接的处理操作。在启动服务端的同时，会初始化一个channel, 并赋予channel注册到一个默认的defaultEventExecutorGroup.
 
-我们知道Netty通过ChannelPipeline组织起各个Handler过滤器对Channel的消息进行处理。 ch.pipeline().addLast就是往pipeline里面添加Handler处理事件处理逻辑,这里可以看出添加有NettyEncoder编码器，NettyDecoder解码器，Netty心跳管理处理器 - 当一个channel一段时间没有读/写就关闭连接的空闲状态处理器IdleStateHandler, 连接管理NettyConnectManageHandler负责捕获新连接，断开连接及异常以及NettyServerHandler。
+当Producer发送消息（例如“Hello world”）时候，首先rocketmq使用netty进行IO通信，Netty的pipeline在各个handler传递消息进行处理。
+```java
+pipeline.fireChannelRead(readBuf.get(i));
+```
 
-<img src="bootstrap.png" width = "1000" height = "400" alt="RocketMQ消息过滤器处理逻辑" align=center />
-只要满足条件，消息会经过每一个handler对应的事件处理方法：
-
-- channelActive、channelInactive：连接建立和连接关闭的时候会被回调。
-- channelRead：当channel有数据可读时会回调到这个函数。mq正是从这个函数将请求分发到后端线程进行处理的。
-- exceptionCaught：发生异常时回调。
-- userEventTriggered：当上面的事件都不满足自己的需求时，用户可以在这里面自定义的事件处理方法。
-
+```java
+   public final ChannelPipeline fireChannelRead(Object msg) {
+        AbstractChannelHandlerContext.invokeChannelRead(head, msg);
+        return this;
+    }
+```
 ## 协议
-协议指RPC调用在网络传输中约定的数据封装方式，通常包括三部分：**编解码**，**消息头**，**消息体**。常见的消息体编解码方式是**序列化**。消息头负责存储方便编码以及方便扩展的元信息，例如语言版本，响应码等等。
-
 RocketMQ自定义的私有协议栈都是基于TCP/IP协议，使用Netty的NIO TCP协议栈方便的进行私有协议栈的定制和开发。使用Netty定义私有协议栈的步骤：
 ### 1. 自定义协议规则
 RocketMQ协议分为以下四个部分:
@@ -81,17 +79,12 @@ RocketMQ协议分为以下四个部分:
 在RocketMQ源码中，通信的消息封装在RemotingCommand这个bean中，其属性可以看出RocketMQ通信协议:
 
 ```java
-/**
- * RequestCode定义:当表示请求操作代码时候，请求接收方根据代码执行相应操作；
- * 当表示应答结果代码时候，0表示成功，非0表示错误代码。
- */
+//RequestCode定义:当表示请求操作代码时候，请求接收方根据代码执行相应操作；
+//当表示应答结果代码时候，0表示成功，非0表示错误代码。
 private int code; 
 private LanguageCode language = LanguageCode.JAVA; // 请求和应答方语言
 private int version = 0; //请求和应答方程序版本
-/**
- * opaque：请求发起连接方在同个TCP连接上不同的请求标识代码。
- */
-private int opaque = RequestId.getAndIncrement();
+private int opaque = RequestId.getAndIncrement();//请求发起方做tcp连接上的线程复用。
 private int flag = 0; //通信层标志位
 private String remark;
 //把下面customHeader中的信息填充到这里，见 makeCustomHeaderToNet
@@ -164,7 +157,7 @@ remoting模块通过定义RemotingClient和RemotingServer实现了基于Netty通
 - invokeSync 同步通信 
 - invokeAsync 异步通信
 - invoikeOneway 单向通信（不需要知道响应）
-通信对象是上文提到的RemotingCommand，服务端和客户端对RemotingCommand进行编解码，然后处理。
+通信对象是上文提到的RemotingCommand，服务端对RemotingCommand进行解码，然后处理。
 
 服务端（实现类NettyRemotingServer）和客户端（实现类NettyRemotingClient）继承了抽象类NettyRemotingAbstract并且实现了RemotingServer/RemotingClient. 
 
@@ -193,18 +186,28 @@ remoting模块通过定义RemotingClient和RemotingServer实现了基于Netty通
     }
 ```
 
-#### 服务端
-RocketMQ服务端针对每个RequestCode设计了其专有处理器，每个处理器有其对应的线程池。processorTable记录请求编码、处理器、线程池的关系。消息的实际处理逻辑不是在当前线程，而是被封装成task放到processor对应的线程池处理。
-<img src="processor.png" width = "800" height = "400" alt="multi-processor per request code" align=center />
+### 服务端
+服务端会针对每个访问请求查询其请求编码，根据请求编码使用相应的处理器(processor)进行处理。processorTable记录请求编码、处理器、线程池的关系。
 
-<img src="processorTable.png" width = "800" height = "400" alt="processorTable" align=center />
+```java
+    /**
+     * This container holds all processors per request code, aka, for each incoming request, we may look up the
+     * responding processor in this map to handle the request.
+     */
+    protected final HashMap<Integer/* request code */, Pair<NettyRequestProcessor, ExecutorService>> processorTable =
+        new HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>>(64);
+```
 
-这样设计的原因是保证线程解耦，实现最大程度的异步，每个线程都专注做自己负责的东西。
-#### 客户端
+### 客户端
 客户端使用responseTable记录所有响应。当客户端发送消息时候，会创建ResponseFuture异步响应结果。将每个响应的opaque与ResponseFuture组成的ConcurrentMap存储到responseTable.
 
-<img src="responseTable.png" width = "800" height = "400" alt="responseTable" align=center />
 
+```java
+    /**
+     * This map caches all on-going requests.
+     */
+    protected final ConcurrentMap<Integer /* opaque */, ResponseFuture> responseTable = new ConcurrentHashMap<Integer, ResponseFuture>(256);
+```
 默认使用同步通信.因为服务端和客户度逻辑相似，这里以客户端为例，：NettyRemotingClient的同步通信实现如下：
 ```java
  /**
@@ -286,4 +289,3 @@ RocketMQ服务端针对每个RequestCode设计了其专有处理器，每个处�
 
 ## 参考
 1. http://zqhxuyuan.github.io/2017/10/18/Midd-RocketMQ/#
-2. https://my.oschina.net/jasun/blog/1162669
