@@ -56,7 +56,7 @@ categories: 消息队列
 ```
 可以看出这里启动了Netty的服务端，是Netty的[Reactor IO模型的体现](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。EventLoopGroupBoss负责IO的连接，EventLoopGroupSelector负责连接的处理操作。在启动服务端的同时，会初始化一个channel, 并赋予channel注册到一个默认的defaultEventExecutorGroup.
 
-我们知道Netty通过ChannelPipeline组织起各个Handler过滤器对Channel的消息进行处理。 ch.pipeline().addLast就是往pipeline里面添加Handler处理事件处理逻辑,这里可以看出添加有NettyEncoder编码器，NettyDecoder解码器，Netty心跳管理处理器 - 当一个channel一段时间没有读/写就关闭连接的空闲状态处理器IdleStateHandler, 连接管理NettyConnectManageHandler负责捕获新连接，断开连接及异常以及NettyServerHandler。
+我们知道Netty通过ChannelPipeline组织起各个Handler过滤器对Channel的消息进行处理。 ch.pipeline().addLast就是往pipeline里面添加Handler处理事件处理逻辑,这里可以看出添加有NettyEncoder编码器，NettyDecoder解码器，Netty心跳管理处理器 - 当一个channel一段时间没有读/写就关闭连接的空闲状态处理器IdleStateHandler, 连接管理NettyConnectManageHandler负责捕获新连接，断开连接及异常以及NettyServerHandler。其中编解码器主要负责按照协议格式对消息的解析和编码，NettyServerHandler则负责根据消息类型，执行相应的业务处理。
 
 <img src="bootstrap.png" width = "1000" height = "400" alt="RocketMQ消息过滤器处理逻辑" align=center />
 只要满足条件，消息会经过每一个handler对应的事件处理方法：
@@ -85,7 +85,7 @@ RocketMQ协议分为以下四个部分:
  * RequestCode定义:当表示请求操作代码时候，请求接收方根据代码执行相应操作；
  * 当表示应答结果代码时候，0表示成功，非0表示错误代码。
  */
-private int code; 
+private int code;
 private LanguageCode language = LanguageCode.JAVA; // 请求和应答方语言
 private int version = 0; //请求和应答方程序版本
 /**
@@ -126,14 +126,14 @@ private transient byte[] body;
 
         byte[] headerData = new byte[headerLength];
         byteBuffer.get(headerData); // 获得报文头部数据
-       
+
         //反序列化解析header data和RemotingCommand类
         RemotingCommand cmd = headerDecode(headerData, getProtocolType(oriHeaderLen));
 
         int bodyLength = length - 4 - headerLength; // 获取body长度
         byte[] bodyData = null;
         if (bodyLength > 0) {
-            bodyData = new byte[bodyLength]; 
+            bodyData = new byte[bodyLength];
             byteBuffer.get(bodyData); // 获取报文提数据
         }
         cmd.body = bodyData;
@@ -159,14 +159,15 @@ SendResult sendResult = producer.send(msg);
 public static final int SEND_MESSAGE_V2 = 310;
 ```
 解码消息得知消息状态码为发送消息。并且发送方语言为JAVA,消息所在群组为gsm_group,消息的topic为Topic2Test。并且消息体Hello RocketMQ的字节码存储在了body里面。
+
 ### 3. 编写自己的应用Client&Server
 remoting模块通过定义RemotingClient和RemotingServer实现了基于Netty通信的应用客户端和服务器。无论是客户端还是服务器都支持三种通信方式：
-- invokeSync 同步通信 
+- invokeSync 同步通信
 - invokeAsync 异步通信
 - invoikeOneway 单向通信（不需要知道响应）
 通信对象是上文提到的RemotingCommand，服务端和客户端对RemotingCommand进行编解码，然后处理。
 
-服务端（实现类NettyRemotingServer）和客户端（实现类NettyRemotingClient）继承了抽象类NettyRemotingAbstract并且实现了RemotingServer/RemotingClient. 
+服务端（实现类NettyRemotingServer）和客户端（实现类NettyRemotingClient）继承了抽象类NettyRemotingAbstract并且实现了RemotingServer/RemotingClient.
 
 抽象类NettyRemotingAbstract中定义了处理请求的方法processRequestCommand,处理响应调用的方法processResponseCommand.
 
@@ -201,7 +202,7 @@ RocketMQ服务端针对每个RequestCode设计了其专有处理器，每个处�
 
 这样设计的原因是保证线程解耦，实现最大程度的异步，每个线程都专注做自己负责的东西。
 #### 客户端
-客户端使用responseTable记录所有响应。当客户端发送消息时候，会创建ResponseFuture异步响应结果。将每个响应的opaque与ResponseFuture组成的ConcurrentMap存储到responseTable.
+客户端使用responseTable记录所有响应。当客户端发送消息时候，会创建ResponseFuture异步响应结果。将每个响应的opaque与ResponseFuture组成的ConcurrentMap存储到responseTable. 同时客户端会启动一个定时扫描responseTable的线程，对超时未响应的消息执行超时回调处理。
 
 <img src="responseTable.png" width = "800" height = "400" alt="responseTable" align=center />
 
@@ -221,12 +222,12 @@ RocketMQ服务端针对每个RequestCode设计了其专有处理器，每个处�
                 }
                 System.out.println("invoke sync! request: "+request.toString());
                 // 同步通信，通信回应存储在reponse里
-                RemotingCommand response = this.invokeSyncImpl(channel, request, timeoutMillis); 
+                RemotingCommand response = this.invokeSyncImpl(channel, request, timeoutMillis);
                 if (this.rpcHook != null) {
                     this.rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(channel), request, response);
                 }
                 return response;
-            } 
+            }
             ...
         }
     }
