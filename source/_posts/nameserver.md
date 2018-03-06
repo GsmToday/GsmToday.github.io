@@ -149,7 +149,8 @@ RouteInfoMananger的topicQueueTable记录了topic名称与broker队列[broker名
 RouteInfoManager 有一个brokerLiveInfo列表保存当前存货的broker机器，可以从这里get到。
 
 - **为什么不用Zookeeper而自己开发了一个NameServer?**
-[引用自](http://blog.csdn.net/earthhour/article/details/78718064)首先，ZooKeeper可以提供Master选举功能，比如Kafka用来给每个分区选一个broker作为leader，但对于RocketMQ来说，**topic的数据在每个Master上是对等的，没有哪个Master上有topic上的全部数据**，所以这里选举leader没有意义；
+[引用自](http://blog.csdn.net/earthhour/article/details/78718064)首先，ZooKeeper可以提供Master选举功能，比如Kafka用来给每个分区选一个broker作为leader
+[推荐看此文](http://blog.csdn.net/chunlongyu/article/details/54018010)，但对于RocketMQ来说，**topic的数据在每个Master上是对等的，没有哪个Master上有topic上的全部数据**，所以这里选举leader没有意义；
 
 其次，RockeqMQ集群中，需要有构件来处理一些通用数据，比如broker列表，broker刷新时间，虽然ZooKeeper也能存放数据，并有一致性保证，但处理数据之间的一些逻辑关系却比较麻烦，而且数据的逻辑解析操作得交给ZooKeeper客户端来做，如果有多种角色的客户端存在，自己解析多级数据确实是个麻烦事情；
 

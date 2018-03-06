@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1336fca0-5bd8-483c-ae10-c44f6f6feccf" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/remoting.md" afterPath="$PROJECT_DIR$/source/_posts/remoting.md" />
-    </list>
+    <list default="true" id="1336fca0-5bd8-483c-ae10-c44f6f6feccf" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -37,7 +35,7 @@
         <entry file="file://$PROJECT_DIR$/themes/icarus/source/css/_highlight/monokai.styl">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="256">
-              <caret line="16" column="0" lean-forward="true" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
+              <caret line="16" column="0" lean-forward="false" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -64,9 +62,9 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/.deploy_git/2016/11/06/book-programtic-programer/index.html" />
         <option value="$PROJECT_DIR$/themes/icarus/source/css/_variables.styl" />
         <option value="$PROJECT_DIR$/themes/icarus/source/css/_highlight/monokai.styl" />
+        <option value="$PROJECT_DIR$/.deploy_git/2016/11/06/book-programtic-programer/index.html" />
       </list>
     </option>
   </component>
@@ -268,12 +266,12 @@
       <option name="presentableId" value="Default" />
       <updated>1513670806965</updated>
       <workItem from="1513670808399" duration="1983000" />
-      <workItem from="1519443431953" duration="1793000" />
+      <workItem from="1519443431953" duration="2995000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="3776000" />
+    <option name="totallyTimeSpent" value="4978000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="22" y="24" width="1400" height="877" extended-state="0" />
@@ -368,7 +366,7 @@
     <entry file="file://$PROJECT_DIR$/themes/icarus/source/css/_highlight/monokai.styl">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="256">
-          <caret line="16" column="0" lean-forward="true" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
+          <caret line="16" column="0" lean-forward="false" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
           <folding />
         </state>
       </provider>
