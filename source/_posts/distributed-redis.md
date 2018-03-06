@@ -118,5 +118,7 @@ Codis 引入了Redis Server Group, 通过指定一个Master Redis实例和多个
 3. 彭东稳：http://www.ywnds.com/?p=6579
 4. 《Redis in Action》
 5. [基于Zookeeper的分布式锁](http://www.dengshenyu.com/java/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/2017/10/23/zookeeper-distributed-lock.html)
+6. [Codis作者黄东旭：细说分布式Redis架构设计和那些踩过的坑
+](http://dbaplus.cn/news-141-270-1.html)
 
 
