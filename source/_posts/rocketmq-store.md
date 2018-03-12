@@ -23,20 +23,20 @@ categories: 消息队列
 ![Kafka log](kafka-log.png)
 当Producer想要写入消息时候，消息会根据其key的哈希值分派到对应的partition上，然后追加写到partition的log文件。但是从IO层面看，这种多topic-多partition方式，对于每个文件来说虽然是顺序IO.但是当并发读写多个partition，在文件系统的磁盘层面，是随机IO写到多个partition的。[由于磁盘是随机读写慢，顺序读写快](https://tech.meituan.com/about-desk-io.html)。因此，[实验证明](http://jm.taobao.org/2016/04/07/kafka-vs-rocketmq-topic-amout/)：topic数量增加到一定程度，Kafka性能急剧下降。
 
-为了解决这个问题，RocketMQ的消息是**存储在一个单一的CommitLog文件里**，从而避免是磁盘的随机IO。因此Kafka针对Producer和Consumer使用了同1份存储结构，而RocketMQ却为Producer和Consumer分别设计了不同的存储结构，Producer对应CommitLog, Consumer对应ConsumeQueue。
-RocketMQ把topic的所有queue的消息存储在一个CommitLog里, 然后再异步分发给ConsumeQueue.  
+为了解决这个问题，RocketMQ的消息是**存储在一个单一的CommitLog文件里**，从而避免是磁盘的随机IO。
 
-ConsumeQueue是逻辑队列，并不真正存储消息的内容，仅仅存储消息在CommitLog的位移(offset)，也就是说ConsumeQueue其实是CommitLog的一个索引文件。ConsumeQueue是定长的结构，每1条记录固定的20个字节。很显然，Consumer消费消息的时候，要读2次：
+另外Kafka针对Producer和Consumer使用了同1份存储结构，而RocketMQ却为Producer和Consumer分别设计了不同的存储结构，Producer对应CommitLog, Consumer对应ConsumeQueue。
+RocketMQ把topic的所有queue的消息存储在一个CommitLog里, 然后再异步分发给ConsumeQueue.  ConsumeQueue是逻辑队列，并不真正存储消息的内容，仅仅存储消息在CommitLog的位移(offset)，也就是说ConsumeQueue其实是CommitLog的一个索引文件。ConsumeQueue是定长的结构，每1条记录固定的20个字节。很显然，Consumer消费消息的时候，要读2次：
 1. 先读ConsumeQueue得到offset
 2. 再读CommitLog得到。 
 
 有关数据存储，可以看出通过将消息都追加写到一个CommitLog文件，实现了顺序写提高了磁盘IO性能。但是这里还有一个问题，Consumer在读消息的时候，实际上是一个随机读磁盘的过程。那么RocketMQ是怎么优化这一点的呢？
 
-可以看到对于CommitLog和ConsumeQueue源代码中都有一个成员MapedFileQueue。这是因为Consumer消费消息过程中使用了**零拷贝（mmap+write）**，[mmap](https://www.cnblogs.com/huxiao-tee/p/4660352.html)是一种内存映射文件的方法，即将一个文件或者其他对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中的一段虚拟地址的一一映射关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存。而系统会自动回写脏页面到对应的文件磁盘，即完成了对文件的操作而不比调用read,write等系统调用函数。相反，内核空间对河段区域的修改也直接反应到用户空间，从而实现不同进程间的文件共享。[有关零拷贝推荐此文](http://www.linuxjournal.com/article/6345)。
+可以看到对于CommitLog和ConsumeQueue源代码中都有一个成员MapedFileQueue。这是因为Consumer消费消息过程中使用了**零拷贝（mmap+write）**，[mmap](https://www.cnblogs.com/huxiao-tee/p/4660352.html)是一种内存映射文件的方法，即将一个文件或者其他对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中的一段虚拟地址的一一映射关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存。而系统会自动回写脏页面到对应的文件磁盘，即完成了对文件的操作而不比调用read,write等系统调用函数。相反，内核空间对区域的修改也直接反应到用户空间，从而实现不同进程间的文件共享。[有关零拷贝推荐此文](http://www.linuxjournal.com/article/6345)。
 
 <img src="consumequeue.png" width = "500" height = "300" alt="数据存储逻辑结构" align=center />
 # 数据存储功能
-消息队列在使用过程中都会面临着如何承载消息堆积的问题，然后在合适的时机投递消息，而处理堆积的最佳方式，就是[数据存储](https://tech.meituan.com/mq-design.html)。
+消息队列在使用过程中都会面临着如何承载消息堆积并在合适的时机投递的问题。处理堆积的最佳方式就是[数据存储](https://tech.meituan.com/mq-design.html)。
 
 从功能上讲，数据存储用于存储：
 * Producer生产的消息
@@ -168,4 +168,4 @@ private final MapedFileQueue mapedFileQueue;
 // 
 # 参考
 1. http://blog.csdn.net/chunlongyu/article/details/54576649
-2. 
+2. [Dengshenyu - Kafka系列](http://www.dengshenyu.com/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/2017/11/06/kafka-Meet-Kafka.html)
