@@ -8,6 +8,9 @@ tags:
   - RocketMQ
 categories: 消息队列
 ---
+本文是[RocketMQ源码分析系列](http://localhost:4000/tags/RocketMQ/)之三，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
+
+<!-- more -->
 # 设计思路
 关键词： CommitLog, ConsumeQueue, 内存映射文件
 
@@ -151,6 +154,12 @@ private final AtomicInteger committedPosition = new AtomicInteger(0);//mapfile�
 private FileChannel fileChannel;//映射的FileChannel对象
 private volatile long storeTimestamp = 0; //最后一条消息保存时间
 private boolean firstCreateInQueue = false;//是不是刚刚创建的Map
+```
+DefaultMessageStore初始化时候：
+```java
+ this.dispatcherList = new LinkedList<>();
+        this.dispatcherList.addLast(new CommitLogDispatcherBuildConsumeQueue());
+        this.dispatcherList.addLast(new CommitLogDispatcherBuildIndex());
 ```
 ##CommitLog
 CommitLog是存储消息的物理结构。
