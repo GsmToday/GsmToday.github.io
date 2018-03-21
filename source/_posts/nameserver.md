@@ -1,6 +1,6 @@
 ---
 title: RocketMQ源码分析2--NameServer
-toc: true
+toc: false
 banner: /images/stingray.jpg
 date: 2018-02-23 19:25:00
 author: GSM
@@ -109,7 +109,7 @@ this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 ```
 RequestCode = GET_ROUTINEINFO_BY_TOPIC
 ```
-之后，会调用默认注册的请求处理器（DefaultRequestProcessor）的getRouteInfoByTopic方法，该方法根据Topic获取对应的broker路由信息. 
+之后，会调用默认注册的请求处理器（DefaultRequestProcessor）的getRouteInfoByTopic方法，该方法根据Topic获取对应的broker路由信息.
 ```java
 TopicRouteData topicRouteData = this.namesrvController.getRouteInfoManager().pickupTopicRouteData(requestHeader.getTopic());
 ```
@@ -135,7 +135,7 @@ RouteInfoMananger的topicQueueTable记录了topic名称与broker队列[broker名
 
 |线程名称|作用|核心方法|
 |:-:|:-:|:-:|
-|ServerHouseKeepingService:type Timer||| 
+|ServerHouseKeepingService:type Timer|||
 |NSScheduledThread1:type scheduledExecutorService|定时任务线程，定时跑2个任务。监听broker的存活 第一个：每隔10分钟扫描出不活动的broker,然后从routeinfo删除 第二个：每隔10分钟定时打印configTable的信息|第一个：scanNotActiveBroker 每10秒扫描一次brokerLiveTable.怎么判断broker是不活动的呢？brokerLiveInfo上次发送过来【注册broker】的更新时间(lastUpdateTimestamp)+设置的broker超时时间 < 系统当前时间，则说明此broker不活动了。第二个：每隔10秒日志打印KVConfig.
 |EventLoopGroupBoss:type EventLoopGroup|Netty的boss线程（accept线程)，负责处理客户端的TCP连接请求。||
 |EventLoopGroupSelector:type EventLoopGroup|Netty的worker线程 是真正负责I/O读写操作的线程组。通过ServerBootstrap的group方法进行设置，用于后续的channel绑定||

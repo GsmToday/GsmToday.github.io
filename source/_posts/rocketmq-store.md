@@ -1,6 +1,6 @@
 ---
 title: RocketMQ源码分析3--Store数据存储
-toc: true
+toc: false
 banner: /images/mouse2.jpg
 date: 2018-03-11 14:56:03
 author: GSM
@@ -29,7 +29,7 @@ categories: 消息队列
 
 对于消费者来说，ConsumeQueue其实是CommitLog的一个索引文件。Consumer消费消息的时候，要读2次：
 1. 先读ConsumeQueue得到offset
-2. 再根据offset从读CommitLog得到消息。 
+2. 再根据offset从读CommitLog得到消息。
 
 <img src="consumequeue.png" width = "600" height = "300" alt="RocketMQ数据逻辑存储" align=center />
 
@@ -91,7 +91,7 @@ this.mappedByteBuffer.putInt(absSlotPos, this.indexHeader.getIndexCount());
 
 ConsumeQueue和IndexFile什么时候建立的呢？ -- 在Broker启动的时候，会启动一个ReputMessageService线程服务:
 ```java
-this.reputMessageService.start(); 
+this.reputMessageService.start();
 ```
 该线程每隔一秒就会执行，根据**CommitLog最新追加到的消息**不断生成：
 - 消息的offset到CommitQueue
@@ -125,7 +125,7 @@ this.reputMessageService.start();
     /**
      * 根据commitlog中该条消息的topic和queueID找到该条消息对应的ConsumeQueue
      */
-   public void putMessagePositionInfo(DispatchRequest dispatchRequest) { 
+   public void putMessagePositionInfo(DispatchRequest dispatchRequest) {
         ConsumeQueue cq = this.findConsumeQueue(dispatchRequest.getTopic(), dispatchRequest.getQueueId());
         cq.putMessagePositionInfoWrapper(dispatchRequest);
     }
@@ -190,8 +190,13 @@ public void buildIndex(DispatchRequest req) {
             log.error("build index error, stop building index");
 
 ```
+
 # 数据存储功能
+
 消息队列在使用过程中都会面临着如何承载消息堆积并在合适的时机投递的问题。处理堆积的最佳方式就是[数据存储](https://tech.meituan.com/mq-design.html)。
+下图是RocketMQ数据的存储管理方式：
+
+<img src="data-store.png" width = "600" height = "300" alt="data store" align=center />
 
 从功能上讲，数据存储用于存储：
 * Producer生产的消息
@@ -203,7 +208,7 @@ public void buildIndex(DispatchRequest req) {
 ```java
 DefaultMessageStore {
     private final MessageStoreConfig messageStoreConfig; //存储相关配置，例如存储路径，CommitLog路径及大小
-    private final CommitLog commitLog; 
+    private final CommitLog commitLog;
     private final ConcurrentMap<String/* topic */, ConcurrentMap<Integer/* queueId */, ConsumeQueue>> consumeQueueTable; //topic的消费队列表
     private final FlushConsumeQueueService flushConsumeQueueService; //CQ刷盘服务线程
     private final CleanCommitLogService cleanCommitLogService;//磁盘超过水位进行清理
@@ -230,7 +235,7 @@ DefaultMessageStore {
     private RandomAccessFile lockFile;
     private FileLock lock;
     boolean shutDownNormal = false;
-} //存储模块核心类,提供数据功能API 
+} //存储模块核心类,提供数据功能API
 
 
 ```

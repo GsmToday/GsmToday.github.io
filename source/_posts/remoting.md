@@ -1,6 +1,6 @@
 ---
 title: RocketMQ源码分析1--Remoting
-toc: true
+toc: false
 banner: /images/dophin.png
 date: 2018-02-19 11:14:03
 author: GSM
@@ -81,7 +81,7 @@ RocketMQ协议分为以下四个部分:
 ```java
 //RequestCode定义:当表示请求操作代码时候，请求接收方根据代码执行相应操作；
 //当表示应答结果代码时候，0表示成功，非0表示错误代码。
-private int code; 
+private int code;
 private LanguageCode language = LanguageCode.JAVA; // 请求和应答方语言
 private int version = 0; //请求和应答方程序版本
 private int opaque = RequestId.getAndIncrement();//请求发起方做tcp连接上的线程复用。
@@ -119,14 +119,14 @@ private transient byte[] body;
 
         byte[] headerData = new byte[headerLength];
         byteBuffer.get(headerData); // 获得报文头部数据
-       
+
         //反序列化解析header data和RemotingCommand类
         RemotingCommand cmd = headerDecode(headerData, getProtocolType(oriHeaderLen));
 
         int bodyLength = length - 4 - headerLength; // 获取body长度
         byte[] bodyData = null;
         if (bodyLength > 0) {
-            bodyData = new byte[bodyLength]; 
+            bodyData = new byte[bodyLength];
             byteBuffer.get(bodyData); // 获取报文提数据
         }
         cmd.body = bodyData;
@@ -154,12 +154,12 @@ public static final int SEND_MESSAGE_V2 = 310;
 解码消息得知消息状态码为发送消息。并且发送方语言为JAVA,消息所在群组为gsm_group,消息的topic为Topic2Test。并且消息体Hello RocketMQ的字节码存储在了body里面。
 ### 3. 编写自己的应用Client&Server
 remoting模块通过定义RemotingClient和RemotingServer实现了基于Netty通信的应用客户端和服务器。无论是客户端还是服务器都支持三种通信方式：
-- invokeSync 同步通信 
+- invokeSync 同步通信
 - invokeAsync 异步通信
 - invoikeOneway 单向通信（不需要知道响应）
 通信对象是上文提到的RemotingCommand，服务端对RemotingCommand进行解码，然后处理。
 
-服务端（实现类NettyRemotingServer）和客户端（实现类NettyRemotingClient）继承了抽象类NettyRemotingAbstract并且实现了RemotingServer/RemotingClient. 
+服务端（实现类NettyRemotingServer）和客户端（实现类NettyRemotingClient）继承了抽象类NettyRemotingAbstract并且实现了RemotingServer/RemotingClient.
 
 抽象类NettyRemotingAbstract中定义了处理请求的方法processRequestCommand,处理响应调用的方法processResponseCommand.
 
@@ -224,12 +224,12 @@ remoting模块通过定义RemotingClient和RemotingServer实现了基于Netty通
                 }
                 System.out.println("invoke sync! request: "+request.toString());
                 // 同步通信，通信回应存储在reponse里
-                RemotingCommand response = this.invokeSyncImpl(channel, request, timeoutMillis); 
+                RemotingCommand response = this.invokeSyncImpl(channel, request, timeoutMillis);
                 if (this.rpcHook != null) {
                     this.rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(channel), request, response);
                 }
                 return response;
-            } 
+            }
             ...
         }
     }

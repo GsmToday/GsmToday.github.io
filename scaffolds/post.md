@@ -1,7 +1,8 @@
 ---
 title: {{ title }}
 date: {{ date }}
-toc: true
-banner: images/
+toc: false
+author:
+banner: /images/
 tags:
 ---
