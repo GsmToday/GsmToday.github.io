@@ -255,16 +255,26 @@ private final FlushCommitLogService flushCommitLogService;
 
 ## Consumer消费消息
 通过PullMessageProcessor处理消费消息。
-## 索引
-索引组件用于创建索引文件集合，当消费者想要获取某个topic下的某个key的消息时候能够快速响应。
 
+## 索引
+索引组件用于创建索引文件集合，RocketMQ允许我们在消息体的property字段中设置一些属性信息记为keys，当消费者想要获取某个topic下的某个key的消息时候能够快速响应。索引组件的具体实现是通过IndexFile来操作的，逻辑结构图如下：
+
+<img src="index_file.jpg" width = "600" height = "300" alt="data store" align=center />
+
+其实，IndexFile就是一个Hash表的具体实现。头字段（蓝色区域）用于记录当前IndexFile文件中内存的使用情况及最新修改的时间戳，哈希桶（紫色区域）用于记录索引信息的哈希值槽位，真实的索引信息（绿色区域）存储在最后，按照索引信息的录入顺序，依次存储。
+
+当录入索引信息的时候，以topic#key为键，计算其哈希值，对哈希桶的总数取余，定位当前索引信息的哈希槽位。由于索引信息按序录入，所以当索引信息一到的时候，其存储位置就固定了，只需要在哈希槽位中记录其位置信息即可，即上图的indexCount。在发生哈希碰撞的时候，采用头插，以最新索引信息的indexCount覆盖哈希槽位的旧值，并把旧值记录在索引信息中。
+
+当以某个topic和key取对应消息的物理点位时，首先定位槽位，然后遍历碰撞的“链表”，取到所需要的信息即可。
+
+IndexFile文件内部的查找就是Hash查找的过程，那如何查找IndexFile呢？这就需要用到IndexFile头中的beginTimeStamp字段和endTimeStamp字段了，它们代表了当前索引信息中第一条和最后一条索引的更新时间。消费者查找时，出了topic和关键字信息，还需要指定时间段。索引组件根据请求的时间段，从后往前匹配。
 
 ## 主从复制
 
 
 
 # 参考
-1. [travi's blog很精彩](http://blog.csdn.net/chunlongyu/article/details/54576649)
+1. [travi's blog很精彩-1](http://blog.csdn.net/chunlongyu/article/details/54576649)
 2. [travi's blog很精彩-2](http://blog.csdn.net/chunlongyu/article/details/54376920)
 2. [Dengshenyu - Kafka系列](http://www.dengshenyu.com/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/2017/11/06/kafka-Meet-Kafka.html)
 3. [meliong blog](http://blog.csdn.net/meilong_whpu)
