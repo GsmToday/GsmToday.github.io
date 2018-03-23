@@ -3,7 +3,7 @@ title: RocketMQ源码分析3--Store数据存储
 toc: false
 banner: /images/mouse2.jpg
 date: 2018-03-11 14:56:03
-author: GSM
+author: NX
 tags:
   - RocketMQ
 categories: 消息队列
