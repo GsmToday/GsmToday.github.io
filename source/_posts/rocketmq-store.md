@@ -262,7 +262,7 @@ public GetMessageResult getMessage(final String group, final String topic, final
           final SubscriptionData subscriptionData);
 ```
 
-<img src="getMessage.jpg" width = "600" height = "300" alt="Consumer-getMessage流程图" align=center />
+<img src="getMessage.jpg" width = "200" height = "50" alt="Consumer-getMessage流程图" align=center />
 
 在根据topic和queueId在指定consumeQueue中第offset个消息开始，拉取maxMsgNums条消息时，首先根据offset找到consumeQueue中的目标MappedFile，然后计算offset在MappedFile中真实的物理偏移量，开始依次读取maxMsgNums条consumeQueue记录CQStoreUnit，回顾之前的数据存储图，CQStoreUnit中存储了此条消息在commitlog中的真实物理偏移和大小，以此为依据在commitlog的消息记录（过程与读取consumeQueue的CQStoreUnit相似，都是先找MappedFile，再取数据）。
 
