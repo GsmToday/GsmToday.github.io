@@ -255,6 +255,17 @@ private final FlushCommitLogService flushCommitLogService;
 
 ## Consumer消费消息
 通过PullMessageProcessor处理消费消息。
+```java
+public GetMessageResult getMessage(final String group, final String topic, final int queueId,
+          final long offset, final int maxMsgNums,
+          final SubscriptionData subscriptionData);
+```
+
+![Consumer-getMessage流程图](getMessage.jpg)
+
+在根据topic和queueId在指定consumeQueue中第offset个消息开始，拉取maxMsgNums条消息时，首先根据offset找到consumeQueue中的目标MappedFile，然后计算offset在MappedFile中真实的物理偏移量，开始依次读取maxMsgNums条consumeQueue记录CQStoreUnit，回顾之前的数据存储图，CQStoreUnit中存储了此条消息在commitlog中的真实物理偏移和大小，以此为依据在commitlog的消息记录（过程与读取consumeQueue的CQStoreUnit相似，都是先找MappedFile，再取数据）。
+
+为了防止一次性拉去的消息太多，阻塞其他任务，会从以拉取消息的个数和内存大小两个角度限制一次消息拉去的量。
 
 ## 索引
 索引组件用于创建索引文件集合，RocketMQ允许我们在消息体的property字段中设置一些属性信息记为keys，当消费者想要获取某个topic下的某个key的消息时候能够快速响应。索引组件的具体实现是通过IndexFile来操作的，逻辑结构图如下：
