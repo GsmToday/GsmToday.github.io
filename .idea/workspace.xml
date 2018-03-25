@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1336fca0-5bd8-483c-ae10-c44f6f6feccf" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/rocketmq-store.md" afterPath="$PROJECT_DIR$/source/_posts/rocketmq-store.md" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -80,9 +80,9 @@
               <first_editor relative-caret-position="80">
                 <caret line="5" column="10" lean-forward="false" selection-start-line="5" selection-start-column="10" selection-end-line="5" selection-end-column="10" />
                 <folding>
-                  <marker date="1521799159943" expanded="true" signature="4704:5229" ph="{...}" />
-                  <marker date="1521799159943" expanded="true" signature="5253:5323" ph="/.../" />
-                  <marker date="1521799159943" expanded="true" signature="5741:5927" ph="{...}" />
+                  <marker date="1521959256846" expanded="true" signature="4702:5227" ph="{...}" />
+                  <marker date="1521959256846" expanded="true" signature="5251:5321" ph="/.../" />
+                  <marker date="1521959256846" expanded="true" signature="5739:5925" ph="{...}" />
                 </folding>
               </first_editor>
               <second_editor />
@@ -331,12 +331,12 @@
       <workItem from="1519443431953" duration="2995000" />
       <workItem from="1521762743815" duration="2598000" />
       <workItem from="1521774720368" duration="243000" />
-      <workItem from="1521799306325" duration="27000" />
+      <workItem from="1521799306325" duration="613000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="7846000" />
+    <option name="totallyTimeSpent" value="8432000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="175" y="98" width="1400" height="707" extended-state="0" />
@@ -475,9 +475,9 @@
           <first_editor relative-caret-position="80">
             <caret line="5" column="10" lean-forward="false" selection-start-line="5" selection-start-column="10" selection-end-line="5" selection-end-column="10" />
             <folding>
-              <marker date="1521799159943" expanded="true" signature="4704:5229" ph="{...}" />
-              <marker date="1521799159943" expanded="true" signature="5253:5323" ph="/.../" />
-              <marker date="1521799159943" expanded="true" signature="5741:5927" ph="{...}" />
+              <marker date="1521959256846" expanded="true" signature="4702:5227" ph="{...}" />
+              <marker date="1521959256846" expanded="true" signature="5251:5321" ph="/.../" />
+              <marker date="1521959256846" expanded="true" signature="5739:5925" ph="{...}" />
             </folding>
           </first_editor>
           <second_editor />
@@ -561,9 +561,9 @@
           <first_editor relative-caret-position="80">
             <caret line="5" column="10" lean-forward="false" selection-start-line="5" selection-start-column="10" selection-end-line="5" selection-end-column="10" />
             <folding>
-              <marker date="1521799159943" expanded="true" signature="4704:5229" ph="{...}" />
-              <marker date="1521799159943" expanded="true" signature="5253:5323" ph="/.../" />
-              <marker date="1521799159943" expanded="true" signature="5741:5927" ph="{...}" />
+              <marker date="1521959256846" expanded="true" signature="4702:5227" ph="{...}" />
+              <marker date="1521959256846" expanded="true" signature="5251:5321" ph="/.../" />
+              <marker date="1521959256846" expanded="true" signature="5739:5925" ph="{...}" />
             </folding>
           </first_editor>
           <second_editor />
@@ -764,9 +764,9 @@
           <first_editor relative-caret-position="80">
             <caret line="5" column="10" lean-forward="false" selection-start-line="5" selection-start-column="10" selection-end-line="5" selection-end-column="10" />
             <folding>
-              <marker date="1521799159943" expanded="true" signature="4704:5229" ph="{...}" />
-              <marker date="1521799159943" expanded="true" signature="5253:5323" ph="/.../" />
-              <marker date="1521799159943" expanded="true" signature="5741:5927" ph="{...}" />
+              <marker date="1521959256846" expanded="true" signature="4702:5227" ph="{...}" />
+              <marker date="1521959256846" expanded="true" signature="5251:5321" ph="/.../" />
+              <marker date="1521959256846" expanded="true" signature="5739:5925" ph="{...}" />
             </folding>
           </first_editor>
           <second_editor />

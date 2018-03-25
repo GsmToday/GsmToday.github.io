@@ -1,6 +1,6 @@
 ---
 title: RocketMQ源码分析3--Store数据存储
-toc: false
+toc: toc
 banner: /images/mouse2.jpg
 date: 2018-03-11 14:56:03
 author: NX
@@ -64,7 +64,14 @@ public commit(final int commitLeastPages)//将内存消息刷盘
 
 public SelectMappedBufferResult selectMappedBuffer(int pos, int size) // 随机读消息
 ```
+## CommitLog
+CommitLog是保存消息元数据的物理存储文件,所有到达Broker的消息都会保存到Commitlog文件。这里需要强调的是所有topic的消息都会统一保存在commitLog中，举个例子：当前集群有TopicA, TopicB，这两个Toipc的消息会按照消息到达的先后顺序保存到同一个commitLog中，而不是每个Topic有自己独立的cCommitLog。
 
+每个CommitLog大小上限为1G，满1G之后会自动新建CommitLog文件做保存数据用。
+
+CommitLog的清理机制：
+1. 按时间清理，默认清理三天前的commitlog文件
+2. 按磁盘水位清理。当磁盘使用量到达磁盘容量的75%,开始清理最老的commitlog文件。
 ## ConsumeQueue
 ConsumeQueue是消息的位置文件，主要存储消息在CommitLog的位置(offset)，多个文件构成一个队列。内部采用MappedFileQueue实现了消息位置文件队列功能。
 ```
