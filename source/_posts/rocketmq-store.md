@@ -1,6 +1,6 @@
 ---
 title: RocketMQ源码分析3--Store数据存储
-toc: false
+toc: toc
 banner: /images/mouse2.jpg
 date: 2018-03-11 14:56:03
 author: NX
@@ -64,7 +64,14 @@ public commit(final int commitLeastPages)//将内存消息刷盘
 
 public SelectMappedBufferResult selectMappedBuffer(int pos, int size) // 随机读消息
 ```
+## CommitLog
+CommitLog是保存消息元数据的物理存储文件,所有到达Broker的消息都会保存到Commitlog文件。这里需要强调的是所有topic的消息都会统一保存在commitLog中，举个例子：当前集群有TopicA, TopicB，这两个Toipc的消息会按照消息到达的先后顺序保存到同一个commitLog中，而不是每个Topic有自己独立的cCommitLog。
 
+每个CommitLog大小上限为1G，满1G之后会自动新建CommitLog文件做保存数据用。
+
+CommitLog的清理机制：
+1. 按时间清理，默认清理三天前的commitlog文件
+2. 按磁盘水位清理。当磁盘使用量到达磁盘容量的75%,开始清理最老的commitlog文件。
 ## ConsumeQueue
 ConsumeQueue是消息的位置文件，主要存储消息在CommitLog的位置(offset)，多个文件构成一个队列。内部采用MappedFileQueue实现了消息位置文件队列功能。
 ```
@@ -188,7 +195,8 @@ public void buildIndex(DispatchRequest req) {
             }
         } else {
             log.error("build index error, stop building index");
-
+        }
+}
 ```
 
 # 数据存储功能
@@ -264,7 +272,7 @@ public GetMessageResult getMessage(final String group, final String topic, final
           final SubscriptionData subscriptionData);
 ```
 
-![Consumer-getMessage流程图](getMessage.jpg)
+<img src="getMessage.jpg" width = "200" height = "50" alt="Consumer-getMessage流程图" align=center />
 
 在根据topic和queueId在指定consumeQueue中第offset个消息开始，拉取maxMsgNums条消息时，首先根据offset找到consumeQueue中的目标MappedFile，然后计算offset在MappedFile中真实的物理偏移量，开始依次读取maxMsgNums条consumeQueue记录CQStoreUnit，回顾之前的数据存储图，CQStoreUnit中存储了此条消息在commitlog中的真实物理偏移和大小，以此为依据在commitlog的消息记录（过程与读取consumeQueue的CQStoreUnit相似，都是先找MappedFile，再取数据）。
 
