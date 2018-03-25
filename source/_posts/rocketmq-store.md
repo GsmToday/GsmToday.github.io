@@ -194,9 +194,12 @@ public void buildIndex(DispatchRequest req) {
 # 数据存储功能
 
 消息队列在使用过程中都会面临着如何承载消息堆积并在合适的时机投递的问题。处理堆积的最佳方式就是[数据存储](https://tech.meituan.com/mq-design.html)。
-下图是RocketMQ数据的存储管理方式：
+
+下图是RocketMQ数据的存储管理方式。所有Producer生产的消息，按照插入顺序写入一个CommitLog文件。CommitLog按照固定的大小被切割为多个小文件，每个文件MappedFile都通过内存映射的方式加载入内存。MappedFile随着消息的写入，不断生成，并放在MappedFileQueue队列的最后，每次消息写入都在最后一个MappedFile后追加，直到达到最大的文件大小，重新生成一个新的MappedFile。每个MappedFile名字表示文件中第一条消息在CommitLog中的物理偏移量。每条消息有固定的格式，在写入CommitLog的过程中，RocketMQ会启动一个异步线程，读取MappedFile，根据生产消息时指定的topic和ConsumeQueue id将每条消息在整个CommitLog中的物理偏移量，以及消息的大小和标签码，组织为一条CQUnit，写入对应ConsumeQueue。ConsumeQueue的组织方式与CommitLog类似，每个topic的每个ConsumeQueue独占一个文件夹，文件夹里同样按照MappedFileQueue的方式，组织所有CQStoreUnit。
 
 <img src="data-store.png" width = "600" height = "300" alt="data store" align=center />
+
+
 
 从功能上讲，数据存储用于存储：
 * Producer生产的消息
