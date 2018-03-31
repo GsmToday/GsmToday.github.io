@@ -8,7 +8,10 @@ tags:
   - RocketMQ
 categories: 消息队列
 ---
-本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。[推荐Netty入门综述](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。如有疑问或者技术探讨，可以email me: gsmuestc@163.com
+本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。[推荐Netty入门综述](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。
+
+本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之一，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
+
 
 <!-- more -->
 

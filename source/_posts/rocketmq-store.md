@@ -8,7 +8,7 @@ tags:
   - RocketMQ
 categories: 消息队列
 ---
-本文是[RocketMQ源码分析系列](http://localhost:4000/tags/RocketMQ/)之三，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
+本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之三，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
 
 <!-- more -->
 # 设计思路
@@ -37,6 +37,7 @@ categories: 消息队列
 
 对于CommitLog和ConsumeQueue源代码中都有一个成员MapedFileQueue -- Consumer消费消息过程中使用了**零拷贝（mmap+write）**，[mmap](https://www.cnblogs.com/huxiao-tee/p/4660352.html)是一种内存映射文件的方法，即将一个文件或者其他对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中的一段虚拟地址的一一映射关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存。而系统会自动回写脏页面到对应的文件磁盘，即完成了对文件的操作而不比调用read,write等系统调用函数。相反，内核空间对区域的修改也直接反应到用户空间，从而实现不同进程间的文件共享。[有关零拷贝推荐此文](http://www.linuxjournal.com/article/6345)。
 
+通过使用零拷贝，解决了文件存储IO的瓶颈，从而实现了Broker的高吞吐量。
 
 # Store模块数据核心文件
 RocketMQ的数据存储功能在源码中为Store模块，其结构如下图所示:
@@ -297,3 +298,4 @@ IndexFile文件内部的查找就是Hash查找的过程，那如何查找IndexFi
 2. [travi's blog很精彩-2](http://blog.csdn.net/chunlongyu/article/details/54376920)
 2. [Dengshenyu - Kafka系列](http://www.dengshenyu.com/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/2017/11/06/kafka-Meet-Kafka.html)
 3. [meliong blog](http://blog.csdn.net/meilong_whpu)
+4. [零拷贝](https://www.jianshu.com/p/fad3339e3448)

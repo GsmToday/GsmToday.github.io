@@ -9,7 +9,7 @@ tags:
 categories: 消息队列
 ---
 
-本文是[RocketMQ源码分析系列](http://localhost:4000/tags/RocketMQ/)之二，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
+本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之二，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
 
 <!-- more -->
 
