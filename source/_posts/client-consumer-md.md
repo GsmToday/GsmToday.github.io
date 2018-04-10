@@ -11,6 +11,7 @@ categories: 消息队列
 本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之五，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
 
 <!-- more -->
+
 RocketMQ中Consuemr由用户部署，支持Push和Pull两种消费模式，支持集群消费和广播消息，提供实时的消息订阅机制。
 
 ## 消息的推和拉

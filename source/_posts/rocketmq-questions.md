@@ -9,6 +9,7 @@ tags:
 既见树木，又见森林。
 <!-- more -->
 1. RocketMQ如何保证**严格的消息顺序**？
+**顺序消息**是RocketMQ功能特性上的一个卖点。RocketMQ可以实现全局保序。需要重点说一下，这里的全局是有前提，针对某个唯一标识（能够被Hash成唯一标识），比方说大卖家账号，某类产品的订单等。其技术实现原理也相对比较简单，保证对通道的单一实例操作，如单进程、单线程写，单进程、线程读。
 2. RocketMQ为什么不采用Zookeeper而自己开发了NameServer?
 3. RocketMQ怎么处理**亿级消息的堆积的**？在保证了堆积亿级消息后，怎么保持**写入低延迟**？
 4. RocketMQ消息**订阅模式**是什么？
@@ -27,3 +28,5 @@ http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/
 producer, consumer, broker, nameserver都可以分布式，集群部署，消除单点故障。
 
 https://www.jianshu.com/p/453c6e7ff81c
+
+http://mp.weixin.qq.com/s/6PmcXJZVyWYZPssveeNkIw
