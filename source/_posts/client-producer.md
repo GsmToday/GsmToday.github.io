@@ -1,11 +1,14 @@
 ---
-title: client-producer
-toc: false
-banner: /images/
-date: 2018-03-26 16:08:11
-author:
+title: RocketMQ源码分析6--Client之Producer模块
+toc: true
+banner: /images/rabbit.jpeg
+date: 2018-04-21 15:38:39
+author: GSM
 tags:
+  - RocketMQ
+categories: 消息队列
 ---
+
 本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之六，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
 
 <!-- more -->
