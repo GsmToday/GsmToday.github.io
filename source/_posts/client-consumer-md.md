@@ -12,8 +12,47 @@ categories: 消息队列
 
 <!-- more -->
 
-RocketMQ中Consuemr由用户部署，支持Push和Pull两种消费模式，支持集群消费和广播消息，提供实时的消息订阅机制。
+RocketMQ中Consuemer由用户部署，支持Push和Pull两种消费模式，支持集群消费和广播消息，提供实时的消息订阅机制。
 
+Client模块的Producer和Consumer源码结构引用[此文的图](https://blog.csdn.net/chunlongyu/article/details/54585232)。
+<img src="client.jpeg" width = "800" height = "600" align=center />
+
+<img src="client-module.svg" width = "800" height = "600" align=center />
+
+Producer和Consumer的共同逻辑，例如定期更新NameServer地址列表，定期更新TopicRoute，发送网络请求封装在MQClientInstance, MQClientAPIImpl, MQAdminImpl类。
+
+## 集群消费，广播消息以及Pub/Sub
+**Consumer Group**: Consumer的集合，这类Consumer通常消费一类消息，且消费逻辑一致。
+
+**集群消费**: 一个Consumer Group重点Consumer实例平摊消费消息。例如，某个Topic有9条消息，其中一个Consumer Group有三个实例，那么每个实例只消费其中的三条消息。多个Consumer Group之间是Pub/Sub发布订阅模式。默认，Consumer是集群消费模式.
+
+**广播消费**：一条消息被多个Consumer消费，即使这些Consumer属于同一个 Consumer Group消息也会被Consumer Group中的每个Consumer 都消费一次，广播消费中的 Consumer Group 概念可以认为在消息划分方面无意义。
+
+```java
+/**
+ * Message model
+ */
+public enum MessageModel {
+    /**
+     * broadcast
+     */
+    BROADCASTING("BROADCASTING"),
+    /**
+     * clustering
+     */
+    CLUSTERING("CLUSTERING");
+
+    private String modeCN;
+
+    MessageModel(String modeCN) {
+        this.modeCN = modeCN;
+    }
+
+    public String getModeCN() {
+        return modeCN;
+    }
+}
+```
 ## 消息的推和拉
 RocketMQ是**以拉模式为主，兼有推模式**。
 
@@ -135,9 +174,9 @@ Pull方式里，取消息的过程需要用户自己写，首先通过打算消�
 
 在RocketMQ里，有一种优化的做法——长轮询 Pull ，来平衡推拉模型各自的缺点。基本思路是：消费者如果尝试拉取失败，不是直接return,而是把连接挂在那里wait,服务端如果有新的消息到来，把连接notify起来，这也是不错的思路。但海量的长连接block对系统的开销还是不容小觑的，还是要合理的评估时间间隔，给wait加一个时间上限比较好。
 
-## 集群消费
-## 广播消息 
+## 启动Consumer
+<img src="clientboot.png" width = "800" height = "600" align=center />
 
 ## 引用
 1. [RocketMQ客户端最佳实践](https://yq.aliyun.com/articles/66128?spm=a2c4e.11154837.601370.2.79df5db0SUbGbK)
-2. https://blog.csdn.net/xxxxxx91116/article/details/50390359
+2. OffsetStore
