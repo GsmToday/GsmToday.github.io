@@ -124,12 +124,18 @@ https://my.oschina.net/xinxingegeya/blog/1584617
 ---
 
 8.RocketMQ是怎么设计事务机制的？
-事务消息是指可以用来实现最终一致性的分布式事务。
 
-https://blog.csdn.net/chunlongyu/article/details/53844393
-https://www.jianshu.com/p/453c6e7ff81c
+分布式事务涉及到两阶段提交问题。RocketMQ通过offset方式实现分布式事务。RocketMQ把消息的发送分成了两个阶段：Prepare阶段和确认阶段。
+（1） 发送Prepared消息
+（2） updateDB
+（3) 根据updateDB结果成功或者失败，确认或者取消Prepare消息。
+如果前两步执行成功了，最后一步失败了。由于**RocketMQ会定期扫描所有的Prepared消息**，询问发送方，到底是要确认这条消息发出去了，还是取消这条消息。
+
+[参考Travis‘s blog](https://blog.csdn.net/chunlongyu/article/details/53844393)
+
 ---
 9.RocketMQ是怎么“天然分布式的”？
+
 producer, consumer, broker, nameserver都可以分布式，集群部署，消除单点故障。
 
 ---
