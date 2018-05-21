@@ -5,7 +5,7 @@ banner: /images/shulan.jpg
 author: GSM
 date: 2017-09-07 22:42:28
 tags:
-  - Java基础知识
+  - Java
 ---
 
 ## What
