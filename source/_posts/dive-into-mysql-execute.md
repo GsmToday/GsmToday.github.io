@@ -1,7 +1,7 @@
 ---
 title: 一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记
 toc: false
-banner: /images/
+banner: /images/sheep.jpg
 date: 2018-05-21 11:37:01
 author: GSM
 tags: MySQL
@@ -9,7 +9,7 @@ categories: 存储
 ---
 [前面一篇总结](https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/)介绍了如何建立最好的索引，这些对于高性能来说必不可少。但是这些还不够--还需要合理的**设计查询**。如果查询写的很糟糕，即使库表结构再合理，索引再何时，也无法实现高性能。
 
-这篇总结关注查询设计的一些基本原则，介绍一些更深的查询优化技巧，以及介绍MySQL优化器内部机制，也解答了MySQL是如何执行查询的。
+这篇总结关注查询设计的一些基本原则，介绍一些更深的查询优化技巧，以及介绍MySQL优化器内部机制，也解答了MySQL是如何执行查询的和如何执行关联查询的。
 <!-- more -->
 当向MySQL发送一个请求的时候，MySQL到底做了什么？
 <img src="process.png" width = "500" height = "400" align=center />
