@@ -5,7 +5,7 @@ date: 2018-04-31 10:34:51
 author: GSM
 tags:
   - RocketMQ
-categories: 消息队列
+categories: 中间件
 ---
 既见树木，又见森林。
 <!-- more -->

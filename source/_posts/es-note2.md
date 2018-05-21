@@ -5,7 +5,7 @@ banner: /images/squirrel.jpg
 date: 2017-04-08 22:39:59
 tags:
   - ElasticSearch
-categories: ElasticSearch
+categories: 中间件
 author: GSM
 ---
 

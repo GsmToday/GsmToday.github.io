@@ -6,6 +6,7 @@ toc: false
 banner: /images/bee.jpg
 tags:
   - Hive
+categories: 存储
 ---
 ## Hive简介
 

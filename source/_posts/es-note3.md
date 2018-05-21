@@ -5,7 +5,7 @@ banner: /images/lu.jpg
 date: 2017-04-12 22:47:09
 tags:
   - ElasticSearch
-categories: ElasticSearch
+categories: 中间件
 author: GSM
 ---
 

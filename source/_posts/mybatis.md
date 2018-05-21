@@ -5,7 +5,7 @@ banner: /images/pun.jpeg
 date: 2017-11-01 22:47:09
 tags:
   - 数据库
-  - mysql
+  - MySQL
 author: GSM
 ---
 

@@ -6,7 +6,7 @@ date: 2017-09-02 21:06:04
 author: NX
 tags:
   - Netty
-categories: Netty
+categories: 中间件
 ---
 
 ## 内存结构

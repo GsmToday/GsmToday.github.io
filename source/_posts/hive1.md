@@ -6,6 +6,7 @@ toc: false
 banner: /images/insect.jpg
 tags:
   - Hive
+categories: 存储
 ---
 ## 引言
 接着上一篇来说[执行入口的分析][1]，`CliDriver`最终将用户指令`command`提交给了`Driver`的`run`方法（针对常用查询语句而言），在这里用户的`command`将会被编译，优化并生成MapReduce任务进行执行。所以`Driver`也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。

@@ -5,7 +5,7 @@ banner: /images/maotouying.jpg
 author: NX
 tags:
   - Netty
-categories: Netty
+categories: 中间件
 ---
 
 ## Preface

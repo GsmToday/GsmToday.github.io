@@ -6,7 +6,7 @@ date: 2018-03-31 15:38:39
 author: GSM
 tags:
   - RocketMQ
-categories: 消息队列
+categories: 中间件
 ---
 本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之五，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
 

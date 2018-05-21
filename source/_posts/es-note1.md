@@ -5,7 +5,7 @@ banner: /images/eagle.jpg
 date: 2017-04-01 21:36:38
 tags:
   - ElasticSearch
-categories: ElasticSearch
+categories: 中间件
 author: GSM
 ---
 

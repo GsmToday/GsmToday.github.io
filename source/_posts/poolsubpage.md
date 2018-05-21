@@ -5,7 +5,7 @@ date: 2017-08-27 11:20:30
 author: NX
 tags:
   - Netty
-categories: Netty
+categories: 中间件
 ---
 
 ## 初始化

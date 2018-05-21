@@ -6,7 +6,7 @@ date: 2017-10-29 00:08:41
 author: GSM
 tags:
   - Nginx
-categories: Nginx
+categories: 服务器
 ---
 
 原文 : [https://www.nginx.com/blog/inside-Nginx-how-we-designed-for-performance-scale/]

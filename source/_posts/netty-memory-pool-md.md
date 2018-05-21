@@ -6,7 +6,7 @@ date: 2017-09-03 12:22:46
 author: NX
 tags:
   - Netty
-categories: Netty
+categories: 中间件
 ---
 
 ## Netty 是怎么做内存管理--内存池

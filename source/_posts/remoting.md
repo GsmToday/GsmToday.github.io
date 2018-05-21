@@ -6,7 +6,7 @@ date: 2018-02-19 11:14:03
 author: GSM
 tags:
   - RocketMQ
-categories: 消息队列
+categories: 中间件
 ---
 本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。[推荐Netty入门综述](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。
 
