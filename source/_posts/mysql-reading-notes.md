@@ -5,6 +5,7 @@ banner: /images/index.jpg
 date: 2018-05-21 08:06:56
 author: GSM
 tags: MySQL
+categories: 存储
 ---
 
 # MySQL索引原理
