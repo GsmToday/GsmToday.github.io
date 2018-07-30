@@ -2,7 +2,7 @@
 title: Redis AOF 持久化源码分析
 toc: true
 banner: /images/tuboshu.jpg
-date: 2018-07-30 17:37:48
+date: 2018-07-30 18:37:48
 author: NX
 tags:
   - Redis
@@ -83,8 +83,7 @@ $<len>       /*第二个参数的长度*/
 #### Append  aof_buf
 
 追加aof_buf的入口函数在feedAppendOnlyFile中，具体的执行流程如下图：
-
-![append aof](/Users/didi/Beatles/Redis持久化/append aof.png)
+<img src="append aof.png" width = "600" height = "400" align=center />
 
 1. 如果当前更新操作和上一次aof记录操作的数据库不一致，则自动生成一个SELECT命令，控制选择正确的数据库
 2. 如果当前操作指令中包含expire信息，如setex，expire等，需要特殊处理把设置到期时间的功能统一使用PEXPIRE命令记录
@@ -94,8 +93,7 @@ $<len>       /*第二个参数的长度*/
 #### Flush aof_buf
 
 ##### 刷盘流程
-
-![flush aof](/Users/didi/Beatles/Redis持久化/flush aof.png)
+<img src="flush aof.png" width = "600" height = "400" align=center />
 
 刷盘的流程整体上分为write()将aof_buf写入系统缓存以及fsync写磁盘两个步骤。首先，在设置了每秒flush一次aof_buf配置情况下，如果后台有正在运行的fsync任务，并且距离上次write等待没超过2秒，直接返回，等待上一次延迟的任务执行完成。否则，调用aofWrite循环write()。由于无法保证write()一定成功，所以当写入不完全时，会执行特定的出错处理机制。如果完全写入，表示aof_buf的内容已写入系统缓存，此时增加aof_current_size的计数。到此为止，就完成了通过write调用将aof_buf写入系统缓存的工作。一旦系统缓存写入成功，即使Redis程序崩溃或者退出，只要系统正常运行，那么aof_buf也一定能刷入磁盘中。
 
@@ -134,8 +132,7 @@ AOF文件只是简单的存储了写操作相关的命令，而并没有进行�
 #### Rewrite的具体流程
 
 由于rewrite操作需要访问整个内存数据库，与RDB持久化类似，为了防止数据访问的冲突，Redis也fork了一个新的子进程来独立的完成rewrite的过程。
-
-![rewrite](/Users/didi/Beatles/Redis持久化/rewrite.png)
+<img src="rewrite.png" width = "600" height = "400" align=center />
 
 1. 因为子进程可能会对父进程做一份完整的内存拷贝，为了减少大规模内存拷贝的次数并防止内存被占满，如果有正在运行的RDB子进程，直接返回。否则执行步骤2
 2. 父进程创建管道，并监听子进程给父进程同步数据管道上的可读事件。
@@ -148,8 +145,7 @@ AOF文件只是简单的存储了写操作相关的命令，而并没有进行�
 我们注意到在父进程返回之前，把当前aof_select_db重置为-1，这是为了保证下一次调用feedAppendOnlyFile()记录操作命令的时候就会强制生成一条SELECT指令，保证父进程同步给子进程的数据能够安全地合并到rewrite文件中。
 
 下面就来看一些rewrite文件生成的具体流程，即上流程图中蓝色标记的具体实现方式：
-
-![rewrite detail](/Users/didi/Beatles/Redis持久化/rewrite detail.png)
+<img src="rewrite detail.png" width = "600" height = "400" align=center />
 
 1. 创建新的临时文件
 2. Redis 4.0新加入了混合模式的持久化文件，综合了RDB文件内容更紧凑恢复更快，AOF机制更安全耐久的优点。如果开启了混合模式，则先用RDB格式将内存快照写入文件（恢复的时候，识别RDB的协议头可以判断是否是混合模式）。否则，遍历整个内存数据空间，根据相应的key-value类型，生成对应的set命令，写入文件。
@@ -196,7 +192,7 @@ if (server.aof_state == AOF_ON &&
 
 在上一节中，我们从rewrite子进程的视角，介绍了具体的流程和出发时机，这一节，我们将从更高层的视角，来看一下整个rewrite过程中父子进程通讯的模型以及父进程在一些问题上处理细节。
 
-![rewrite父子进程通讯模型](/Users/didi/Beatles/Redis持久化/rewrite父子进程通讯模型.png)
+<img src="rewrite父子进程通讯模型.png" width = "600" height = "400" align=center title="rewrite父子进程通讯模型" />
 
 整个rewrite过程中，父子进程的通讯模型如上图。前面章节我们主要从右边子进程的维度，分析了整个执行流程。那么从父进程的角度，我们仍需要解决以下问题：
 
