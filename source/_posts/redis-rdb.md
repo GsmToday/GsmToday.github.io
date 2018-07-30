@@ -8,6 +8,7 @@ tags:
   - Redis
 categories: 中间件
 ---
+<!-- more -->
 ## Redis RDB持久化
 
 Redis是内存数据库，持久化的功能可以将Redis在内存中的数据保存到磁盘里，避免数据在进程退出或者意外宕机等情况下意外丢失。Redis提供了两种持久化的方式，RDB和AOF。本文重点关注RDB相关的知识点。
