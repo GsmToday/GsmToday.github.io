@@ -1,17 +1,15 @@
 ---
 title: Redis RDB持久化 - Redis源码分析
 toc: true
-banner: /images/
+banner: /images/lu.jpg
 date: 2018-07-30 17:49:50
 author: NX
 tags:
   - Redis
 categories: 中间件
 ---
-<!-- more -->
-## Redis RDB持久化
-
 Redis是内存数据库，持久化的功能可以将Redis在内存中的数据保存到磁盘里，避免数据在进程退出或者意外宕机等情况下意外丢失。Redis提供了两种持久化的方式，RDB和AOF。本文重点关注RDB相关的知识点。
+<!-- more -->
 
 ### 初识RDB
 
@@ -25,8 +23,8 @@ redis> save
 ```
 
 上述命令执行完成后，生成的rdb文件如下：(Redis version 4.0.8)
+
 <img src="rdb文件.jpg" width = "600" height = "400" align=center title="dump.rdb文件" />
-![dump.rdb文件](/Users/didi/Beatles/Redis持久化/rdb文件.jpg)
 
 ### RDB文件结构
 
@@ -98,11 +96,11 @@ redis>save
 ```
 
 分析RDB的dump文件如图：
-<img src="length_code.jpg" width = "600" height = "400" align=center title="长度编码" />
+<img src="length_code.jpg" width = "400" height = "200" align=center title="长度编码" />
 
 第一条指令的编码中300(对应十进制192)，二进制高两位都是1，表示采用了特殊的自定义编码，低6位都是0，说明使用了**RDB_ENC_INT8**的方式编码，即紧随着的内容377(对应二进制11111111)是一个有符号的整数-1，这与key是-1稳合，同理value是2；第二条指令dump比较直观，看下value hello的编码，005高二位都是0，表示采用1字节的长度编码，低6位的值就是5，说明value的长度为5， 与hello稳合。
 
-##### string
+##### String
 
 由于Redis中key总是以字符串的形式组织，所以将其纳入字符串类型的value中一起分析，不再单独描述。字符串的编码方式有两种：整数编码(OBJ_ENCODING_INT )和普通字符串序列(REDIS_ENCODING_RAW)。
 
@@ -131,7 +129,7 @@ ssize_t rdbSaveLongLongAsStringObject(rio *rdb, long long value) {
 ```
 
 其中，整数编码的实现比较简单，根据字面值值能否使用1byte,  2byte,  4byte来表示，将数字按位存储到一个字节数组里。整体结构如下图：
-<img src="RDB整数字符串编码.png" width = "600" height = "400" align=center title="RDB整数字符串编码" />
+<img src="RDB整数字符串编码.png" width = "300" height = "200" align=center title="RDB整数字符串编码" />
 
 对于太长的数字值，Redis使用ll2string方法进行转换。一般我们把一个数字转换为字符表示时，比较直观的做法就是除10取余，然后再加上对应的数字字符。但是，对于long long这种很长的数字，效率就比较低下了。看下ll2string的实现：
 
@@ -203,7 +201,7 @@ string浮点数的存储按照原生字符串的形式编码，验证如下图�
 
 <img src="rdb浮点数编码.png" width = "600" height = "400" align=center title="浮点数编码" />
 
-##### hash
+##### HASH
 
 hash对象的编码方式有两种：ziplist和dict。
 
@@ -216,11 +214,16 @@ hash对象的编码方式有两种：ziplist和dict。
 
 ziplist的内存结构可以描述为：
 
-$<zlbytes><zltail><zllen><entry>…<entry><zlend>$
+```
+<zlbytes><zltail><zllen><entry>…<entry><zlend>
+```
+
 
 其中zlbytes占4字节，表示ziplist占用的总字节数；zltail占4字节，表示最后一项在ziplist中的偏移量，方便在尾端直接进行PUSH和POP等操作，zllen占2字节，表示entry的个数；zlend结束符，和前述的EOF一致，值为255。entry是真正存放数据的数据项，有自己独立的内部结构如下：
 
-$<prevrawlen><len><data>$
+```
+<prevrawlen><len><data>
+```
 
 prevrawlen表示前一项数据的总字节数，len表示当前数据项data的长度。这两个长度都是根据实际情况变长编码的，这里不展开描述。
 
@@ -246,7 +249,7 @@ Dict的结构比较常见，在Redis中的实现结构如下图：
 
 针对Dict的持久化过程比较简单，先写入dict的元素个数，然后再迭代entry，以字符串的方式，将entry.field和entry.value写入文件，不再验证。
 
-##### zset
+##### ZSET
 
 zset对象的编码方式有两种：ziplist和skiplist。那么什么情况下会使用ziplist，什么情况下会使用skiplist呢？
 
@@ -285,20 +288,21 @@ redis>save
 
 第二，对于节点内容，按照原生字符串方式进行持久化，而对于double类型的score，并非按照整数类型的编码，而是全部转换为小端后，按照内存布局写入。
 
-##### list
+##### LIST
 
 Redis中list类型遍量的底层数据结构是quicklist，它是一个双向链表，源码注释中是这样描述的：
 
 > A doubly linked list of ziplists
 
 它确实是一个双向链表，而且是一个ziplist的双向链表。这里不对具体的结构以及涉及到的ziplist节点大小调参等细节做过多描述。还有一个影响持久化的特性是：当列表很长的时候，最容易被访问的很可能是两端的数据，中间的数据被访问的频率比较低（访问起来性能也很低）。如果应用场景符合这个特点，那么list还提供了一个选项，能够把中间的数据节点进行压缩，从而进一步节省内存空间。
-<img src="redis_quicklist_structure.png" width = "600" height = "400" align=center />
+
+<img src="redis_quicklist_structure.png" width = "800" height = "600" align=center />
 
  有了数据结构的支持，持久化的过程也就很直观了：首先写入quicklist节点中的长度信息，也就是quicklistNode的节点个数。然后从头结点开始遍历，如果不是被压缩过的节点，则直接把上文ziplist的内存结构按原生字符串的方式，写入文件。否则，按照如下lzf压缩格式编码写入。
 
 <img src="lzf压缩.png" width = "600" height = "400" align=center />
 
-##### set
+##### SET
 
 set对象的编码方式也有两种：intset和dict。当set中添加的元素都是整型且元素数目较少时(512)，set使用intset作为底层数据结构，否则，set使用dict作为底层数据结构。dict格式的持久化在前面已经介绍过了。
 
@@ -322,7 +326,9 @@ redis>save
 
 图中被彩色区域框起来的部分，依次表示：intset的总大小：
 
-$4byte(encoding)+4byte(length)+2*4 = 16bytes$
+```
+4byte(encoding)+4byte(length)+2*4 = 16bytes
+```
 
 encoding：2，表示每个整数元素使用2字节编码
 
@@ -340,12 +346,13 @@ content: 按照数据元素的大小，从小到大排序依次存储。
 这里可能会有一个疑问，为什么不在主进程中创建新的线程，而是创建新的子进程来执行RDB的持久化呢？主要是出于Redis性能的考虑，我们知道Redis对客户端响应请求的工作模型是单进程和单线程的，如果在主进程内启动一个线程，这样会造成对数据的竞争条件。所以为了避免使用锁降低性能，Redis选择启动新的子进程，独立拥有一份父进程的内存拷贝，以此为基础执行RDB持久化。
 
 从代码的角度来说，SAVE命令的执行流程如下图：
-<img src="rdbSave.png" width = "600" height = "400" align=center />
+<img src="rdbSave.png" width = "300" height = "200" align=center />
 
 SAVE的实现过程比较直白，没有太多的逻辑分支，要么全部成功，要么报错。这里隐含了一种"原子性"的概念，因为，rdb的dump文件无论执行多少次SAVE，都只会有一个文件，所以要求要么SAVE成功后，新的dump文件，被更新，要么任何一环出问题，旧的dump文件保持不变。Redis的实现方式就是，利用rename调用，先生成一个临时文件，**并完成刷盘** ，然后使用rename调用对旧的dump文件进行替换。关于rename的原子性可以参考rename的[man page](http://man7.org/linux/man-pages/man2/rename.2.html) 和 [讨论](https://stackoverflow.com/questions/7054844/is-rename-atomic)。
 
 BGSAVE的执行流程如下：
-<img src="rdbBgSave.png" width = "600" height = "400" align=center />
+
+<img src="rdbBgSave.png" width = "500" height = "300" align=center />
 
 1. 如果有正在执行的AOF子进程或者RDB子进程，直接返回失败，防止两个子进程，同时执行大量的磁盘写入，影响效率。
 2. 保存执行bgsave时，已修改未持久化的脏数据项个数。

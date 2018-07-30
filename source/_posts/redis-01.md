@@ -1,5 +1,5 @@
 ---
-title: Redis AOF 持久化源码分析
+title: Redis AOF 持久化- Redis源码分析
 toc: true
 banner: /images/tuboshu.jpg
 date: 2018-07-30 18:37:48
@@ -8,9 +8,8 @@ tags:
   - Redis
 categories: 中间件
 ---
-## Redis AOF 持久化
-
 在《Redis RDB持久化》一文中，我们对RDB持久化的流程，格式以及实现方式进行了阐述。本文重点关注下另外一种持久化方式：AOF持久化。
+<!-- more -->
 
 ### 初始AOF
 
@@ -83,7 +82,7 @@ $<len>       /*第二个参数的长度*/
 #### Append  aof_buf
 
 追加aof_buf的入口函数在feedAppendOnlyFile中，具体的执行流程如下图：
-<img src="append aof.png" width = "600" height = "400" align=center />
+<img src="append aof.png" width = "300" height = "200" align=center />
 
 1. 如果当前更新操作和上一次aof记录操作的数据库不一致，则自动生成一个SELECT命令，控制选择正确的数据库
 2. 如果当前操作指令中包含expire信息，如setex，expire等，需要特殊处理把设置到期时间的功能统一使用PEXPIRE命令记录
