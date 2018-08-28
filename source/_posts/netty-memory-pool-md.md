@@ -8,6 +8,9 @@ tags:
   - Netty
 categories: 中间件
 ---
+内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。
+
+从Netty层面来说，操作系统分配内存容易有碎页并且比较耗时，一次性申请足够空间，自己管理更高效。Netty内存管理其实质就是先分配一块大内存，然后在内存的分配和回收过程中，使用一些数据结构记录内存使用状态，如果有新的分配请求，根据这些状态信息寻找最合适的位置并更新内存结构。释放内存时候：同步修改数据结构.
 
 ## Netty 是怎么做内存管理--内存池
 > Netty is a NIO client server framework which enables quick and easy development of network applications such as protocol servers and clients. It greatly simplifies and streamlines network programming such as TCP and UDP socket server.  
@@ -32,13 +35,19 @@ Netty内存池的实现参考了jemalloc的原理，关于jemalloc的介绍可�
 
 线程私有缓存因为可以避免多线程请求内存时的竞争，所以效率很高，但是也存在一些缺陷：最大缓存容量小，每个线程默认32k；使用不当可能会造成[内存泄漏](https://caorong.github.io/2016/08/27/netty-hole/).
 
-全局共享的内存池支持堆内存和堆外内存（Direct Buffer）的申请和回收，其内存管理的粒度有两种：
+全局共享的内存池支持堆内存和堆外内存（Direct Buffer）的申请和回收，其**内存管理的粒度**有两种：
 + Page: 内存管理的最小单元，默认8K
-+ Chunk：以Page为单元的集合，默认64M
++ Chunk：Netty向操作系统申请内存是以Chunk为单位申请的，内存分配也是基于Chunk。Chunk是Page为单元的集合，默认16M。
 
 当Client申请的内存大于一个Page的大小时，在Chunk内进行分配（申请内存大于Chunk size的时候，不在内存池中管理，由JVM负责处理），反之，在一个Page页内进行分配。
 
-针对上述两种粒度的内存块的管理，其实现上包含以下几个组件（类）：
+Netty逻辑上将内存大小分为了tiny, small, normal, huge 几个单位。对tiny&small大小的内存，normal大小的内存，huge大小的内存采用的不同的内存分配策略。
+<div align = center>
+
+![unit](unit.png)
+
+</div>
+针对上述两种粒度（Chunk&Page）的内存块的管理，其实现上包含以下几个组件（类）：
 + PoolArena：内存分配中心
 + PoolChunk：负责Chunk内的内存分配
 + PoolSubpage：负责Page内的内存分配
