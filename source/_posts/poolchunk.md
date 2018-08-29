@@ -16,19 +16,20 @@ categories: 中间件
 
 <!-- more -->
 
-1. 内存块Chunk，以内存页Page为最小存储单元  
-Chunk大小的默认值：  
-**MaxChunkSize** : ((long)Integer.MAX_VALUE + 1)/2 = **1024M**  
-AbsMaxOrder : 14  
-DefaultMaxOrder : 11, 一个chunk默认由2<sup>11</sup>个页面构成  
-**DefaultChunkSize** = DefaultPageSize * 2<sup>DefaultMaxOrder</sup> = **16M**  
-可调节，根据pageSize和maxOrder计算得到
+1.内存块Chunk，Netty向操作系统申请资源的最小单位，chunk是page单元的集合
+- chunk默认大小16M，可调节，根据pageSize和maxOrder计算得到 
 
-2. 内存页Page，当请求的内存小于页大小时，可继续划分为更小的内存段，使用位图标记各使用情况  
+![](http://chart.googleapis.com/chart?cht=tx&chl=\Large DefaultChunkSize=DefaultPageSize \times 2 ^ {DefaultMaxOrder})
+
+- MaxChunkSize, chunk最大大小为1G
+
+- DefaultMaxOrder = 11, 一个chunk默认由2<sup>11</sup>个页面构成，因为一个page 8k，所以默认完全二叉树11层。
+
+2.内存页Page，当请求的内存小于页大小时，可继续划分为更小的内存段，使用位图标记各使用情况  
 Page大小的默认值：  
-**DefaultPageSize** : 8192 Byte = **8K**  
+![](http://chart.googleapis.com/chart?cht=tx&chl=\Large DefaultPageSize =8192 Byte = 8k)
 可调节，必须为2的幂
-pageShifts: log2(pageSize), 2<sup>pageShifts</sup>=pageSize
+![](http://chart.googleapis.com/chart?cht=tx&chl=\Large pageShifts =log_2 pageSize)
 
 题入正文，我们将PoolChunk上的内存分配视为一个算法来分析：
 
@@ -98,10 +99,10 @@ private long allocateRun(int normCapacity) {
  * @return index in memoryMap
  */
 private int allocateNode(int d) {
-    int id = 1;
+    int id = 1; // 从根节点开始计算
     int initial = - (1 << d); // has last d bits = 0 and rest all = 1
     byte val = value(id);
-    if (val > d) { // unusable
+    if (val > d) { // 根节点的容量不足以满足要分配的内存大小
         return -1;
     }
     while (val < d || (id & initial) == 0) { // id & initial == 1 << d for all ids at depth d, for < d it is 0
