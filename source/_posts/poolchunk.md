@@ -10,33 +10,30 @@ categories: 中间件
 
 ## Preface
 
+
+我们将PoolChunk上的内存分配视为一个算法来分析：
+
++ 输入：指定的连续内存空间大小
++ 输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败
+
+这里强调以下，Netty内存池分配出来的内存空间不是Client申请size的大小，而是大于size的最小2的幂次方（size > 512）或者是16的倍数。比如Client申请100byte的内存，那么返回的将是128byte。Netty会在入口处对申请的大小统一做规整化的处理，来保证分配出来的内存都是2的幂次方，这样做有两点好处：内存保持对齐，不会有很零散的内存碎片，这点和操作系统的内存管理类似；其次可以基于2的幂次方在二进制上的特性，大量运用位运算提升效率。后面的详细流程中我们将会看到。
+## 内存存储单元
 在分析原理之前，我们先看以下PoolChunk中一些默认参数：
-
-后文我们将时常这些默认的参数来分析内存管理的过程，所以先大致了解一下很有必要。
-
-<!-- more -->
 
 1.内存块Chunk，Netty向操作系统申请资源的最小单位，chunk是page单元的集合
 - chunk默认大小16M，可调节，根据pageSize和maxOrder计算得到 
 
-![](http://chart.googleapis.com/chart?cht=tx&chl=\Large DefaultChunkSize=DefaultPageSize \times 2 ^ {DefaultMaxOrder})
+![](http://chart.googleapis.com/chart?cht=tx&chl=\Large DefaultChunkSize=DefaultPageSize \times 2 ^ {DefaultMaxOrder} = 16M)
 
 - MaxChunkSize, chunk最大大小为1G
 
 - DefaultMaxOrder = 11, 一个chunk默认由2<sup>11</sup>个页面构成，因为一个page 8k，所以默认完全二叉树11层。
 
 2.内存页Page，当请求的内存小于页大小时，可继续划分为更小的内存段，使用位图标记各使用情况  
-Page大小的默认值：  
+Page大小的默认值为8K,可调节，必须为2的幂：  
 ![](http://chart.googleapis.com/chart?cht=tx&chl=\Large DefaultPageSize =8192 Byte = 8k)
-可调节，必须为2的幂
-![](http://chart.googleapis.com/chart?cht=tx&chl=\Large pageShifts =log_2 pageSize)
 
-题入正文，我们将PoolChunk上的内存分配视为一个算法来分析：
-
-+ 输入：指定的连续内存空间大小
-+ 输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败
-
-这里强调以下，Netty内存池分配出来的内存空间不是Client申请size的大小，而是大于size的最小2的幂次方（size > 512）或者是16的倍数。比如Client申请100byte的内存，那么返回的将是128byte。Netty会在入口处对申请的大小统一做规整化的处理，来保证分配出来的内存都是2的幂次方，这样做有两点好处：内存保持对齐，不会有很零散的内存碎片，这点和操作系统的内存管理类似；其次可以基于2的幂次方在二进制上的特性，大量运用位运算提升效率。后面的详细流程中我们将会看到。
+![](http://chart.googleapis.com/chart?cht=tx&chl=\Large pageShifts =log_2 pageSize=13)
 
 ## Data structure  
 
@@ -57,11 +54,14 @@ Netty使用了一个数组memoryMap来表示这个完全二叉树，数组元素
 ## Procedure
 先看代码：
 ```
+/**
+ * 向PoolChunk申请一段内存
+ * /
 long allocate(int normCapacity) {
     if ((normCapacity & subpageOverflowMask) != 0) { // >= pageSize
-        return allocateRun(normCapacity); //chunk内分配
+        return allocateRun(normCapacity); // 当要分配的内存大于pageSize时候，使用allocateRun在chunk内分配
     } else {
-        return allocateSubpage(normCapacity); //page内分配
+        return allocateSubpage(normCapacity); //否则使用向PoolChunk申请一段内存在page内分配
     }
 }
 ```
@@ -86,7 +86,7 @@ private long allocateRun(int normCapacity) {
 首先根据请求内存的大小，选择采取合适的分配策略，这里详细讨论分配大于一个页面大小的情况，页内分配请移步{% post_link poolsubpage Netty 是怎么做内存管理-PoolSubpage %}
 
 再根据请求内存的大小，定位其在二叉树中的深度：int d = maxOrder - (log2(normCapacity) - pageShifts)。参考前述二叉树的图，可以有两种理解方式：
-1. 自底向上：父节点的内存是子节点的二倍，比子节点高一层；父节点的内存是孙子节点的四倍，比孙子节点高两层，所以拥有normalCapacity内存的节点应该比叶子节点高：log2(normalCapacity/pagesie) = log2(normalCapacity)-pageShifts层，也就是说它在树中的深度应该为maxOrder-(log2(normalCapacity)-pageShifts)
+1. 自底向上：父节点的内存是子节点的二倍，比子节点高一层；父节点的内存是孙子节点的四倍，比孙子节点高两层，所以拥有normalCapacity内存的节点应该比叶子节点高：log2(normalCapacity/pagesie) = log2(normalCapacity)-pageShifts层，也就是说它在树中的深度应该为maxOrder-(log2(normalCapacity)-pageShifts).
 2. 自顶向下：观察上图右侧说明信息的第三列，根节点拥有整个chunk的内存，任意d层节点拥有的内存Capacity=chunksize／2<sup>d</sup>, 两边取对数可得拥有normalCapacity内存的节点应该在log2(chunksize/normalCapacity)这一层上。
 
 下面看最核心的一段：如何利用memoryMap在d层上寻找第一个可用内存节点。
@@ -126,7 +126,11 @@ private byte value(int id) {
     return memoryMap[id];
 }
 ```
-这一段的核心思想是：从根节点开始，如果根节点已经被分配，并且其可分配内存的子节点深度大于d，表示已没有足够且连续的内存空间用来分配，返回-1；如果左子节点上的内存可分配则在左子节点上分配，否则尝试右子节点，依次迭代。
+这一段的核心思想是：
+
+从根节点开始，如果根节点已经被分配，并且其可分配内存的子节点深度大于d，表示已没有足够且连续的内存空间用来分配，返回-1；
+
+如果左子节点上的内存可分配则在左子节点上分配，否则尝试右子节点，依次迭代。
 
 这里主要注意下循环的迭代条件：
 1. 如果当前节点可分配节点的深度小于目标深度（相应的内存也就大于请求的内存），说明子节点就能够满足条件，进入下一层；
