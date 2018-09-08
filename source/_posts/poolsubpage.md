@@ -7,15 +7,30 @@ tags:
   - Netty
 categories: 中间件
 ---
-
+当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。
 ## 初始化
-PoolSubPage在页内进行内存分配，用位图记录内存分配的情况。
-以默认的PageSize=8192byte为例，位图的大小被初始化为
-long bitmap[] = new long[pageSize >>> 10]
+PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。
+```
+PoolSubpage(PoolSubpage<T> head,
+    PoolChunk<T> chunk,
+    int memoryMapIdx, int runOffset,
+    int pageSize, elemSize) {
 
+    this.chunk = chunk;
+    this.memoryMapIdx = memoryMapIdx;
+    this.runOffset = runOffset;
+    this.pageSize = pageSize;
+    bitmap = new long[pageSize >>> 10]; // pageSize / 16 / 64
+    init(head, elemSize);
+}
+```
+可以发现，以默认的PageSize=8192byte为例，位图bitmap的大小被初始化为8:
+```
+long bitmap[] = new long[pageSize >>> 10]
+```
 <!-- more -->
 
-简单说明一下，在Page中以16字节为最小单位划分内存段，而一个long类型的变量有64位，所以最多使用PageSize/16/64=8个
+简单说明一下，在Page中subpage以16字节为最小单位划分内存段，而一个long类型的变量有64位，所以最多使用PageSize/16/64=8个
 long型的变量就可以表示所有内存段。
 
 假设我们以elemSize=72字节为单位，在页内进行内存段的划分，那最多将有maxNumElem=PageSize/elemSize=113个内存段。（elemSize一旦确定就不会改变， 页面中内存段都是大小一致的）
@@ -32,7 +47,7 @@ if ((maxNumElems & 63) != 0) {
 假如内存段更大到elemSize=4096，maxNumElems只有2时，就需要1个数据元素就可以描述着两个内存段。整个计算过程都基于位操作实现，效率更高。
 
 ## 分配流程
-PoolSubPage分配内存段的过程就是在位图中找到第一个未被使用的内存段（marked as zero），返回一个描述其内存位置偏移量的整数句柄，用于定位。
+PoolSubPage分配内存段的过程就是在**位图中找到第一个未被使用的内存段**，返回一个描述其内存位置偏移量的整数句柄，用于定位。
 
 代码如下：
 ```
