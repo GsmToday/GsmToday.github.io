@@ -6,7 +6,9 @@ date: 2018-12-25 22:48:02
 author: GSM
 tags:
 ---
-[TOC]
+Merry Christmas and 本文特别鸣谢Master Eric刘. 
+<!-- more -->
+
 # 长连接 VS 短连接 
 先澄清个概念，我们通常说的长连接和短连接其实是**TCP连接**。因为HTTP是请求/响应模式，只要服务端给了响应，本次HTTP连接就结束了。而TCP连接是一个双向的通道，它是可以保持一段时间不关闭的，因此TCP连接才有真正的长连接和短连接一说。
 
@@ -167,6 +169,8 @@ TCP类请求：可以使用Netty建立长连接。
 ```
 
 # 参考
+
+[关于长连接/短连接](https://www.jianshu.com/p/3fc3646fad80)
 
 [各种数据库连接池对比](https://github.com/alibaba/druid/wiki/%E5%90%84%E7%A7%8D%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5%E6%B1%A0%E5%AF%B9%E6%AF%94) 
 
