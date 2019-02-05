@@ -1,7 +1,7 @@
 ---
 title: 分布式Redis探讨
 toc: true
-banner: /images/mouse.jpg
+thumbnail: /images/mouse.jpg
 date: 2018-03-06 17:09:08
 author: GSM
 tags:

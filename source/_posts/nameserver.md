@@ -1,7 +1,7 @@
 ---
 title: RocketMQ源码分析2--NameServer
 toc: false
-banner: /images/stingray.jpg
+thumbnail: /images/stingray.jpg
 date: 2018-02-23 19:25:00
 author: GSM
 tags:

@@ -1,7 +1,7 @@
 ---
 title: Elastic Search学习笔记-4 (常见搜索类型实践)
 toc: false
-banner: /images/zebra.jpg
+thumbnail: /images/zebra.jpg
 date: 2017-04-18 22:55:46
 tags:
   - ElasticSearch

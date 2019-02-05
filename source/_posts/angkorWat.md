@@ -1,7 +1,7 @@
 ---
 title: Angkor Wat - 柬埔寨浮光掠影
 toc: false
-banner:
+thumbnail:
 date: 2016-07-03 17:00:27
 tags:
 categories: Travelling

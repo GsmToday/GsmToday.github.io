@@ -2,7 +2,7 @@
 title: JVM以及垃圾回收器的工作原理
 date: 2015-03-05 10:35:42
 author: GSM
-banner: /images/fatcat.jpg
+thumbnail: /images/fatcat.jpg
 tags:
   - JVM
 ---

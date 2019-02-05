@@ -1,7 +1,7 @@
 ---
 title: Elastic Search 学习笔记-2 (搜索相关)
 toc: false
-banner: /images/squirrel.jpg
+thumbnail: /images/squirrel.jpg
 date: 2017-04-08 22:39:59
 tags:
   - ElasticSearch

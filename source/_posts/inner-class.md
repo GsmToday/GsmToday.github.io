@@ -1,7 +1,7 @@
 ---
 title: Java内部类详解
 toc: false
-banner: /images/shulan.jpg
+thumbnail: /images/shulan.jpg
 author: GSM
 date: 2017-09-07 22:42:28
 tags:

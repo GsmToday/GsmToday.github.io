@@ -1,7 +1,7 @@
 ---
 title: Elastic Search 学习笔记-3 (深入了解ES搜索原理)
 toc: false
-banner: /images/lu.jpg
+thumbnail: /images/lu.jpg
 date: 2017-04-12 22:47:09
 tags:
   - ElasticSearch

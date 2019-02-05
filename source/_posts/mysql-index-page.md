@@ -1,7 +1,7 @@
 ---
 title: Mysql存储机制-数据页管理
 toc: false
-banner: /images/armour.jpg
+thumbnail: /images/armour.jpg
 date: 2018-11-13 16:40:52
 author: NX
 tags: MySQL

@@ -1,7 +1,7 @@
 ---
 title: Taiwan - 台湾环岛
 toc: false
-banner: /images/taiwan.JPG
+thumbnail: /images/taiwan.JPG
 date: 2016-06-14 17:05:53
 tags:
 categories: Travelling

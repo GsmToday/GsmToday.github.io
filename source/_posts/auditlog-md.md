@@ -1,7 +1,7 @@
 ---
 title: 一种使用自定义注解+切面统一收集审计日志的方式
 toc: false
-banner: /images/cat2018.jpg
+thumbnail: /images/cat2018.jpg
 date: 2018-01-19 14:23:39
 tags:
     - Java

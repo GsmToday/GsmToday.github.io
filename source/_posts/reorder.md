@@ -1,7 +1,7 @@
 ---
 title: 指令重排序
 date: 2016-11-17 22:20:30
-banner: /images/cpu.jpg
+thumbnail: /images/cpu.jpg
 author: NX
 tags:
   - CPU

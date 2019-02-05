@@ -1,7 +1,7 @@
 ---
 title: RocketMQ源码分析1--Remoting
 toc: false
-banner: /images/dophin.png
+thumbnail: /images/dophin.png
 date: 2018-02-19 11:14:03
 author: GSM
 tags:

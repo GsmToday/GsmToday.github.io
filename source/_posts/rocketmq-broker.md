@@ -1,7 +1,7 @@
 ---
 title: RocketMQ源码分析4--Broker模块
 toc: true
-banner: /images/bird1.png
+thumbnail: /images/bird1.png
 date:  2018-03-26 15:48:57
 author: GSM
 tags:

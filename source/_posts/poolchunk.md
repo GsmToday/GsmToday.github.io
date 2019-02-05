@@ -1,7 +1,7 @@
 ---
 title: Netty 是怎么做内存管理--PoolChunk
 date: 2017-08-27 11:20:30
-banner: /images/maotouying.jpg
+thumbnail: /images/maotouying.jpg
 author: NX
 tags:
   - Netty

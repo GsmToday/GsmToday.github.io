@@ -1,7 +1,7 @@
 ---
 title: MyBatis generator自动生成代码详细配置
 toc: false
-banner: /images/pun.jpeg
+thumbnail: /images/pun.jpeg
 date: 2017-11-01 22:47:09
 tags:
   - 数据库

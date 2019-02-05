@@ -1,7 +1,7 @@
 ---
 title: Lambda表达式详解
 toc: false
-banner: /images/shuta.jpg
+thumbnail: /images/shuta.jpg
 date: 2017-09-10 21:26:28
 author: GSM
 tags:

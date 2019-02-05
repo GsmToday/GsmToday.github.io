@@ -1,7 +1,7 @@
 ---
 title: Java8函数式接口
 toc: false
-banner: /images/catfeet.jpg
+thumbnail: /images/catfeet.jpg
 date: 2017-10-17 21:36:38 
 tags:
   - Java

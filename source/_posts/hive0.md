@@ -3,7 +3,7 @@ title: Hive 源码解析之 Hive 基本框架和执行入口
 date: 2016-03-20 22:47:39
 author: NX
 toc: false
-banner: /images/bee.jpg
+thumbnail: /images/bee.jpg
 tags:
   - Hive
 categories: 存储

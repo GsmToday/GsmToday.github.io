@@ -1,7 +1,7 @@
 ---
 title: Google的BeyondCorp安全模型总结
 toc: false
-banner: /images/cat.jpeg
+thumbnail: /images/cat.jpeg
 date: 2017-12-18 21:40:07
 author: GSM
 categories:

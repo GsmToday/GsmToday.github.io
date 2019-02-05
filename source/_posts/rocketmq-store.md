@@ -1,7 +1,7 @@
 ---
 title: RocketMQ源码分析3--Store数据存储
 toc: true
-banner: /images/mouse2.jpg
+thumbnail: /images/mouse2.jpg
 date: 2018-03-11 14:56:03
 author: NX
 tags:

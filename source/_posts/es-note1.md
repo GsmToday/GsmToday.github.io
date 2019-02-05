@@ -1,7 +1,7 @@
 ---
 title: ElasticSearch系列学习-1
 toc: false
-banner: /images/eagle.jpg
+thumbnail: /images/eagle.jpg
 date: 2017-04-01 21:36:38
 tags:
   - ElasticSearch

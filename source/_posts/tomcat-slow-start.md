@@ -1,7 +1,7 @@
 ---
 title: Spring项目加载慢问题
 toc: false
-banner: /images/woniu.jpg
+thumbnail: /images/woniu.jpg
 date: 2017-08-23 20:42:59
 author: GSM
 tags:

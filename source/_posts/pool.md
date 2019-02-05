@@ -1,7 +1,7 @@
 ---
 title: 从数据库连接池想到的
 toc: true
-banner: /images/xmas.jpeg
+thumbnail: /images/xmas.jpeg
 date: 2018-12-25 22:48:02
 author: GSM
 tags:

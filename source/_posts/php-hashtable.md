@@ -1,7 +1,7 @@
 ---
 title: PHP哈希表内核实现
 toc: false
-banner: /images/puffin.jpeg
+thumbnail: /images/puffin.jpeg
 date: 2018-03-21 11:10:56
 author: NX
 tags: PHP

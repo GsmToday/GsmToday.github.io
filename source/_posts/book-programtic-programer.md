@@ -1,7 +1,7 @@
 ---
 title: 程序员修炼知道--从小工到专家
 toc: false
-banner: /images/horse.jpg
+thumbnail: /images/horse.jpg
 date: 2016-11-06 14:29:12
 author: NX
 categories:

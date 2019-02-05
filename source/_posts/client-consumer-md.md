@@ -1,7 +1,7 @@
 ---
 title: RocketMQ源码分析5--Client之Consumer模块
 toc: true
-banner: /images/cat2.jpeg
+thumbnail: /images/cat2.jpeg
 date: 2018-03-31 15:38:39
 author: GSM
 tags:

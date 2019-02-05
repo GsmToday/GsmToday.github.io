@@ -2,7 +2,7 @@
 title: 庖丁解牛-多服务器并发场景下乐观锁的实际应用
 date: 2017-07-23 21:30:09
 toc: false
-banner: /images/niu.jpg
+thumbnail: /images/niu.jpg
 author: GSM
 tags:
 	- Java

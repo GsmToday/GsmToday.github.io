@@ -1,7 +1,7 @@
 ---
 title: Netty 是怎么做内存管理--PoolArena
 toc: false
-banner: /images/butterfly.jpg
+thumbnail: /images/butterfly.jpg
 date: 2017-09-02 21:06:04
 author: NX
 tags:

@@ -1,7 +1,7 @@
 ---
 title: Redis AOF 持久化- Redis源码分析
 toc: true
-banner: /images/raccon.jpg
+thumbnail: /images/raccon.jpg
 date: 2018-07-30 18:37:48
 author: NX
 tags:

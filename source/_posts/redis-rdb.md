@@ -1,7 +1,7 @@
 ---
 title: Redis RDB持久化 - Redis源码分析
 toc: true
-banner: /images/lu.jpg
+thumbnail: /images/lu.jpg
 date: 2018-07-30 17:49:50
 author: NX
 tags:

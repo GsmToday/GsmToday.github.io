@@ -1,7 +1,7 @@
 ---
 title: 责任链模式实践
 toc: false
-banner: /images/tortoise.jpg
+thumbnail: /images/tortoise.jpg
 date: 2017-10-22 21:46:57
 author: GSM
 tags:

@@ -3,7 +3,7 @@ title: Hive Driver源码执行流程分析
 author: NX
 date: 2016-05-18 20:41:22
 toc: false
-banner: /images/insect.jpg
+thumbnail: /images/insect.jpg
 tags:
   - Hive
 categories: 存储

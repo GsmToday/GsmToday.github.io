@@ -1,7 +1,7 @@
 ---
 title: MySQL索引二三事 - 《高性能MySQL》读书笔记
 toc: true
-banner: /images/index.jpg
+thumbnail: /images/index.jpg
 date: 2018-05-21 08:06:56
 author: GSM
 tags: MySQL

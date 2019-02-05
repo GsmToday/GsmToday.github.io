@@ -1,6 +1,6 @@
 ---
 title: Netty 是怎么做内存管理--PoolSubPage
-banner: /images/tuboshu.jpg
+thumbnail: /images/tuboshu.jpg
 date: 2017-08-27 11:20:30
 author: NX
 tags:

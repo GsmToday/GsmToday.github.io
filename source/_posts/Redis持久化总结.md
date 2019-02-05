@@ -1,7 +1,7 @@
 ---
 title: Redis持久化总结
 toc: true
-banner: /images/egret.jpg
+thumbnail: /images/egret.jpg
 date: 2018-07-30 17:49:50
 author: NX
 tags:

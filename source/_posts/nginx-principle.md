@@ -1,7 +1,7 @@
 ---
 title: Nginx高性能和高扩展性背后的设计原理[译]
 toc: false
-banner: /images/monkey.jpg
+thumbnail: /images/monkey.jpg
 date: 2017-10-29 00:08:41
 author: GSM
 tags:

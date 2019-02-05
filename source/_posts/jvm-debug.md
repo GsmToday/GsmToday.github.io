@@ -1,7 +1,7 @@
 ---
 title: JVM调试工具入门
 toc: false
-banner: /images/jellyfish.jpg
+thumbnail: /images/jellyfish.jpg
 author: NX
 date: 2016-10-17 14:07:49
 tags:

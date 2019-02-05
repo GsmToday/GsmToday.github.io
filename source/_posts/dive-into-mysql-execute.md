@@ -1,7 +1,7 @@
 ---
 title: 一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记
 toc: true
-banner: /images/sheep.jpg
+thumbnail: /images/sheep.jpg
 date: 2018-05-21 11:37:01
 author: GSM
 tags: MySQL

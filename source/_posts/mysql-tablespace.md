@@ -1,7 +1,7 @@
 ---
 title: Mysql存储机制—表空间结构
 toc: false
-banner: /images/pollor bear.jpg
+thumbnail: /images/pollor bear.jpg
 date: 2018-11-13 16:20:53
 author: NX
 tags: MySQL

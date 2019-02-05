@@ -1,7 +1,7 @@
 ---
 title: Japan-霓虹归来
 toc: false
-banner: /images/IMG_6522.JPG
+thumbnail: /images/IMG_6522.JPG
 date: 2017-12-19 22:39:33
 tags:
 categories: Travelling

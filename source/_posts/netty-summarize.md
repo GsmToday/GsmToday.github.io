@@ -1,7 +1,7 @@
 ---
 title: Netty入门综述
 toc: true
-banner: /images/dog.jpg
+thumbnail: /images/dog.jpg
 date: 2018-02-13 14:31:51
 author: GSM
 tags:

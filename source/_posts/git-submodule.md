@@ -2,7 +2,7 @@
 title: Git子模块实践
 toc: false
 author: GSM
-banner: /images/daishu.jpeg
+thumbnail: /images/daishu.jpeg
 date: 2017-11-28 21:33:29
 tags:
 ---

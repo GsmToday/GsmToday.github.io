@@ -1,6 +1,6 @@
 ---
 title: RocketMQ源码分析6--关于RocketMQ你想知道的Questions
-banner: /images/lion.png
+thumbnail: /images/lion.png
 date: 2018-04-31 10:34:51
 author: GSM
 tags:
