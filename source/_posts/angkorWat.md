@@ -1,12 +1,12 @@
 ---
 title: Angkor Wat - 柬埔寨浮光掠影
 toc: false
-thumbnail:
+thumbnail: /images/ankorWat.jpeg
 date: 2016-07-03 17:00:27
-tags:
-categories: Travelling
+tags: 侣行
+categories: 游世界
 ---
-![吴哥窟边上的少年](angkorWat.JPG)
+吴哥窟边的少年。
 <!-- more -->
 <img src="IMG_0257.JPG" width = "600" height = "300" alt="" align= />
 <img src="IMG_0369.JPG" width = "600" height = "300" alt="" align= />
