@@ -4,7 +4,8 @@ toc: true
 thumbnail: /images/xmas.jpeg
 date: 2018-12-25 22:48:02
 author: GSM
-tags:
+tags: MySQL
+categories: 存储
 ---
 Merry Christmas and 本文特别鸣谢Master Eric刘. 
 <!-- more -->

@@ -5,7 +5,7 @@ thumbnail: /images/cat.jpeg
 date: 2017-12-18 21:40:07
 author: GSM
 categories:
-  - Security
+  - 安全
 tags: 
     - 架构
     - 模型学习

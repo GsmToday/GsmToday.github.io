@@ -44,3 +44,20 @@ Day3-Day4 开始了巴塞罗那的第二个灵魂 - 高迪建筑之旅。
 
 乱入一个加泰罗尼亚艺术博物馆，建在山上的它虽然不是高迪的手笔，但是傍晚在这里享受着夕阳，俯瞰巴塞罗那全景，真是惬意极了。
 <img src="mengzhuike.jpeg" width = "600" height = "300" alt="加泰罗尼亚艺术博物馆" align= />
+
+<img src="church.jpeg" width = "600" height = "300" alt="巴萨罗那大教堂-同样不是高迪的手笔但是很美" align= />
+
+Day5 - Day6 塞利维亚。类比于中国的城市，我认为这里像是成都。天气炎热，人民热情似火，美食美女多多。这里有Tapas，弗拉明戈和历史悠久的主教堂！城市并不大，却有无数如迷宫般狭窄的小巷，这来自于古时候犹太人的设计，可以遮挡炎炎烈日，实用性与趣味性兼具。记忆深刻的是在记忆房子观看弗拉明戈表演，歌者音喉辽远，舞蹈充满了生命力与张力，吉他表演更加刷新了我对吉他演奏的认知。两天虽然浮光掠影，但是却让我像热爱程度一样喜欢上了这个城市。
+<img src="sevilla1.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla2.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla3.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla4.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla5.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla6.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla7.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla8.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla9.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sevilla10.jpeg" width = "600" height = "300" alt="" align= />
+
+Day7 科尔多瓦。
+

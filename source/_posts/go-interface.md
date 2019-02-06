@@ -4,9 +4,9 @@ toc: false
 thumbnail: /images/tuboshu.jpeg
 date: 2019-01-04 20:59:43
 author: NX
-categories: go
+categories: 开发语言
 tags:
-  - go
+  - GO
 ---
 
 ## Go Interface源码分析
