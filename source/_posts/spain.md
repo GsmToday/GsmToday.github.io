@@ -1,13 +1,13 @@
 ---
 title: 西班牙
-toc: false
-thumbnail: /images/taiwan.JPG
+toc: true
 date: 2018-10-09 17:05:53
 tags: 侣行
 categories: 游世界
 ---
 一想到能在南欧的海边吹着来自地中海的暖风，徜徉在中世纪的教堂里听着教士们唱经，在古罗马的城墙想象十字军东征，再亲眼看一场巴萨的球赛。这种感觉真是奇妙极了。
 <!--more-->
+# 巴塞罗那
 北京出发，阿姆斯特丹机场转机到巴塞罗那。荷兰皇家航空的飞机三明治真美味。
 <img src="nezerland.jpeg" width = "600" height = "300" alt="阿姆斯特丹转机 @史基浦机场" align= />
 <img src="gameofthrone.jpeg" width = "600" height = "300" alt="史基浦机场书店，看到了熟悉的冰与火之歌" align= />
@@ -22,16 +22,6 @@ categories: 游世界
 巴塞罗那的三个灵魂，诺坎普，高迪还有教堂。虽然不是足球热血粉丝，去诺坎普现场感受下氛围，亲眼欣赏梅西的球技还是不错的。闻名不如一见，果然巴塞罗那主场优势燃爆，地铁坐到最后车厢里满满都是穿着巴萨球衣的球迷。每当巴萨有精彩配合所有人都会起身鼓掌，对方守门员持球太久就会立刻遭到嘘声一片。铁粉们全场打鼓唱歌，梅西出场后更是全场高呼Messi。不愧是巴萨！
 <img src="football.jpeg" width = "600" height = "300" alt="巴萨主场-诺坎普球场" align= />
 <img src="football2.jpeg" width = "600" height = "300" alt="巴萨主场-诺坎普球场" align= />
-Day 2 来到了赫罗纳（Girona）。这个小镇距离巴塞罗那高铁一个多小时车程，是一个很安静充满中世纪历史感的小镇，不过它更吸引我的地方是它是权力的游戏的取景地。提前在印象笔记中准备了好多取景地打卡，激动的一路拍照对比。
-<img src="girona.jpeg" width = "600" height = "300" alt="河边的彩色房子" align= />
-
-<img src="girona1.jpeg" width = "600" height = "300" alt="君临城贝勒大圣堂取景地-赫罗纳大教堂" align= />
-<img src="girona3.jpeg" width = "600" height = "300" alt="君临城贝勒大圣堂取景地-赫罗纳大教堂" align= />
-<img src="girona2.jpeg" width = "600" height = "300" alt="布拉佛斯取景地，二丫在这里大打斗" align= />
-
-路遇一家米其林三星的甜品店，这个雪糕别提多黑暗料理了...
-<img src="miqilin.jpeg" width = "600" height = "300" alt="米其林三星的甜品店" align= />
-<img src="paella.jpeg" width = "600" height = "300" alt="海鲜饭" align= />
 
 Day3-Day4 开始了巴塞罗那的第二个灵魂 - 高迪建筑之旅。
 <img src="gaudi1.jpeg" width = "600" height = "300" alt="米拉之家-直线属于人类，曲线属于上帝" align= />
@@ -47,7 +37,20 @@ Day3-Day4 开始了巴塞罗那的第二个灵魂 - 高迪建筑之旅。
 
 <img src="church.jpeg" width = "600" height = "300" alt="巴萨罗那大教堂-同样不是高迪的手笔但是很美" align= />
 
-Day5 - Day6 塞利维亚。类比于中国的城市，我认为这里像是成都。天气炎热，人民热情似火，美食美女多多。这里有Tapas，弗拉明戈和历史悠久的主教堂！城市并不大，却有无数如迷宫般狭窄的小巷，这来自于古时候犹太人的设计，可以遮挡炎炎烈日，实用性与趣味性兼具。记忆深刻的是在记忆房子观看弗拉明戈表演，歌者音喉辽远，舞蹈充满了生命力与张力，吉他表演更加刷新了我对吉他演奏的认知。两天虽然浮光掠影，但是却让我像热爱程度一样喜欢上了这个城市。
+# 赫罗纳
+Day 2 来到了赫罗纳（Girona）。这个小镇距离巴塞罗那高铁一个多小时车程，是一个很安静充满中世纪历史感的小镇，不过它更吸引我的地方是它是权力的游戏的取景地。提前在印象笔记中准备了好多取景地打卡，激动的一路拍照对比。
+<img src="girona.jpeg" width = "600" height = "300" alt="河边的彩色房子" align= />
+
+<img src="girona1.jpeg" width = "600" height = "300" alt="君临城贝勒大圣堂取景地-赫罗纳大教堂" align= />
+<img src="girona3.jpeg" width = "600" height = "300" alt="君临城贝勒大圣堂取景地-赫罗纳大教堂" align= />
+<img src="girona2.jpeg" width = "600" height = "300" alt="布拉佛斯取景地，二丫在这里大打斗" align= />
+
+路遇一家米其林三星的甜品店，这个雪糕别提多黑暗料理了...
+<img src="miqilin.jpeg" width = "600" height = "300" alt="米其林三星的甜品店" align= />
+<img src="paella.jpeg" width = "600" height = "300" alt="海鲜饭" align= />
+
+# 塞维利亚
+Day5 - Day6 塞维利亚。类比于中国的城市，我认为这里像是成都。天气炎热，人民热情似火，美食美女多多。这里有Tapas，弗拉明戈和历史悠久的主教堂！城市并不大，却有无数如迷宫般狭窄的小巷，这来自于古时候犹太人的设计，可以遮挡炎炎烈日，实用性与趣味性兼具。记忆深刻的是在记忆房子观看弗拉明戈表演，歌者音喉辽远，舞蹈充满了生命力与张力，吉他表演更加刷新了我对吉他演奏的认知。两天虽然浮光掠影，但是却让我像热爱程度一样喜欢上了这个城市。
 <img src="sevilla1.jpeg" width = "600" height = "300" alt="" align= />
 <img src="sevilla2.jpeg" width = "600" height = "300" alt="" align= />
 <img src="sevilla3.jpeg" width = "600" height = "300" alt="" align= />
@@ -59,9 +62,29 @@ Day5 - Day6 塞利维亚。类比于中国的城市，我认为这里像是成�
 <img src="sevilla9.jpeg" width = "600" height = "300" alt="" align= />
 <img src="sevilla10.jpeg" width = "600" height = "300" alt="" align= />
 
+# 科尔多瓦
 Day7 科尔多瓦。如果说塞维利亚像成都的话，科尔多瓦这个小城应该像大理。这里阳光充沛，家家有花。图2就是我们住的airbnb民宿，整个院子被花环绕。据说五月是科尔多瓦的庭院节，那时到处盛开着五彩缤纷的鲜花。不禁羡慕这里的居民，如此明媚的阳光，天然适合侍弄花草。另外，这里还是一个跨文化融合的地方，罗马，穆斯林，犹太文化都在这里长期灿烂过，因此清晨逛大清真寺和市中心的罗马神庙有一种重回历史书的穿越感。对了，这里还有一座古罗马桥始建于1世纪，是权游瓦兰提斯长桥的取景地。
 <img src="codorba1.jpeg" width = "600" height = "300" alt="" align= />
 <img src="codorba4.jpeg" width = "600" height = "300" alt="我们住的airbnb民宿" align= />
 <img src="codorba5.jpeg" width = "600" height = "300" alt="" align= />
 <img src="codorba3.jpeg" width = "600" height = "300" alt="权游瓦兰提斯长桥的取景地" align= />
 <img src="codorba6.jpeg" width = "600" height = "300" alt="权游瓦兰提斯长桥的取景地" align= />
+
+# 塞哥维亚
+Day8 塞哥维亚是马德里旁边的一个山上的小镇，虽然只与马德里相距半小时高铁车程，却寒冷许多。下了通往市区的公交车，首先映入眼帘的就是两千年前的古罗马水槽，震撼极了。扶着水槽墙壁行走，仿佛亲手触摸两千年的历史。离开古罗马水槽往城中央走，会看见被称为贵妇的欧洲最后一个哥特教堂，中午有乐队在教堂前面的广场演出，大家举着酒杯高喊bravo。这里最著名的美食要属烤乳猪了配红酒，我会觉得乳猪有一点点腻，完全交给男朋友享用，他觉得外焦里嫩，香嫩可口。anyway，慢悠悠的听着音乐，吃着欧式dish,真舒服呀。
+<img src="sego0.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sego4.jpeg" width = "600" height = "300" alt="两千年的古罗马水槽" align= />
+<img src="sego5.jpeg" width = "600" height = "300" alt="两千年的古罗马水槽" align= />
+
+<img src="sego1.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sego2.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sego3.jpeg" width = "600" height = "300" alt="" align= />
+
+<img src="sego6.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sego10.jpeg" width = "600" height = "300" alt="塞哥维亚特色-烤乳猪" align= />
+<img src="sego7.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sego8.jpeg" width = "600" height = "300" alt="" align= />
+<img src="sego9.jpeg" width = "600" height = "300" alt="" align= />
+
+# 马德里 
+Day9 马德里 
