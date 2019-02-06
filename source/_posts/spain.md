@@ -87,4 +87,9 @@ Day8 塞哥维亚是马德里旁边的一个山上的小镇，虽然只与马德
 <img src="sego9.jpeg" width = "600" height = "300" alt="" align= />
 
 # 马德里 
-Day9 马德里 
+Day9 马德里并没有不思议。倒是丽池公园这满地板栗哟……这里的市民为啥不捡走呢，板栗鸡，烤板栗，炒板栗，水煮板栗……
+<img src="mar1.jpeg" width = "600" height = "300" alt="" align= />
+<img src="mar2.jpeg" width = "600" height = "300" alt="街边的小书摊" align= />
+<img src="mar3.jpeg" width = "600" height = "300" alt="" align= />
+<img src="mar4.jpeg" width = "600" height = "300" alt="" align= />
+<img src="mar5.jpeg" width = "600" height = "300" alt="偶遇出海的摩拜" align= />
