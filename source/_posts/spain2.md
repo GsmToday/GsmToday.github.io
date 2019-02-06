@@ -39,3 +39,8 @@ Day9 马德里并没有不思议。倒是丽池公园这满地板栗哟……这
 <img src="mar3.jpeg" width = "600" height = "300" alt="" align= />
 <img src="mar4.jpeg" width = "600" height = "300" alt="" align= />
 <img src="mar5.jpeg" width = "600" height = "300" alt="偶遇出海的摩拜" align= />
+
+--- 
+时间： 2018年10月
+
+地点： 西班牙

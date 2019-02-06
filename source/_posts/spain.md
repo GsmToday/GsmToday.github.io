@@ -62,5 +62,8 @@ Day5 - Day6 塞维利亚。类比于中国的城市，我认为这里像是成�
 <img src="sevilla9.jpeg" width = "600" height = "300" alt="" align= />
 <img src="sevilla10.jpeg" width = "600" height = "300" alt="" align= />
 
+--- 
+时间： 2018年10月
 
+地点： 西班牙
 
