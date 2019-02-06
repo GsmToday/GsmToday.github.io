@@ -59,5 +59,9 @@ Day5 - Day6 塞利维亚。类比于中国的城市，我认为这里像是成�
 <img src="sevilla9.jpeg" width = "600" height = "300" alt="" align= />
 <img src="sevilla10.jpeg" width = "600" height = "300" alt="" align= />
 
-Day7 科尔多瓦。
-
+Day7 科尔多瓦。如果说塞维利亚像成都的话，科尔多瓦这个小城应该像大理。这里阳光充沛，家家有花。图2就是我们住的airbnb民宿，整个院子被花环绕。据说五月是科尔多瓦的庭院节，那时到处盛开着五彩缤纷的鲜花。不禁羡慕这里的居民，如此明媚的阳光，天然适合侍弄花草。另外，这里还是一个跨文化融合的地方，罗马，穆斯林，犹太文化都在这里长期灿烂过，因此清晨逛大清真寺和市中心的罗马神庙有一种重回历史书的穿越感。对了，这里还有一座古罗马桥始建于1世纪，是权游瓦兰提斯长桥的取景地。
+<img src="codorba1.jpeg" width = "600" height = "300" alt="" align= />
+<img src="codorba4.jpeg" width = "600" height = "300" alt="我们住的airbnb民宿" align= />
+<img src="codorba5.jpeg" width = "600" height = "300" alt="" align= />
+<img src="codorba3.jpeg" width = "600" height = "300" alt="权游瓦兰提斯长桥的取景地" align= />
+<img src="codorba6.jpeg" width = "600" height = "300" alt="权游瓦兰提斯长桥的取景地" align= />
