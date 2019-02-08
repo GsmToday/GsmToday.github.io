@@ -1,12 +1,12 @@
 ---
-title: 刷页的时机
+title: 为什么MySQL会抖一下 - 关于刷脏页磁盘
 toc: true
-thumbnail: /images/
+thumbnail: /images/bihua.jpeg
 date: 2019-02-08 11:09:57
-author:
-tags:
+author: GSM
+tags: MySQL
+categories: 存储
 ---
-
 一条SQL语句，正常执行时候特别快，有时候会突然变得特别慢，而且很难复现，它不只是随机而且持续时间很短。 看上去像数据库抖了一下 -- 原因就是MySQL在刷脏页到磁盘。
 <!--more-->
 当内存数据页和磁盘数据页内容不一致的时候，这个数据页被称为“脏页”。内存数据写入磁盘后，内存和磁盘的数据页的内容就一致了，称为“干净页”。 不论脏页还是干净页，都存在内存里。
@@ -39,23 +39,6 @@ innodb_io_capacity = IOPS
 case: 如果出现MySQL写入速度很慢，TPS很低，而数据库主机IO压力并不大，很可能就是这个原因。
 
 2. InnoDB控制引擎按照“全力”的百分比刷脏页 - 刷盘速度。
-刷盘速度主要参考：一个是脏页比例，一个是 redo log 写盘速度。
-
-```
-innodb_max_dirty_pages_pct 是脏页比例上限。默认值75%
-```
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## 参考
 https://time.geekbang.org/column/article/71806
