@@ -41,6 +41,7 @@ ExecutorService threadPool = Executors.newFixedThreadPool(100);
 Redis是典型的单线程模型，它非常高效，基本操作能达到10w/s。从单线程角度看，部分原因在于：
 1. 多线程会存在线程上下文切换开销，单线程没有此种开销；
 2. 锁
+
 更本质的原因为：Redis基本都是内存操作（很少IO操作），这种情况下单线程可以高效地利用CPU。而多线程使用场景一般是：存在相当比例的IO和网络操作。
 
 ## 参考
