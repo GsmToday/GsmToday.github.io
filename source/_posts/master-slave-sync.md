@@ -6,7 +6,7 @@ date: 2019-02-17 11:02:21
 tags: 
     - MySQL
     - 高可用
-categories: 存储
+categories: 学习积累
 ---
 **MySQL高可用系统的基础即主备切换**, 而MySQL的几乎所有的高可用架构，都直接依赖于binlog。
 <!--more-->

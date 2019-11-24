@@ -4,7 +4,7 @@ toc: true
 thumbnail: /images/dakongyi.jpeg
 date: 2019-02-15 15:47:10
 tags: MySQL
-categories: 存储
+categories: 学习积累
 ---
 只要redo log和binlog保证持久化到磁盘，就能保证MySQL异常重启后，数据可以恢复。而讨论MySQL数据丢失应该从InnoDB事务数据丢失和数据库复制导致数据丢失两方面讨论。
 <!--more-->

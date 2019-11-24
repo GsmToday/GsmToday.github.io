@@ -5,7 +5,7 @@ thumbnail: /images/kemingsiji.jpg
 date: 2019-02-09 09:51:47
 author: GSM
 tags: MySQL
-categories: 存储
+categories: 学习积累
 ---
 感谢丁奇，让我们对MySQL的count了解的更清楚了。
 <!--more-->

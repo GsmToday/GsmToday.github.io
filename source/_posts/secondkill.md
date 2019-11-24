@@ -5,7 +5,7 @@ thumbnail: /images/giant.jpeg
 date: 2019-02-05 10:28:56
 author: GSM
 tags: 架构设计
-categories: 架构设计
+categories: 学习积累
 
 ---
 秒杀这一业务场景已经发展多年，有套路可循。另外，秒杀属于极端大流量场景，它的应对经验对Web大流量应对方案有很好的借鉴意义。

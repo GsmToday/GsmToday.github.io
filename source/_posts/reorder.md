@@ -5,6 +5,7 @@ thumbnail: /images/cpu.jpg
 author: NX
 tags:
   - CPU
+categories: 学习积累  
 ---
 ### Background
 Intel 从8086系列芯片起到目前的Core i系列芯片，每一次提速与架构升级都会引入一些新的技术.指令重排序(instruction reordering)的概念大约出现在Pentium Pro系列上。在说明这项技术之前，先简单看一下CPU内部的组件与指令流水线等相关概念。

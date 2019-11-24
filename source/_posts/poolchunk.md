@@ -5,7 +5,7 @@ thumbnail: /images/maotouying.jpg
 author: NX
 tags:
   - Netty
-categories: 中间件
+categories: 学习积累
 ---
 
 ## Preface

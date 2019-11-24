@@ -5,6 +5,7 @@ author: GSM
 thumbnail: /images/daishu.jpeg
 date: 2017-11-28 21:33:29
 tags: Git
+categories: 业务实践
 ---
 
 ## 应用背景

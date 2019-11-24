@@ -6,7 +6,7 @@ date: 2017-09-10 21:26:28
 author: GSM
 tags:
 	- Java
-categories: 开发语言
+categories: 学习积累
 ---
 
 > 编写简洁而灵活的代码，能够轻松地适应不断变化的需求

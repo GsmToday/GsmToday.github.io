@@ -6,7 +6,7 @@ date: 2018-02-23 19:25:00
 author: GSM
 tags:
   - RocketMQ
-categories: 中间件
+categories: 学习积累
 ---
 
 本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之二，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.

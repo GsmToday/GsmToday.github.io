@@ -6,7 +6,7 @@ date: 2018-02-13 14:31:51
 author: GSM
 tags:
   - Netty
-categories: 中间件
+categories: 学习积累
 ---
 本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:
 * IO模型发展历程

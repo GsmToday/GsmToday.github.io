@@ -5,8 +5,8 @@ thumbnail: /images/squirrel.jpg
 date: 2017-04-08 22:39:59
 tags:
   - ElasticSearch
-categories: 中间件
 author: GSM
+categories: 学习积累
 ---
 
 整理自[ES.cn](http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/distrib-multi-doc.html)，并加入个人理解

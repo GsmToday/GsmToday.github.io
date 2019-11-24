@@ -6,7 +6,7 @@ date: 2018-07-30 18:37:48
 author: NX
 tags:
   - Redis
-categories: 中间件
+categories: 学习积累
 ---
 在《Redis RDB持久化》一文中，我们对RDB持久化的流程，格式以及实现方式进行了阐述。本文重点关注下另外一种持久化方式：AOF持久化。
 <!-- more -->

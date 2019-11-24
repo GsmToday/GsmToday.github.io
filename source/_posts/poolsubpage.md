@@ -5,7 +5,7 @@ date: 2017-08-27 11:20:30
 author: NX
 tags:
   - Netty
-categories: 中间件
+categories: 学习积累
 ---
 当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。
 ## 初始化

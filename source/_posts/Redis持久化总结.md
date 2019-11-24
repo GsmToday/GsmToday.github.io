@@ -6,7 +6,7 @@ date: 2018-07-30 17:49:50
 author: NX
 tags:
   - Redis
-categories: 中间件
+categories: 学习积累
 ---
 本篇主要关于Redis持久化的总结。
 

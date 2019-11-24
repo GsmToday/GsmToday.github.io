@@ -5,7 +5,7 @@ date: 2018-04-31 10:34:51
 author: GSM
 tags:
   - RocketMQ
-categories: 中间件
+categories: 学习积累
 ---
 既见树木，又见森林。
 <!-- more -->

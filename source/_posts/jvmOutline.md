@@ -5,6 +5,7 @@ author: GSM
 thumbnail: /images/fatcat.jpg
 tags:
   - JVM
+categories: 学习积累
 ---
 Java 虚拟机（Java virtual machine，JVM）是运行 Java 程序必不可少的机制。
 

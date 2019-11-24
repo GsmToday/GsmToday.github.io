@@ -5,7 +5,7 @@ thumbnail: /images/bihua.jpeg
 date: 2019-02-08 11:09:57
 author: GSM
 tags: MySQL
-categories: 存储
+categories: 学习积累
 ---
 一条SQL语句，正常执行时候特别快，有时候会突然变得特别慢，而且很难复现，它不只是随机而且持续时间很短。 看上去像数据库抖了一下 -- 原因就是MySQL在刷脏页到磁盘。
 <!--more-->

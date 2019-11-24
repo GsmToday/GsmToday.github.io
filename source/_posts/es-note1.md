@@ -5,8 +5,8 @@ thumbnail: /images/eagle.jpg
 date: 2017-04-01 21:36:38
 tags:
   - ElasticSearch
-categories: 中间件
 author: GSM
+categories: 学习积累
 ---
 
 _今天是一个要上班的愚人节_

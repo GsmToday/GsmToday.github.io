@@ -5,6 +5,7 @@ thumbnail: /images/cpu.jpeg
 date: 2019-02-14 17:58:54
 author: GSM
 tags:
+categories: 业务实践
 ---
 踩坑中成长。
 <!--more-->

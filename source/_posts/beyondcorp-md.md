@@ -4,11 +4,10 @@ toc: false
 thumbnail: /images/cat.jpeg
 date: 2017-12-18 21:40:07
 author: GSM
-categories:
-  - 安全
 tags: 
     - 架构
     - 模型学习
+categories: 学习积累
 ---
 
 未来要接触一个企业安全项目，先了解了下Google的BeyondCorp安全模型。

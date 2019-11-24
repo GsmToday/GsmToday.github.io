@@ -5,7 +5,7 @@ thumbnail: /images/sheep.jpg
 date: 2018-05-21 11:37:01
 author: GSM
 tags: MySQL
-categories: 存储
+categories: 学习积累
 ---
 [前面一篇总结](https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/)介绍了如何建立最好的索引，这些对于高性能来说必不可少。但是这些还不够，还需要合理的**设计查询**。如果查询写的很糟糕，即使库表结构再合理，索引再合理，也无法实现高性能。
 

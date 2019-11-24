@@ -10,6 +10,8 @@ thumbnail: /about/index/us.jpg
 
 从北到南，再到从南到北。生活本不该一眼望穿。
 
+contact me : gsmtoday艾特qq.com.
+
 ## <i class="fa fa-github"></i>
 才开始工作没多久，个人 [GitHub](https://github.com/uestc-dpz) 还只是一些在学校遗留的东西，
 希望有机会可以多多更新。

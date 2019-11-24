@@ -7,6 +7,7 @@ author: GSM
 tags:
 	- Java
 	- 并发编程
+categories: 学习积累
 ---
 
 庖丁解牛-多服务器并发场景下乐观锁的实际应用

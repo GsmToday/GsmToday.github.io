@@ -5,7 +5,7 @@ thumbnail: /images/zebra.jpg
 date: 2017-04-18 22:55:46
 tags:
   - ElasticSearch
-categories: 中间件
+categories: 学习积累
 author: GSM
 ---
 

@@ -6,6 +6,7 @@ date: 2017-10-22 21:46:57
 author: GSM
 tags:
   - Design Pattern
+categories: 业务实践
 ---
 
 最近参与的项目开发了大量RPC接口，并且需要针对所有RPC接口开发接入公司方法监控的埋点代码。开发RPC方法的监控埋点代码有两种方式：

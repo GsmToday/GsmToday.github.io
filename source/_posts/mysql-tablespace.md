@@ -5,7 +5,7 @@ thumbnail: /images/pollor bear.jpg
 date: 2018-11-13 16:20:53
 author: NX
 tags: MySQL
-categories: 存储
+categories: 学习积累
 ---
 
 本文基于InnDB存储引擎源码，试图解释Mysql数据表在InnoDB引擎下的组织管理方式。本文重点对用户表空间的物理和逻辑结构进行阐述，属于Mysql存储机制系列之一。

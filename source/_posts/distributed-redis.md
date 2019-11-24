@@ -6,7 +6,7 @@ date: 2018-03-06 17:09:08
 author: GSM
 tags:
   - Redis
-categories: 中间件
+categories: 学习积累
 ---
 
 ## 为什么需要使用Redis集群

@@ -4,7 +4,8 @@ toc: true
 thumbnail: /images/1.jpeg
 date: 2019-02-09 20:12:33
 author:
-tags:
+tags: My SQL 
+categories: 学习积累
 ---
 MySQL做排序是一个成本比较高的操作。本文整理了MySQL是怎么做order by排序的。
 <!--more-->

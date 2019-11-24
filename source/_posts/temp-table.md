@@ -4,7 +4,8 @@ toc: true
 thumbnail: /images/italy.jpeg
 date: 2019-02-22 15:30:25
 author:
-tags:
+tags: MySQL
+categories: 学习积累
 ---
 关于MySQL临时表。
 <!--more-->

@@ -5,7 +5,7 @@ thumbnail: /images/armour.jpg
 date: 2018-11-13 16:40:52
 author: NX
 tags: MySQL
-categories: 存储
+categories: 学习积累
 ---
 
 Mysql中，索引即数据。Index page是数据表中一条条数据和索引的载体，是最重要的一种页面类型。本章讨论和验证了索引页的物理存储结构

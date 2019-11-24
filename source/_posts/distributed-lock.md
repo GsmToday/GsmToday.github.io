@@ -5,6 +5,7 @@ thumbnail: /images/5v.jpeg
 date: 2019-06-21 09:33:06
 author: GSM
 tags: Redis
+categories: 学习积累
 ---
 和我厂老师傅练功夫系列。
 <!--more-->

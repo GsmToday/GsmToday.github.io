@@ -5,6 +5,7 @@ thumbnail: /images/mysql-lock.png
 date: 2019-03-01 10:16:28
 author: GSM
 tags:
+categories: 学习积累
 ---
 时不时就要来翻翻看。
 <!--more-->

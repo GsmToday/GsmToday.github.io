@@ -6,7 +6,7 @@ toc: false
 thumbnail: /images/bee.jpg
 tags:
   - Hive
-categories: 存储
+categories: 学习积累
 ---
 ## Hive简介
 

@@ -6,6 +6,7 @@ date: 2017-11-01 22:47:09
 tags:
   - MySQL
 author: GSM
+categories: 学习积累
 ---
 
 # MyBatis

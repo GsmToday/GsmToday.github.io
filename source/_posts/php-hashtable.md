@@ -5,7 +5,7 @@ thumbnail: /images/puffin.jpeg
 date: 2018-03-21 11:10:56
 author: NX
 tags: PHP
-categories: 开发语言
+categories: 学习积累
 ---
 
 毫无疑问，Hash表是php语言最重要的数据结构。

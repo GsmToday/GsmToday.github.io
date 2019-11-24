@@ -5,6 +5,7 @@ thumbnail: /images/xixili.jpeg
 date: 2019-02-08 13:58:40
 author: GSM
 tags: MySQL
+categories: 学习积累
 ---
 本文试图从原理层面讲解一条更新语句在MySQL是怎么执行的。
 <!--more-->
