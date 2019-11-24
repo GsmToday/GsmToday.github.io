@@ -1,7 +1,7 @@
 ---
 title: 分布式锁实现浅谈
 toc: true
-thumbnail: /images/mouse.jpg
+thumbnail: /images/5v.jpeg
 date: 2019-06-21 09:33:06
 author: GSM
 tags: Redis
