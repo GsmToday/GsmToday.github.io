@@ -4,7 +4,8 @@ toc: true
 thumbnail: /images/wuyuetian.jpeg
 date: 2019-11-21 19:09:25
 author:
-tags:
+tags: Flink 
+categories: 业务实践
 ---
 题图不相关，图为2019鸟巢五月天演唱会所拍。
 <!-- more -->

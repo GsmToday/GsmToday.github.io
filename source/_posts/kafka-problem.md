@@ -1,7 +1,7 @@
 ---
 title: 一次Kafka消费不到数据的踩坑记录
 toc: true
-thumbnail: /images/kafka1025.jpeg
+thumbnail: /images/pollor bear.jpg
 date: 2019-11-24 13:55:20
 author: GSM
 tags: Kafka
