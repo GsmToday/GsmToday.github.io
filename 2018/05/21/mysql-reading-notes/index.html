@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>MySQL索引二三事 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="MySQL索引原理索引在MySQL中也叫做键(Key), 是存储引擎层面实现，用于快速找到记录的一种数据结构。">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL索引二三事">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="MySQL索引原理索引在MySQL中也叫做键(Key), 是存储引擎层面实现，用于快速找到记录的一种数据结构。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/index1.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/index-merge.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/cluster-index.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/secondary-index.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/innodb-vs-isam.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.049Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL索引二三事">
+<meta name="twitter:description" content="MySQL索引原理索引在MySQL中也叫做键(Key), 是存储引擎层面实现，用于快速找到记录的一种数据结构。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/index1.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/index.jpg" alt="MySQL索引二三事">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-05-21T00:06:56.000Z">2018-05-21</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    28 分钟 读完 (大约 4217 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                MySQL索引二三事
+            
+        </h1>
+        <div class="content">
+            <h2 id="MySQL索引原理"><a href="#MySQL索引原理" class="headerlink" title="MySQL索引原理"></a>MySQL索引原理</h2><p>索引在MySQL中也叫做键(Key), 是存储引擎层面实现，用于快速找到记录的一种数据结构。<br><a id="more"></a></p>
+<h2 id="索引的Pros-amp-Cons"><a href="#索引的Pros-amp-Cons" class="headerlink" title="索引的Pros &amp; Cons"></a>索引的Pros &amp; Cons</h2><p>索引可以让服务器快速定位到表的指定位置。除了这个作用，索引还有其他的附加作用。</p>
+<ol>
+<li>索引大大减少了服务器需要扫描的数据量</li>
+<li>索引可以帮助服务器避免排序和临时表。（由于B+树索引是按照顺序存储数据的，所以MySQL可以用来做ORDER BY和Group BY操作。因为数据是有序的，所以B+tree会将相关的列值都存储在一起。最后因为索引中存储了实际的列值，所以某些查询只使用索引就能够完成全部查询。）</li>
+<li>索引可以将随机I/O变为顺序I/O</li>
+</ol>
+<p>但是：<strong>索引并不总是最好的解决方案</strong>。总的来说，只有当索引帮助索引引擎快速查找到记录带来的好处大于其带来的额外工作时，索引才是有效的。对于非常小的表，大部分情况下简单的全表扫描更加高效。对于中到大型的表，索引就非常有效。但是对于特大型的表，建立和使用索引的代价将随之增长 - 这种情况下需要分区 - 直接区分查询需要的一组数据。</p>
+<p>如果表的数量特别多，可以建立一个元数据信息表。用来查询需要用到的某些特性。例如执行哪些需要聚合多个应用分布在多个表的数据的查询，则需要记录“哪个用户的信息储存在哪个表中”的元数据，这样在查询时候就可以直接忽略哪些不包含指定用户信息的表。。对于TB级别的数据，定位单条记录的意义不大，所以经常使用块级别元数据技术替代索引。</p>
+<p>当一个查询慢了怎么办：当一个表中, 存储了 N 多数据的时候, 操作会变得很慢, 怎么解决？实际实例：<a href="http://moon-walker.iteye.com/blog/2377643" target="_blank" rel="noopener">http://moon-walker.iteye.com/blog/2377643</a></p>
+<h2 id="建索引的几大原则"><a href="#建索引的几大原则" class="headerlink" title="建索引的几大原则"></a>建索引的几大原则</h2><h3 id="1-最左前缀匹配原则"><a href="#1-最左前缀匹配原则" class="headerlink" title="1.最左前缀匹配原则"></a>1.<strong>最左前缀匹配原则</strong></h3><p>非常重要的原则，MySQL会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配.比如a = 1 and b = 2 and c &gt; 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整。</p>
+<p>如下图people表的索引，该索引显示了该索引是如何组织数据的存储的，索引中包含了last_name, first_name和dob的值。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">create table people(</span><br><span class="line">    last_name varchar(50) not null,</span><br><span class="line">    first_name varchar(50) not null,</span><br><span class="line">    dob        date        not null, </span><br><span class="line">    key(last_name, first_name, dob)</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p><img src="/2018/05/21/mysql-reading-notes/index1.png" width="500" height="400" align="center"></p>
+<p>2.=和in可以乱序，比如a = 1 and b = 2 and c = 3 建立(a,b,c)索引可以任意顺序，mysql的查询优化器会帮你优化成索引可以识别的形式</p>
+<p>3.尽量选择区分度高的列作为索引,区分度的公式是count(distinct col)/count(*)，表示字段不重复的比例，比例越大我们扫描的记录数越少，唯一键的区分度是1，而一些状态、性别字段可能在大数据面前区分度就是0，那可能有人会问，这个比例有什么经验值吗？使用场景不同，这个值也很难确定，一般需要join的字段我们都要求是0.1以上，即平均1条扫描10条记录</p>
+<p>4.索引列不能参与计算，保持列“干净”，比如from_unixtime(create_time) = ’2014-05-29’就不能使用到索引，原因很简单，b+树中存的都是数据表中的字段值，但进行检索时，需要把所有元素都应用函数才能比较，显然成本太大。所以语句应该写成create_time = unix_timestamp(’2014-05-29’);<br>5.尽量的扩展索引，不要新建索引。比如表中已经有a的索引，现在要加(a,b)的索引，那么只需要修改原来的索引即可</p>
+<p>6.索引列不能是表达式的一部分，也不能是函数的参数。</p>
+<h3 id="7-前缀索引"><a href="#7-前缀索引" class="headerlink" title="7. 前缀索引"></a>7. 前缀索引</h3><p>当需要索引的列字符很长情况下需要使用前缀索引。如果直接索引这个很长的列，会让索引变得大且慢。前缀索引索引列开始的部分字符。对于BLOB,TEXT或者很长的VARCHAR类型的列，必须使用前缀索引。</p>
+<p>如何选择合适的前缀长度呢？关注区分度。可以通过统计索引上有多少个不同的值来判断要使用多长的前缀。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">select count(distinct email) as L from SUser;//算出列上有多少个不同的值；</span><br><span class="line"> // 然后依次选取不同长度的前缀来看这个值</span><br><span class="line"></span><br><span class="line">mysql&gt; select </span><br><span class="line">  count(distinct left(email,4)）as L4,</span><br><span class="line">  count(distinct left(email,5)）as L5,</span><br><span class="line">  count(distinct left(email,6)）as L6,</span><br><span class="line">  count(distinct left(email,7)）as L7,</span><br><span class="line">from SUser;</span><br></pre></td></tr></table></figure></p>
+<p>增加前缀索引<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table xxx add key(city(7))</span><br></pre></td></tr></table></figure></p>
+<p>前缀索引的缺点：<br>1、MySQL无法使用前缀索引做ORDER BY和Group BY.<br>2、可能造成额外的扫描。因此使用前缀索引，定义好长度，就可以做到既节省空间，又不用额外增加太多查询成本。<br>3、使用前索引将无法使用覆盖索引。</p>
+<p>那对于很长的字符串，怎么既节省空间的存储，又能使用到索引，又能避免前缀索引的缺点？</p>
+<ol>
+<li>直接创建完整索引，这样可能比较占用空间；</li>
+<li>创建前缀索引，节省空间，但会增加查询扫描次数，并且不能使用覆盖索引；</li>
+<li><strong>倒序存储</strong>，再创建前缀索引，用于绕过字符串本身前缀的区分度不够的问题；</li>
+<li><strong>创建hash字段索引</strong>，查询性能稳定，有额外的存储和计算消耗，跟第三种方式一样，都不支持范围扫描。</li>
+</ol>
+<p>8.索引合并 Index Merge - 通过使用表中的多个单列索引来定位指定的行。<br>SQL查询语句where可能有多个条件涉及到多个字段，它们之间进行AND或者OR，那么此时就有可能会用到Index Merge技术。Index Merge技术简单的说，就是对同一个表使用多个索引分别进行条件扫描，然后将它们各自的结果进行合并 （intersect / union).<br><img src="/2018/05/21/mysql-reading-notes/index-merge.png" width="800" height="800" align="center"><br>虽然索引合并策略是一种优化的结果，但是实际上更多说明表上的索引建的糟糕：当出现服务器对多个索引做and、or操作时候，通常需要一个多列索引，而不是单个独立的单列索引。更重要的是，优化器不会把这些计算到查询成本中，优化器只会关心随机页面的读取，这回使得查询成本被低估，导致该执行计划还不如直接走权标扫描。</p>
+<p>因此如果explain 中看到有Index Merge，应该好好检查一下查询 和表的结构，看是不是已经是最优的。也可以通过参数optimizer_switch 来关闭索引合并功能。</p>
+<h3 id="9-聚簇索引"><a href="#9-聚簇索引" class="headerlink" title="9.聚簇索引"></a>9.聚簇索引</h3><p><strong>聚簇索引并不是一种单独的索引类型，而是一种数据存储方式</strong>,具体细节依赖于不同的引擎实现方式。<strong>InnoDB的聚簇索引在同一个结构中保存了B+树的索引和数据行（存储数据的顺序和索引的顺序一致）。当表有聚簇索引时候，它的数据行实际上存放在索引的叶子页（leaf page）中</strong>。 术语“聚簇”表示数据行和相邻的键值建凑的存储在一起。因为无法同时把数据行存放在两个不同的地方，所以一个表只能有一个聚簇索引。</p>
+<p>InnoDB只能通过主键聚集数据 - 即聚簇索引只能是主键索引。一般情况下主键会默认创建聚簇索引，且<strong>一张表只允许存在一个聚簇索引</strong>。InnoDB的主键采用聚簇索引索引存储，使用B+树作为索引结构，但是叶子节点存储的是索引值和数据本身。</p>
+<p>Innodb的二级索引不使用聚簇索引，叶子节点存储的是KEY字段+主键值（因为不存储指针，索引不需要更新索引的指标 - 这减小了移动数据或者数据页面分裂时维护二级索引的开销）。因此，通过二级索引查询首先查到的是主键值，然后Innodb再根据查到的主键值通过朱建索引找到数据块。</p>
+<p>Innodb 主键索引存储数据方式： 聚簇索引的每个叶子节点都包含了主键值，事务ID,用于事务和MVCC的回滚指针以及所有的剩余列。如果主键是一个列前缀索引，InnoDB也会包含完整的主键列和剩下的其他列。</p>
+<p>下图展示了聚簇索引的记录是如何存放的，leaf page存放了行的全部数据，但是节点页只包含了索引列。<br><img src="/2018/05/21/mysql-reading-notes/cluster-index.png" width="500" height="400" align="center" name="聚簇索引的数据分布"><br>下图展示了二级索引的叶子节点是如何存放数据的，叶子节点存放索引key和主键值。<br><img src="/2018/05/21/mysql-reading-notes/secondary-index.png" width="500" height="400" align="center" name="二级索引的数据分布"></p>
+<p>下图描述了InnoDB和MyISAM如何存放表的抽象图。<br><img src="/2018/05/21/mysql-reading-notes/innodb-vs-isam.png" width="500" height="400" align="center" name="聚簇和非聚簇表对比图"></p>
+<h4 id="聚簇索引-Pros-amp-Cons"><a href="#聚簇索引-Pros-amp-Cons" class="headerlink" title="聚簇索引 Pros &amp; Cons"></a>聚簇索引 Pros &amp; Cons</h4><p>聚簇索引优点</p>
+<ul>
+<li>聚集索引表记录的排列顺序与索引的排列顺序一致，优点是查询速度快，因为一旦具有第一个索引值的记录被找到，具有连续索引值的记录页一定物理上紧跟其后。可以把相关数据保存在一起，减少磁盘IO.</li>
+<li>数据访问更快 - 索引和数据保存在同一个Btree，因此获得数据比非聚簇索引快</li>
+<li>使用聚簇索引扫描的索引可以直接使用页节点的主键值。</li>
+</ul>
+<p>聚簇索引缺点</p>
+<ul>
+<li>最大限度地提高了I/O密集型应用的性能，但如果数据全部都存放在内存中，则访问的顺序就没那么重要了。</li>
+<li>插入速度严重依赖插入顺序。按照主键的顺序插入是加载数据到InnoDB表中速度最快的方式，反思如果不是按照主键顺序加载数据，那么在加载完成后最后使用optimize table命令重新组织一下表。插入数据时速度要慢（时间花费在 “物理存储的排序” 上，也就是首先要找到位置然后插入）。</li>
+<li>更新聚簇索引列的代价很高，因为会强制INNODB将每个被更新的行移动到新的位置。</li>
+<li>基于聚簇索引的表插入新行，或者被更新需要移动行的时候，可能面临“页分裂 page split”问题。当行的主键值要求必须将这一行插入到某个已满的页中，存储引擎会将该页分裂成两个页面来容纳该行，这就是一次page split. page split 会导致表占用更多的磁盘空间。</li>
+<li>二级索引访问需要使用两次查找。</li>
+</ul>
+<h2 id="聚集索引V-S-非聚集索引"><a href="#聚集索引V-S-非聚集索引" class="headerlink" title="聚集索引V.S.非聚集索引"></a>聚集索引V.S.非聚集索引</h2><p>聚集索引和非聚集索引的根本区别是表记录的排列顺序和索引的排列顺序是否一致。简单点来说，就是聚集索引: 物理存储按照索引排序；非聚集索引: 物理存储不按照索引排序。</p>
+<p>聚集索引叶节点是数据，非聚集索引叶节点是指向索引叶节点的指针。</p>
+<p>10.覆盖索引。如果索引包含所有满足查询需要的数据，那么索引即覆盖索引(Covering Index), 也就是不需要回表操作。覆盖索引是非常有用的工具，它使用索引就可以直接获取列数据，这样就不需要再回表查询，能够极大地提高性能。</p>
+<p>覆盖索引是一种非常强大的工具，能大大提高查询性能，只需要读取索引而不用读取数据有以下一些优点:<br>1、索引项通常比记录要小，所以MySQL访问更少的数据<br>2、索引都按值的大小顺序存储，相对于随机访问记录，需要更少的I/O<br>3、大多数据引擎能更好的缓存索引，比如MyISAM只缓存索引<br>4、覆盖索引对于InnoDB表尤其有用，因为InnoDB使用聚集索引组织数据，如果二级索引中包含查询所需的数据，就不再需要在聚集索引中查找了</p>
+<p>判断标准： 使用explain, 通过输出的extra来判断，对于一个索引覆盖查询，显示为using index。 MySQL查询优化器在执行查询前会决定是否有索引覆盖查询。</p>
+<p>注意：如果使用覆盖索引，一定要注意select列表值取出需要的列，不可以是select *. 因为如果将所有字段一起做索引会导致索引文件过大，查询性能下降。</p>
+<p>11.使用索引扫描来做排序<br>MySQL有两种方式可以生成有序的结果，通过排序操作或者按照索引顺序扫描，如果explain的type列的值为index，则说明mysql使用了索引扫描来做排序（不要和extra列的Using index搞混了，那个是使用了覆盖索引查询）。扫描索引本身是很快的，因为只需要从一条索引记录移动到紧接着的下一条记录，但如果索引不能覆盖查询所需的全部列，那就不得不扫描一条索引记录就回表查询一次对应的整行，这基本上都是随机IO，因此按索引顺序读取数据的速度通常要比顺序地全表扫描慢，尤其是在IO密集型的工作负载时。</p>
+<h1 id="MySQL索引数据结构剖析"><a href="#MySQL索引数据结构剖析" class="headerlink" title="MySQL索引数据结构剖析"></a>MySQL索引数据结构剖析</h1><p>B+-tree</p>
+<p>mysql可以使用同一个索引既满足排序，又用于查找行，因此，如果可能，设计索引时应该尽可能地同时满足这两种任务，这样是最好的。只有当索引的列顺序和order by子句的顺序完全一致，并且所有列的排序方向（倒序或升序，创建索引时可以指定ASC或DESC）都一样时，mysql才能使用索引来对结果做排序，如果查询需要关联多张表，则只有当order by子句引用的字段全部为第一个表时，才能使用索引做排序，order by子句和查找型查询的限制是一样的，需要满足索引的最左前缀的要求，否则mysql都需要执行排序操作，而无法使用索引排序。</p>
+<p>MySQL的查询优化器会通过两个API来了解存储引擎的索引值的分布信息，以决定如何使用索引。第一个API是records_in_range()，通过向存储引擎传入两个边界值获取在这个范围大概有多少条记录。对于MYISAM该接口返回精确值；INNODB，该接口返回估算值。<br>第二个是info()，该接口返回各种类型的数据，包括索引的基数 - 每个key有多少条记录。</p>
+<p>cardinlity: 索引列的基数，显示了存储引擎估算索引列有多少不同的取值。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/">MySQL索引二三事</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/">https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/</a></li>
+            <li><strong>发布时间：</strong>2018-05-21</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/05/21/dive-into-mysql-execute/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/05/01/rocketmq-questions/">
+                <span class="level-item">RocketMQ源码分析6--关于RocketMQ你想知道的Questions</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#MySQL索引原理">
+        <span class="has-mr-6">1.1</span>
+        <span>MySQL索引原理</span>
+        </a></li><li>
+        <a class="is-flex" href="#索引的Pros-amp-Cons">
+        <span class="has-mr-6">1.2</span>
+        <span>索引的Pros &amp; Cons</span>
+        </a></li><li>
+        <a class="is-flex" href="#建索引的几大原则">
+        <span class="has-mr-6">1.3</span>
+        <span>建索引的几大原则</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-最左前缀匹配原则">
+        <span class="has-mr-6">1.3.1</span>
+        <span>1.最左前缀匹配原则</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-前缀索引">
+        <span class="has-mr-6">1.3.2</span>
+        <span>7. 前缀索引</span>
+        </a></li><li>
+        <a class="is-flex" href="#9-聚簇索引">
+        <span class="has-mr-6">1.3.3</span>
+        <span>9.聚簇索引</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#聚集索引V-S-非聚集索引">
+        <span class="has-mr-6">1.4</span>
+        <span>聚集索引V.S.非聚集索引</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#MySQL索引数据结构剖析">
+        <span class="has-mr-6">2</span>
+        <span>MySQL索引数据结构剖析</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

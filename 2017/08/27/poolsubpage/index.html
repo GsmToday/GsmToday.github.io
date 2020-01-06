@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Netty 是怎么做内存管理--PoolSubPage - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。 初始化PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。123456789101112PoolSubpage(PoolSubpage&amp;lt;T&amp;g">
+<meta name="keywords" content="Netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty 是怎么做内存管理--PoolSubPage">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/08/27/poolsubpage/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。 初始化PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。123456789101112PoolSubpage(PoolSubpage&amp;lt;T&amp;g">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/08/27/poolsubpage/subpage.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.138Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty 是怎么做内存管理--PoolSubPage">
+<meta name="twitter:description" content="当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。 初始化PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。123456789101112PoolSubpage(PoolSubpage&amp;lt;T&amp;g">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2017/08/27/poolsubpage/subpage.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/tuboshu.jpg" alt="Netty 是怎么做内存管理--PoolSubPage">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-08-27T03:20:30.000Z">2017-08-27</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1727 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Netty 是怎么做内存管理--PoolSubPage
+            
+        </h1>
+        <div class="content">
+            <p>当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。</p>
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">PoolSubpage(PoolSubpage&lt;T&gt; head,</span><br><span class="line">    PoolChunk&lt;T&gt; chunk,</span><br><span class="line">    int memoryMapIdx, int runOffset,</span><br><span class="line">    int pageSize, elemSize) &#123;</span><br><span class="line"></span><br><span class="line">    this.chunk = chunk;</span><br><span class="line">    this.memoryMapIdx = memoryMapIdx;</span><br><span class="line">    this.runOffset = runOffset;</span><br><span class="line">    this.pageSize = pageSize;</span><br><span class="line">    bitmap = new long[pageSize &gt;&gt;&gt; 10]; // pageSize / 16 / 64</span><br><span class="line">    init(head, elemSize);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以发现，以默认的PageSize=8192byte为例，位图bitmap的大小被初始化为8:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">long bitmap[] = new long[pageSize &gt;&gt;&gt; 10]</span><br></pre></td></tr></table></figure></p>
+<a id="more"></a>
+<p>简单说明一下，在Page中subpage以16字节为最小单位划分内存段，而一个long类型的变量有64位，所以最多使用PageSize/16/64=8个<br>long型的变量就可以表示所有内存段。</p>
+<p>假设我们以elemSize=72字节为单位，在页内进行内存段的划分，那最多将有maxNumElem=PageSize/elemSize=113个内存段。（elemSize一旦确定就不会改变， 页面中内存段都是大小一致的）<br>那么这113个内存段就要占用位图中113个位置，那需要多少个bitmap元素呢？</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bitmapLength = maxNumElems &gt;&gt;&gt; 6;</span><br><span class="line">if ((maxNumElems &amp; 63) != 0) &#123;</span><br><span class="line">    bitmapLength ++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>计算也比较简单，除64取整，如果存在不能整除的部分，结果再加1。当maxNumElems=113时，就需要2个数组元素来描述内存段的状态。<br>假如内存段更大到elemSize=4096，maxNumElems只有2时，就需要1个数据元素就可以描述着两个内存段。整个计算过程都基于位操作实现，效率更高。</p>
+<h2 id="分配流程"><a href="#分配流程" class="headerlink" title="分配流程"></a>分配流程</h2><p>PoolSubPage分配内存段的过程就是在<strong>位图中找到第一个未被使用的内存段</strong>，返回一个描述其内存位置偏移量的整数句柄，用于定位。</p>
+<p>代码如下：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">private int findNextAvail() &#123;</span><br><span class="line">    final long[] bitmap = this.bitmap;</span><br><span class="line">    final int bitmapLength = this.bitmapLength;</span><br><span class="line">    for (int i = 0; i &lt; bitmapLength; i ++) &#123;</span><br><span class="line">        long bits = bitmap[i];</span><br><span class="line">        if (~bits != 0) &#123;  //当前数组元素上有未分配的内存(marked as zero)</span><br><span class="line">            return findNextAvail0(i, bits);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return -1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line">  * i ：空闲内存在位图数组中的下标</span><br><span class="line">  * bits : 数组元素表示的位图详情</span><br><span class="line">  * return ：位图索引</span><br><span class="line">  */</span><br><span class="line">private int findNextAvail0(int i, long bits) &#123;</span><br><span class="line">    final int maxNumElems = this.maxNumElems;</span><br><span class="line">    final int baseVal = i &lt;&lt; 6; //高位用来记录分配的内存在位图数组中的下标位置</span><br><span class="line"></span><br><span class="line">    for (int j = 0; j &lt; 64; j ++) &#123;</span><br><span class="line">        if ((bits &amp; 1) == 0) &#123; //当前位置表示的内存未分配</span><br><span class="line">            int val = baseVal | j; //低6位用来记录空闲内存在long型元素二进制表示中占据的位置</span><br><span class="line">            if (val &lt; maxNumElems) &#123;</span><br><span class="line">                return val;</span><br><span class="line">            &#125; else &#123;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        bits &gt;&gt;&gt;= 1; //右移，尝试下一位</span><br><span class="line">    &#125;</span><br><span class="line">    return -1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>算法首先在位图数组bitmap中开始遍历，如果当前数组元素表示的内存空间上有空闲内存段(即数组元素的二进制位上有0)，则进一步在此数组元素中查找空闲内存段在二进制位上的位置。通过在二进制位上循环移位遍历，访问到0则构造内存偏移量并返回。整形的内存偏移量，低6位用来表示空闲内存在long型元素的二进制位表示中占据的位置，高位用来记录该数组元素的下标。</p>
+<p>以下图的bitmap为例，算法首先在bitmap[0]上没有发现空闲内存，则进一步访问bitmap[1]。为了找到空闲内存在bitmap[1]中的位置，依次遍历，最终在位置2（j=2）上 找到目标内存。构建位图索引，baseVal = 1 &lt;&lt; 6, val = baseVal | j = 01000010。</p>
+<div align="center"><br><br><img src="/2017/08/27/poolsubpage/subpage.jpg" alt="chunk example"><br><br></div>
+
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">final int bitmapIdx = getNextAvail();</span><br><span class="line">int q = bitmapIdx &gt;&gt;&gt; 6; //取数组元素的位置，即上述的baseVal</span><br><span class="line">int r = bitmapIdx &amp; 63; //相当于模64，计算得到上述算法流程中的变量j</span><br><span class="line">assert (bitmap[q] &gt;&gt;&gt; r &amp; 1) == 0;</span><br><span class="line">bitmap[q] |= 1L &lt;&lt; r; //位图中相应的位置置1</span><br><span class="line"></span><br><span class="line">if (-- numAvail == 0) &#123;</span><br><span class="line">    removeFromPool();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">return toHandle(bitmapIdx);</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private long toHandle(int bitmapIdx) &#123;</span><br><span class="line">    return 0x4000000000000000L | (long) bitmapIdx &lt;&lt; 32 | memoryMapIdx;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然，分配完成之后需要将位图中的位置置1，防止被再次分配。详细的过程已在代码中做了注释，不再详述。最终返回给Client的偏移量句柄，还需要做一次变化（toHandle），其结构也比较明显，句柄共占据long型的低48位，其中低32位记录当前内存页在PoolChunk的平衡二叉树中的节点编号，中间16位（低6位记录在位图long型元素的二进制位置，低3位记录在位图数组中的位置）。</p>
+<h2 id="上层调用"><a href="#上层调用" class="headerlink" title="上层调用"></a>上层调用</h2><p>在 <a href="/2017/08/27/poolchunk/" title="Netty 是怎么做内存管理-PoolChunk">Netty 是怎么做内存管理-PoolChunk</a> 一文中提到过，当用户请求的内存空间小于一个页面的内存大小时，会调用allocateSubpage在页面内进行内存分配。</p>
+<p>看一下allocateSubpage的实现：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Create/ initialize a new PoolSubpage of normCapacity</span><br><span class="line"> * Any PoolSubpage created/ initialized here is added to subpage pool in the PoolArena that owns this PoolChunk</span><br><span class="line"> *</span><br><span class="line"> * @param normCapacity normalized capacity</span><br><span class="line"> * @return index in memoryMap</span><br><span class="line"> */</span><br><span class="line">private long allocateSubpage(int normCapacity) &#123;</span><br><span class="line">    // Obtain the head of the PoolSubPage pool that is owned by the PoolArena and synchronize on it.</span><br><span class="line">    // This is need as we may add it back and so alter the linked-list structure.</span><br><span class="line">    PoolSubpage&lt;T&gt; head = arena.findSubpagePoolHead(normCapacity);</span><br><span class="line">    synchronized (head) &#123;</span><br><span class="line">        int d = maxOrder; // subpages are only be allocated from pages i.e., leaves</span><br><span class="line">        int id = allocateNode(d);</span><br><span class="line">        if (id &lt; 0) &#123;</span><br><span class="line">            return id;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        final PoolSubpage&lt;T&gt;[] subpages = this.subpages;</span><br><span class="line">        final int pageSize = this.pageSize;</span><br><span class="line"></span><br><span class="line">        freeBytes -= pageSize;</span><br><span class="line"></span><br><span class="line">        int subpageIdx = subpageIdx(id);</span><br><span class="line">        PoolSubpage&lt;T&gt; subpage = subpages[subpageIdx];</span><br><span class="line">        if (subpage == null) &#123;</span><br><span class="line">            subpage = new PoolSubpage&lt;T&gt;(head, this, id, runOffset(id), pageSize, normCapacity);</span><br><span class="line">            subpages[subpageIdx] = subpage;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            subpage.init(head, normCapacity);</span><br><span class="line">        &#125;</span><br><span class="line">        return subpage.allocate();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">private int subpageIdx(int memoryMapIdx) &#123;</span><br><span class="line">    return memoryMapIdx ^ maxSubpageAllocs; // remove highest set bit, to get offset</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>首先根据在arena中找到normCapacity大小的内存空间应该在arena维持的PoolSubpage列表中的那一个节点上分配 (参见 <a href="/2017/08/27/poolchunk/" title="Netty 是怎么做内存管理-PoolArena">Netty 是怎么做内存管理-PoolArena</a>对内存结构的分析)，然后以d = maxorder, 在PoolChunk的完全二叉树中，寻找一个空闲的叶子节点，用于此次的内存分配。</p>
+<p>在创建PoolChunk的是否会默认创建一个PoolSubpage的数组subpages=new PoolSubpage[1 &lt;&lt; maxorder], 用来记录叶子节点被用作PoolSubpage的分配情况。在PoolChunk找到一个空闲的叶子节点时，首先调用subpageIdx，计算该叶子节点在PoolChunk完全二叉树最底层的相对位置。(完全二叉树最底层的第一页叶子节点编号为2<sup>maxorder</sup>, 所以任意叶子节点相对首个叶子节点的相对位置，可以通过上述代码中的异或运算，把高位的0抹掉，只保留低位的值即为相对位置)</p>
+<p>如果subpages当前位置没有记录，则分配生产一个新的PoolSubpage对象，否则直接初始化当前PoolSubpage对象，并插入head的后。</p>
+<p>最后调用allocate()就是执行前文所描述的页面内分配内存的执行流程。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/08/27/poolsubpage/">Netty 是怎么做内存管理--PoolSubPage</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/08/27/poolsubpage/">https://gsmtoday.github.io/2017/08/27/poolsubpage/</a></li>
+            <li><strong>发布时间：</strong>2017-08-27</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Netty/">Netty</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/09/02/poolarena/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Netty 是怎么做内存管理--PoolArena</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/08/27/poolchunk/">
+                <span class="level-item">Netty 是怎么做内存管理--PoolChunk</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

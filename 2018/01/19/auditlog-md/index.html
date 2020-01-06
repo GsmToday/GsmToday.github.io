@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>一种使用自定义注解+切面统一收集审计日志的方式 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="最近在做一个审计模块，想要实现的是为微服务各个模块提供一个审计日志服务，即各个微服务模块收集日志 + 日志存储在db/elk/hive，然后针对存储的审计日志做展示或者分析的一个服务。可以看出实现一个审计服务的三个关键地方是：  收集日志 存储日志 展示/分析日志  第一个关键地方是收集日志, 本文也想探讨下如何更低耦合的收集日志。">
+<meta name="keywords" content="Java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一种使用自定义注解+切面统一收集审计日志的方式">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/01/19/auditlog-md/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="最近在做一个审计模块，想要实现的是为微服务各个模块提供一个审计日志服务，即各个微服务模块收集日志 + 日志存储在db/elk/hive，然后针对存储的审计日志做展示或者分析的一个服务。可以看出实现一个审计服务的三个关键地方是：  收集日志 存储日志 展示/分析日志  第一个关键地方是收集日志, 本文也想探讨下如何更低耦合的收集日志。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.763Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一种使用自定义注解+切面统一收集审计日志的方式">
+<meta name="twitter:description" content="最近在做一个审计模块，想要实现的是为微服务各个模块提供一个审计日志服务，即各个微服务模块收集日志 + 日志存储在db/elk/hive，然后针对存储的审计日志做展示或者分析的一个服务。可以看出实现一个审计服务的三个关键地方是：  收集日志 存储日志 展示/分析日志  第一个关键地方是收集日志, 本文也想探讨下如何更低耦合的收集日志。">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/cat2018.jpg" alt="一种使用自定义注解+切面统一收集审计日志的方式">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-01-19T06:23:39.000Z">2018-01-19</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    9 分钟 读完 (大约 1396 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                一种使用自定义注解+切面统一收集审计日志的方式
+            
+        </h1>
+        <div class="content">
+            <p>最近在做一个审计模块，想要实现的是为微服务各个模块提供一个审计日志服务，即各个微服务模块收集日志 + 日志存储在db/elk/hive，然后针对存储的审计日志做展示或者分析的一个服务。可以看出实现一个审计服务的三个关键地方是：</p>
+<ul>
+<li>收集日志</li>
+<li>存储日志</li>
+<li>展示/分析日志</li>
+</ul>
+<p>第一个关键地方是收集日志, 本文也想探讨下如何更低耦合的收集日志。<br><a id="more"></a></p>
+<h2 id="什么是审计日志"><a href="#什么是审计日志" class="headerlink" title="什么是审计日志"></a>什么是审计日志</h2><p>审计日志记录了系统用户操作了什么，以便对用户行为进行追踪和审计。最典型的审计日志：</p>
+<ul>
+<li>“张三新增了一个用户李四”；</li>
+<li>“张三给李四新增了一个管理员权限”</li>
+</ul>
+<p>“张三新增了一个用户李四”这条日志主语是当前登录的用户”张三”，谓语是动作“新增”，宾语是用户“李四”，还需要记录使用的系统功能“用户管理。”</p>
+<p>所以最基本日志需要包含字段：</p>
+<ul>
+<li>操作人operator；</li>
+<li>操作动作action. 审计模块一般针对“新增”，“修改”和“删除”和“登录”类型的操作做记录；</li>
+<li>操作的功能function,例如角色管理，应用管理，用户管理；</li>
+<li>操作的主体subject，例如新创建一个用户是李四, 李四就是操作的主体;</li>
+<li>日志的创建时间createTime</li>
+</ul>
+<h2 id="记录审计日志的方法"><a href="#记录审计日志的方法" class="headerlink" title="记录审计日志的方法"></a>记录审计日志的方法</h2><p>假如我们系统有三个服务，用户服务，权限服务，角色服务，需要在用户/权限/角色相关操作上记录审计日志。最直观的做法是在每个服务中嵌入审计日志rpc服务。例如：</p>
+<p>用户服务  -  新增用户代码：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addUser</span><span class="hljs-params">(UserDTO userDTO)</span> </span>&#123;</span><br><span class="line">   userService.addUser(userDTO);</span><br><span class="line">   </span><br><span class="line">   AuditLog auditLog= <span class="hljs-keyword">new</span> AuditLog();</span><br><span class="line">   auditLog.setOperator(getCurrentLoginUser());</span><br><span class="line">   auditLog.setAction(<span class="hljs-string">"新增"</span>)；</span><br><span class="line">   auditLog.setFunction(<span class="hljs-string">"用户管理"</span>);</span><br><span class="line">   auditLog.setSubject(userDTO.getUserName());</span><br><span class="line">   auditLogSerice.writeLog(auditLog);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是这种做法有一个很大的缺陷就是业务代码和审计日志服务高耦合。业务coder需要花费很大的时间去封装日志需要的参数，但是实际上他是不需要关注这些日志相关的事情的。另外业务代码也会被割裂，很难写出clean code 一段代码只做一件事的代码。</p>
+<p>我想到的一种优化方式是使用自定义注解+AOP切面生成统一日志。</p>
+<p>首先定义一个注解，该注解的目的是只要被该注解@Auditable注解过的方法，都会被切面接收到打印审计日志。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="hljs-meta">@Target</span>(&#123;ElementType.METHOD, ElementType.TYPE&#125;)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> Auditable &#123;</span><br><span class="line">    <span class="hljs-function">Action <span class="hljs-title">action</span><span class="hljs-params">()</span></span>;<span class="hljs-comment">// 行为</span></span><br><span class="line">    <span class="hljs-function">Function <span class="hljs-title">function</span><span class="hljs-params">()</span></span>; <span class="hljs-comment">//功能</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> Action&#123;</span><br><span class="line">    ADD(<span class="hljs-string">"增加"</span>),</span><br><span class="line">    DELETE(<span class="hljs-string">"删除"</span>),</span><br><span class="line">    MODIFY(<span class="hljs-string">"修改"</span>);</span><br><span class="line">    <span class="hljs-keyword">private</span> String description;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-title">Action</span><span class="hljs-params">(String description)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">this</span>.description = description;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getDescription</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.description;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> Function&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>再定义一个注解，该注解帮助切面捕获被@Audit注解的方法参数中的操作主体值（例如刚才的张三）<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="hljs-meta">@Target</span>(&#123;ElementType.FIELD, ElementType.TYPE, ElementType.LOCAL_VARIABLE&#125;)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> AuditingTargetUsername &#123;</span><br><span class="line">    <span class="hljs-function">String <span class="hljs-title">value</span><span class="hljs-params">()</span> <span class="hljs-keyword">default</span> ""</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>用户DTO可以如下定义：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Data</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserDTO</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Serializable</span></span>&#123; <span class="hljs-comment">// already use lombok</span></span><br><span class="line">    <span class="hljs-meta">@NotNull</span></span><br><span class="line">    <span class="hljs-meta">@AuditingTargetUsername</span></span><br><span class="line">    <span class="hljs-keyword">private</span> String name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>切面<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-meta">@Aspect</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AuditAspect</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Resource</span></span><br><span class="line">    <span class="hljs-keyword">private</span> IAuditLogService auditLogService;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@After</span>(value = <span class="hljs-string">"@annotation(auditable)"</span>)</span><br><span class="line">    <span class="hljs-meta">@Transactional</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">logAuditActivity</span><span class="hljs-params">(JoinPoint jp, Auditable auditable)</span> </span>&#123;</span><br><span class="line">        String action = auditable.actionType().getDescription();</span><br><span class="line">        String function = auditable.function().getFunction();</span><br><span class="line">        String valueFilledIntoSubject = extractTargetAudintUserFromAnnotation(jp.getArgs()[<span class="hljs-number">0</span>]);</span><br><span class="line"></span><br><span class="line">        AuditLog auditLog = <span class="hljs-keyword">new</span> AuditLog();</span><br><span class="line">        auditLog.setOperationFunctionType(function);</span><br><span class="line">        auditLog.setFunctionType(action);</span><br><span class="line">        auditLog.setCreatedAt(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">        auditLog.setUpdatedAt(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">        auditLog.setOpName(getCurrentLoginUser());<span class="hljs-comment">//获取当前登录用户</span></span><br><span class="line">        auditLog.setContent(getCurrentLoginUser() + actionType + subject + valueFilledIntoSubject);<span class="hljs-comment">//张三新增了用户</span></span><br><span class="line">        auditLogService.insert(auditLog);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">private</span> String <span class="hljs-title">extractTargetAudintUserFromAnnotation</span><span class="hljs-params">(Object obj)</span></span>&#123;</span><br><span class="line">        <span class="hljs-comment">// ...</span></span><br><span class="line">        <span class="hljs-keyword">return</span> getSubjectValueViaAnnotation(obj);</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">private</span> String <span class="hljs-title">getSubjectValueViaAnnotation</span><span class="hljs-params">(Object obj)</span> </span>&#123;</span><br><span class="line">        String result = <span class="hljs-keyword">null</span>;</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            <span class="hljs-keyword">for</span> (Field f : obj.getClass().getDeclaredFields()) &#123;</span><br><span class="line">                <span class="hljs-keyword">for</span> (Annotation a : f.getAnnotations()) &#123;</span><br><span class="line">                    <span class="hljs-keyword">if</span> (a.annotationType() == AuditingTargetUsername.class) &#123;</span><br><span class="line">                        f.setAccessible(<span class="hljs-keyword">true</span>);</span><br><span class="line">                        Field annotatedFieldName = obj.getClass().getDeclaredField(f.getName());</span><br><span class="line">                        annotatedFieldName.setAccessible(<span class="hljs-keyword">true</span>);</span><br><span class="line">                        String annotatedFieldVal = (String) annotatedFieldName.get(obj);</span><br><span class="line">                        result = annotatedFieldVal;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过上述自定义注解+切面可以实现将具体业务和记录审计日志解耦，提高各自开发人员的效率，代码也更加好维护一些。但是这种方式无法实现某些个性化的日志。我将日志分为两种：</p>
+<ul>
+<li>通用日志</li>
+</ul>
+<p>日志需要确定的信息都是固定的，例如异常/错误日志，或者一些简单的审计日志场景，例如上例中审计日志只需要“动作”，操作的”功能“，操作的”主体“值，或者登陆用户的ip, 等等固定信息都是可以算为通用日志，利用切面去优化日志实现方式。</p>
+<ul>
+<li>个性化日志</li>
+</ul>
+<p>在上述场景中，如果想进一步在服务中查询出某些数据反映在审计日志中，这些数据可以理解为动态日志数据，切面是无法拿到的（因为切面是基于反射，只能拿到方法的输入输出参数）。举例子来说就是删除用户场景。前端传入删除用户id = 5：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Auditable</span>(actionType = ActionType.DELETE, function = Function.User)</span><br><span class="line"><span class="hljs-meta">@RequestMapping</span>(<span class="hljs-string">"/delete"</span>)</span><br><span class="line"><span class="hljs-meta">@ResponseBody</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">delete</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;</span><br><span class="line">    String userNameDeleted = userService.getUserById(userId);<span class="hljs-comment">// 需要记录日志 “DELETE USER 张三“ 但是aop无法拿到，</span></span><br><span class="line">    userInfoService.delete(userId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这时候可以利ThreadLocal记录动态日志数据，有一点不太方便的是要使用双方约定好threadlocal中的字段。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/01/19/auditlog-md/">一种使用自定义注解+切面统一收集审计日志的方式</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/01/19/auditlog-md/">https://gsmtoday.github.io/2018/01/19/auditlog-md/</a></li>
+            <li><strong>发布时间：</strong>2018-01-19</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/02/13/netty-summarize/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Netty入门综述</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/12/19/japan/">
+                <span class="level-item">Japan-霓虹归来</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

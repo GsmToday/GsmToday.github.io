@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Spring项目加载慢问题 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="最近遇到一个诡异的问题，项目启动异常缓慢(每次重启tomcat都要6-7分钟)，这对于开发来说简直是灾难式体验，所以决心修正此问题。 首先google搜索解决tomcat启动慢的问题，按照大多数人反映的计算熵SecureRandom的方法修改，发现无效。于是只好阅读tomcat启动日志，发现每次项目启动，时间都卡在这里org.apache.catalina.core.ApplicationCont">
+<meta name="keywords" content="Spring">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring项目加载慢问题">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/08/23/tomcat-slow-start/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="最近遇到一个诡异的问题，项目启动异常缓慢(每次重启tomcat都要6-7分钟)，这对于开发来说简直是灾难式体验，所以决心修正此问题。 首先google搜索解决tomcat启动慢的问题，按照大多数人反映的计算熵SecureRandom的方法修改，发现无效。于是只好阅读tomcat启动日志，发现每次项目启动，时间都卡在这里org.apache.catalina.core.ApplicationCont">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2020-01-06T10:52:38.189Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring项目加载慢问题">
+<meta name="twitter:description" content="最近遇到一个诡异的问题，项目启动异常缓慢(每次重启tomcat都要6-7分钟)，这对于开发来说简直是灾难式体验，所以决心修正此问题。 首先google搜索解决tomcat启动慢的问题，按照大多数人反映的计算熵SecureRandom的方法修改，发现无效。于是只好阅读tomcat启动日志，发现每次项目启动，时间都卡在这里org.apache.catalina.core.ApplicationCont">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/woniu.jpg" alt="Spring项目加载慢问题">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-08-23T12:42:59.000Z">2017-08-23</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    3 分钟 读完 (大约 387 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Spring项目加载慢问题
+            
+        </h1>
+        <div class="content">
+            <p>最近遇到一个诡异的问题，项目启动异常缓慢(每次重启tomcat都要6-7分钟)，这对于开发来说简直是灾难式体验，所以决心修正此问题。</p>
+<p>首先google搜索解决tomcat启动慢的问题，按照大多数人反映的计算熵SecureRandom的方法修改，发现无效。于是只好阅读tomcat启动日志，发现每次项目启动，时间都卡在这里<code>org.apache.catalina.core.ApplicationContext.log Initializing Spring root WebApplicationContext</code>。这时候搜索结果就与计算熵SecureRandom无关了，而是spring启动的问题，摘取排查问题步骤如下，果然解决。<br><a id="more"></a></p>
+<ol>
+<li>检查spring是否运行在debug模式下，是跳转到2 否则跳转到3</li>
+<li>查看spring在run模式下是否运行依旧缓慢 是跳转到3，否则跳转到4</li>
+<li>检验是否spring bean加载了多次（quartz加载很有可能导致部分bean被是实例两次） <a href="http://blog.csdn.net/chaijunkun/article/details/6925889" target="_blank" rel="noopener">是跳转到</a>; 否则<a href="http://jinnianshilongnian.iteye.com/blog/1883013" target="_blank" rel="noopener">跳转到</a></li>
+<li>请将代码中所有代码断点禁用掉或者全部删除重新进入到debug模式下查看加载速度是否变快 .</li>
+</ol>
+<p>发现debug模式下可能导致应用启动速度大幅度变慢。将breakpoint删除后我的应用从 171021ms+43824 ms=====》13021ms+2950ms</p>
+<p>我使用Step4就解决了项目启动慢的问题，原来是打了太多断点，影响了加载速度…</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/08/23/tomcat-slow-start/">Spring项目加载慢问题</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/08/23/tomcat-slow-start/">https://gsmtoday.github.io/2017/08/23/tomcat-slow-start/</a></li>
+            <li><strong>发布时间：</strong>2017-08-23</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Spring/">Spring</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/08/27/poolchunk/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Netty 是怎么做内存管理--PoolChunk</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/07/23/multithread/">
+                <span class="level-item">庖丁解牛-多服务器并发场景下乐观锁的实际应用</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

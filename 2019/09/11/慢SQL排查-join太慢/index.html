@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>慢SQL排查- join太慢 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="一次慢SQL的排查。">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="慢SQL排查- join太慢">
+<meta property="og:url" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="一次慢SQL的排查。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/image2019-9-11_15-59-39.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/image2019-9-11_16-5-12.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/explain.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/table.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/1.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:38.207Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="慢SQL排查- join太慢">
+<meta name="twitter:description" content="一次慢SQL的排查。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/image2019-9-11_15-59-39.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/latte.jpeg" alt="慢SQL排查- join太慢">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-09-11T13:38:28.000Z">2019-09-11</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    8 分钟 读完 (大约 1143 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                慢SQL排查- join太慢
+            
+        </h1>
+        <div class="content">
+            <p>一次慢SQL的排查。<br><a id="more"></a></p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>我负责的统一权限系统的管理端首页优化功能上线了一批新功能接口。发现一个接口响应延时比较长（近1s）的接口，接口如下：<br><img src="/2019/09/11/慢SQL排查-join太慢/image2019-9-11_15-59-39.png" width="800" height="600" align="center"></p>
+<p>由于接口逻辑层比较简单，只是调service查表的数据逻辑，初步判断是查DB效率太低。通过查看rds慢查询日志得到了验证。<br><img src="/2019/09/11/慢SQL排查-join太慢/image2019-9-11_16-5-12.png" width="800" height="600" align="center"></p>
+<p>定位到查询的业务SQL ，SQL语句为：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">r.apply_type as applyType, count(DISTINCT(r.apply_value)) as count</span><br><span class="line">from</span><br><span class="line">t1 apply,</span><br><span class="line">t2 r</span><br><span class="line">where</span><br><span class="line">apply.id = r.workflow_apply_id</span><br><span class="line">and apply.is_delete = 0</span><br><span class="line">and r.is_delete = 0</span><br><span class="line">and username = &quot;tomcat&quot;</span><br><span class="line">and status = 1</span><br><span class="line">group by r.apply_type</span><br></pre></td></tr></table></figure></p>
+<p>该语句的业务逻辑为返回用户正在申请中的权限类型：权限数列表。其中表t1为权限申请记录表，表t2 为申请记录与申请实体关系表，upm_data.t2表的 is_delete = 0 行数908247。</p>
+<p>explain 一下看看:<br><img src="/2019/09/11/慢SQL排查-join太慢/explain.png" width="800" height="600" align="center"></p>
+<p><strong>发现出现了影响性能的join - BNL</strong><br>这里回顾下几种类型的join：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from t1 straight_join t2 on (t1.a=t2.b); //t1 行数N， t2行数M- NLJ (Index Nested-Loop Join)</span><br></pre></td></tr></table></figure></p>
+<p>表t1 join（驱动）表t2。如果可以使用被驱动表的索引，则为NLJ。执行过程类似于嵌套循环。总的扫描行数是N+N*2log2M</p>
+<ul>
+<li>BNL (Block Nested-Loop Join)<br>表t1 join（驱动）表t2。如果不可以使用被驱动表t2的索引，则每次到t2匹配的时候，都要做一次全表扫描。执行次数为N*M。</li>
+</ul>
+<p>BNL 的算法流程：<br>Situation1: join_buffer放得下</p>
+<ol>
+<li>把表t1的数据读入线程内存join_buffer中，由于我们这个语句写的是select *, 因此是把整个表t1 放入内存；</li>
+<li>扫描表t2, 把表t2中的每一行取出来，跟join_buffer中的数据做对比，满足join条件的，作为结果集的一部分返回。<br>BNL中，表t1和t2都做了一次全表扫描，因此总的扫描行数是N+M。由于join_buffer是以无序数组的方式组织的，因此对于表t2中的每一行，都要做M次判断，总共需要join_buffer内存判断次数是N*M次 (内存操作)。另外BNL选大表做驱动表，还是选小表做驱动表都是一样的。</li>
+</ol>
+<p>Situation2: join_buffer放不下<br>如果放不下t1的所有数据的话，策略很简单，就是分段放。</p>
+<ol>
+<li>扫描表 t1，顺序读取数据行放入 join_buffer 中，放完第 88 行 join_buffer 满了，继续第 2 步；</li>
+<li>扫描表 t2，把 t2 中的每一行取出来，跟 join_buffer 中的数据做对比，满足 join 条件的，作为结果集的一部分返回；</li>
+<li>清空 join_buffer；</li>
+<li>继续扫描表 t1，顺序读取最后的 12 行数据放入 join_buffer 中，继续执行第 2 步。<br>内存判断次数是N*M次 , 这种情况选择小表作为驱动表。</li>
+</ol>
+<p>总的来说，<strong>如果要使用join，要避免出现BNL， 要给被驱动的表的字段加索引。另外，要小表驱动大表</strong>（在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，过滤完成之后，计算参与 join 的各个字段的总数据量，数据量小的那个表，就是“小表”，应该作为驱动表。）。</p>
+<p><strong> 再回看为什么会出现BNL? </strong><br>被驱动表upm_workflow_apply_info_relation的驱动字段workflow_apply_id 并没有加索引。导致在表被join时候，MySQL使用了BNL算法。<br><img src="/2019/09/11/慢SQL排查-join太慢/table.png" width="800" height="600" align="center"><br>因此优化第一条就是加索引：<br><img src="/2019/09/11/慢SQL排查-join太慢/1.png" width="800" height="600" align="center"><br>另外第二条优化，经同事提醒驱动表upm_workflow_apply_v2的username 字符串的索引查询效率要远低于user_id 的索引效率。因此修改查询语句条件 “username =” 改为  “user_id =”<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">r.apply_type as applyType, count(DISTINCT(r.apply_value)) as count</span><br><span class="line">from</span><br><span class="line">upm_workflow_apply_v2 apply,</span><br><span class="line">upm_workflow_apply_info_relation r</span><br><span class="line">where</span><br><span class="line">apply.id = r.workflow_apply_id</span><br><span class="line">and apply.is_delete = 0</span><br><span class="line">and r.is_delete = 0</span><br><span class="line">and user_id = &quot;123123&quot;</span><br><span class="line">and status = 1</span><br><span class="line">group by r.apply_type</span><br></pre></td></tr></table></figure></p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>遇到join语句性能瓶颈的时候，explain一下，如果出现了BNL，一定要优化，要给被驱动表加索引。<br>要小表驱动大表</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/">慢SQL排查- join太慢</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/">https://gsmtoday.github.io/2019/09/11/慢SQL排查-join太慢/</a></li>
+            <li><strong>发布时间：</strong>2019-09-11</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/21/flink-upm/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">使用Flink进行权限申请实时推荐</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/09/03/BeanUtils中HashMap触发死循环/">
+                <span class="level-item">BeanUtils中HashMap触发死循环</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#背景">
+        <span class="has-mr-6">1</span>
+        <span>背景</span>
+        </a></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">2</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

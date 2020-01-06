@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>PHP哈希表内核实现 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="毫无疑问，Hash表是php语言最重要的数据结构。话不多说，看一下php7中HashTable的定义：">
+<meta name="keywords" content="PHP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PHP哈希表内核实现">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/03/21/php-hashtable/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="毫无疑问，Hash表是php语言最重要的数据结构。话不多说，看一下php7中HashTable的定义：">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/21/php-hashtable/HashTable.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/21/php-hashtable/example.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.126Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PHP哈希表内核实现">
+<meta name="twitter:description" content="毫无疑问，Hash表是php语言最重要的数据结构。话不多说，看一下php7中HashTable的定义：">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/03/21/php-hashtable/HashTable.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/puffin.jpeg" alt="PHP哈希表内核实现">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-03-21T03:10:56.000Z">2018-03-21</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    24 分钟 读完 (大约 3574 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                PHP哈希表内核实现
+            
+        </h1>
+        <div class="content">
+            <p>毫无疑问，Hash表是php语言最重要的数据结构。<br>话不多说，看一下php7中HashTable的定义：</p>
+<a id="more"></a>
+<h2 id="HashTable-结构定义"><a href="#HashTable-结构定义" class="headerlink" title="HashTable 结构定义"></a>HashTable 结构定义</h2><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> _<span class="hljs-title">zend_array</span> <span class="hljs-title">HashTable</span>;</span></span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> _<span class="hljs-title">zend_array</span> &#123;</span></span><br><span class="line">	zend_refcounted_h gc;               ／* gc引用计数 *／</span><br><span class="line">	<span class="hljs-keyword">union</span> &#123;</span><br><span class="line">		<span class="hljs-class"><span class="hljs-keyword">struct</span> &#123;</span></span><br><span class="line">			ZEND_ENDIAN_LOHI_4(</span><br><span class="line">				zend_uchar    flags,</span><br><span class="line">				zend_uchar    _unused,</span><br><span class="line">				zend_uchar    nIteratorsCount,</span><br><span class="line">				zend_uchar    consistency)</span><br><span class="line">		&#125; v;</span><br><span class="line">		<span class="hljs-keyword">uint32_t</span> flags;                    <span class="hljs-comment">/* 哈希表的标记信息，包括类型标志，迭代器计数等 */</span></span><br><span class="line">	&#125; u;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span>          nTableMask;        <span class="hljs-comment">/* 散列表掩码 */</span></span><br><span class="line">	Bucket            * arData;           <span class="hljs-comment">/* Bucket数组首指针 */</span></span><br><span class="line">	<span class="hljs-keyword">uint32_t</span>          nNumUsed;          <span class="hljs-comment">/* 已用Bucket计数 */</span></span><br><span class="line">	<span class="hljs-keyword">uint32_t</span>          nNumOfElements;    <span class="hljs-comment">/* 有效元素计数，nNumOfElements = nNumUsed - UNDEF(Bucket.val) */</span></span><br><span class="line">	<span class="hljs-keyword">uint32_t</span>          nTableSize;        <span class="hljs-comment">/* 哈希表总大小 */</span></span><br><span class="line">	<span class="hljs-keyword">uint32_t</span>          nInternalPointer;  <span class="hljs-comment">/* 内部指针，提供给迭代器使用，默认用于标注第一个有效的元素在Bucket数组中的位置 */</span></span><br><span class="line">	zend_long         nNextFreeElement;  <span class="hljs-comment">/* 下一个可用的数值索引,如:arr[] = 1;arr["a"] = 2;nNextFreeElement = 1; */</span></span><br><span class="line">	<span class="hljs-keyword">dtor_func_t</span>       pDestructor;       <span class="hljs-comment">/* 无效Bucket value的销毁函数指针 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>其中arData指向了哈希表中元素的实际存储位置，其他字段用于计数，定位hash key，执行迭代等辅助操作。</p>
+<p>Bucket的结构也比较简洁，包含三个信息，元素的key， value，以及相应的hash值：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">typedef</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> _<span class="hljs-title">Bucket</span> &#123;</span></span><br><span class="line">	zval              val;              <span class="hljs-comment">/* HashTable value */</span></span><br><span class="line">	zend_ulong        h;                <span class="hljs-comment">/* hash value (or numeric index) for key */</span></span><br><span class="line">	zend_string      *key;              <span class="hljs-comment">/* string key or NULL for numerics */</span></span><br><span class="line">&#125; Bucket;</span><br></pre></td></tr></table></figure>
+<p>如下图所示，与PHP5不同的是，HashTable的数据结构发生的巨大的变化，取消了原有按key映射双向链表的模式，而采用一维数组统一管理。</p>
+<p><img src="/2018/03/21/php-hashtable/HashTable.jpg" alt="HashTable"></p>
+<p>好处在于：</p>
+<ul>
+<li>加速寻值定位，直接利用hash值计算得到索引，在一维数组上通过指针运算定位元素，效率更高。</li>
+<li>数组的结构形式能够很好的利用cpu cache的性能，减少cpu cache命中失败的次数。(延伸阅读：<a href="http://cenalulu.github.io/linux/all-about-cpu-cache/" target="_blank" rel="noopener">cpu cache line</a> )</li>
+<li>简化Bucket的管理，不需要双向链表维持插入顺序，利用数组的天然优势，减少了Bucket结构的冗余信息，指针内存以及分配操作。</li>
+</ul>
+<p>既然arData并不是按key映射的散列表，那么映射函数是如何将key与arData中的value建立映射关系的呢？实际上这个散列表也在arData中，比较特别的是散列表在ht-&gt;arData内存之前，分配内存时这个散列表(散列表)与Bucket数组一起分配。arData向后移动到了Bucket数组的起始位置，并不是申请内存的起始位置，这样散列表可以由arData指针向前移动访问到，即arData[-1]、arData[-2]、arData[-3]……<br>散列表的结构是uint32_t，它保存的是value在Bucket数组中的位置。</p>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>先看一段简单的PHP代码：<br><figure class="highlight php hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$arr[<span class="hljs-string">"a"</span>] = <span class="hljs-number">1</span>;</span><br><span class="line">$arr[<span class="hljs-string">"b"</span>] = <span class="hljs-number">2</span>;</span><br><span class="line">$arr[<span class="hljs-string">"c"</span>] = <span class="hljs-number">3</span>;</span><br><span class="line">$arr[<span class="hljs-string">"d"</span>] = <span class="hljs-number">4</span>;</span><br><span class="line"><span class="hljs-keyword">unset</span>($arr[<span class="hljs-string">"c"</span>]);</span><br></pre></td></tr></table></figure></p>
+<p>在PHP7的内核实现中，其对应的表示如下：</p>
+<p><img src="/2018/03/21/php-hashtable/example.jpg" alt="example"></p>
+<p>有了整体的数据结构支持，我们详细的来看一下，常见哈希表操作(包括外部接口与内部调整)的具体实现方式。PHP7的哈希表实现针对不同的操作场景提供了不同的操作接口，比如数值key插入，字符串key插入等，根据语法分析过程生产的opcode和操作数的不同，在zend_vm_execute的入口函数中会调用不同的哈希表接口处理。</p>
+<p>本文只选择字符串类型插入的过程来分析，帮助加深对哈希表实现的理解，对于需要特别区分的地方，会单独描述。</p>
+<h3 id="初始化：void-zend-hash-real-init-ex-HashTable-ht-int-packed"><a href="#初始化：void-zend-hash-real-init-ex-HashTable-ht-int-packed" class="headerlink" title="初始化：void zend_hash_real_init_ex(HashTable *ht, int packed)"></a>初始化：void zend_hash_real_init_ex(HashTable *ht, int packed)</h3><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">static</span> zend_always_inline <span class="hljs-keyword">void</span> <span class="hljs-title">zend_hash_real_init_ex</span><span class="hljs-params">(HashTable *ht, <span class="hljs-keyword">int</span> packed)</span></span></span><br><span class="line"><span class="hljs-function"></span>&#123;</span><br><span class="line">    HT_ASSERT_RC1(ht);</span><br><span class="line">    ZEND_ASSERT(!((ht)-&gt;u.flags &amp; HASH_FLAG_INITIALIZED));</span><br><span class="line">    <span class="hljs-keyword">if</span> (packed) &#123;                   <span class="hljs-comment">/*压缩数组，针对hash key为完美连续自然数的场景优化，参考https://phpinternals.net/docs/hash_flag_packed*/</span></span><br><span class="line">         HT_SET_DATA_ADDR(ht, pemalloc(HT_SIZE(ht), GC_FLAGS(ht) &amp; IS_ARRAY_PERSISTENT));  <span class="hljs-comment">/*分配Bucket数组及散列表*/</span></span><br><span class="line">         (ht)-&gt;u.flags |= HASH_FLAG_INITIALIZED | HASH_FLAG_PACKED;</span><br><span class="line">         HT_HASH_RESET_PACKED(ht); ／*压缩数组直接使用整数key作为hash索引，进一步减少了定位开销，所以也就不要前置的散列表*／</span><br><span class="line">   &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        (ht)-&gt;nTableMask = -(ht)-&gt;nTableSize;</span><br><span class="line">        HT_SET_DATA_ADDR(ht, pemalloc(HT_SIZE(ht), GC_FLAGS(ht) &amp; IS_ARRAY_PERSISTENT));</span><br><span class="line">        (ht)-&gt;u.flags |= HASH_FLAG_INITIALIZED;</span><br><span class="line">        <span class="hljs-keyword">if</span> (EXPECTED(ht-&gt;nTableMask == (<span class="hljs-keyword">uint32_t</span>)<span class="hljs-number">-8</span>)) &#123; <span class="hljs-comment">/*初始化散列表*/</span></span><br><span class="line">              Bucket *arData = ht-&gt;arData;</span><br><span class="line">              HT_HASH_EX(arData, <span class="hljs-number">-8</span>) = <span class="hljs-number">-1</span>;</span><br><span class="line">              HT_HASH_EX(arData, <span class="hljs-number">-7</span>) = <span class="hljs-number">-1</span>;</span><br><span class="line">              ...</span><br><span class="line">              HT_HASH_EX(arData, <span class="hljs-number">-1</span>) = <span class="hljs-number">-1</span>;</span><br><span class="line">       &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">             HT_HASH_RESET(ht);</span><br><span class="line">       &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>初始化的操作主要完成了Bucket首地址arData的设置与散列表的初始赋值。<br>取Bucket头指针的宏定义，可见分配内存时，申请了物理上连续，逻辑上分开的两段内存，即散列表与Bucket数组。</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> HT_SET_DATA_ADDR(ht, ptr) do &#123;</span></span><br><span class="line">        (ht)-&gt;arData = (Bucket*)(((<span class="hljs-keyword">char</span>*)(ptr)) + HT_HASH_SIZE((ht)-&gt;nTableMask));</span><br><span class="line">&#125; <span class="hljs-keyword">while</span> (<span class="hljs-number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> HT_HASH_SIZE(nTableMask) \ 取nTableMask的负数</span></span><br><span class="line">        (((<span class="hljs-keyword">size_t</span>)(<span class="hljs-keyword">uint32_t</span>)-(<span class="hljs-keyword">int32_t</span>)(nTableMask)) * <span class="hljs-keyword">sizeof</span>(<span class="hljs-keyword">uint32_t</span>))</span><br></pre></td></tr></table></figure>
+<h3 id="添加元素-zval-zend-hash-add-or-update-i-HashTable-ht-zend-string-key-zval-pData-uint32-t-flag-ZEND-FILE-LINE-DC"><a href="#添加元素-zval-zend-hash-add-or-update-i-HashTable-ht-zend-string-key-zval-pData-uint32-t-flag-ZEND-FILE-LINE-DC" class="headerlink" title="添加元素: zval *_zend_hash_add_or_update_i(HashTable *ht, zend_string *key, zval *pData, uint32_t flag ZEND_FILE_LINE_DC)"></a>添加元素: zval *_zend_hash_add_or_update_i(HashTable *ht, zend_string *key, zval *pData, uint32_t flag ZEND_FILE_LINE_DC)</h3><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">static</span> zend_always_inline zval *_zend_hash_add_or_update_i(HashTable *ht, zend_string *key, zval *pData, <span class="hljs-keyword">uint32_t</span> flag ZEND_FILE_LINE_DC)</span><br><span class="line">&#123;</span><br><span class="line">	zend_ulong h;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> nIndex;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> idx;</span><br><span class="line">	Bucket *p;</span><br><span class="line">	IS_CONSISTENT(ht);</span><br><span class="line">	HT_ASSERT_RC1(ht);</span><br><span class="line">	<span class="hljs-keyword">if</span> (UNEXPECTED(!(ht-&gt;u.flags &amp; HASH_FLAG_INITIALIZED))) &#123;</span><br><span class="line">		CHECK_INIT(ht, <span class="hljs-number">0</span>);</span><br><span class="line">		<span class="hljs-keyword">if</span> (!ZSTR_IS_INTERNED(key)) &#123;</span><br><span class="line">			zend_string_addref(key); 				          <span class="hljs-comment">//为key添加引用计数</span></span><br><span class="line">			ht-&gt;u.flags \&amp;= ~HASH_FLAG_STATIC_KEYS;   <span class="hljs-comment">//非内部key</span></span><br><span class="line">			zend_string_hash_val(key); 				        <span class="hljs-comment">//计算key的hash值 time 33算法</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">goto</span> add_to_hash;</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (ht-&gt;u.flags &amp; HASH_FLAG_PACKED) &#123;</span><br><span class="line">		zend_hash_packed_to_hash(ht); 				      <span class="hljs-comment">//转换为非自然序的形式，重构散列表</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (!ZSTR_IS_INTERNED(key)) &#123;</span><br><span class="line">			zend_string_addref(key);</span><br><span class="line">			ht-&gt;u.flags \&amp;= ~HASH_FLAG_STATIC_KEYS;</span><br><span class="line">			zend_string_hash_val(key);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> ((flag &amp; HASH_ADD_NEW) == <span class="hljs-number">0</span>) &#123; 		  <span class="hljs-comment">//添加新元素</span></span><br><span class="line">		p = zend_hash_find_bucket(ht, key, <span class="hljs-number">0</span>); 		  <span class="hljs-comment">//按key寻找</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (p) &#123; 									                  <span class="hljs-comment">//如果找到了数据，就detroy掉老数据，然后用传入的data覆盖掉旧数据</span></span><br><span class="line">			zval *data;</span><br><span class="line">			<span class="hljs-keyword">if</span> (flag &amp; HASH_ADD) &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> (!(flag &amp; HASH_UPDATE_INDIRECT)) &#123;</span><br><span class="line">					<span class="hljs-keyword">return</span> <span class="hljs-literal">NULL</span>;</span><br><span class="line">				&#125;</span><br><span class="line">				ZEND_ASSERT(&amp;p-&gt;val != pData);</span><br><span class="line">				data = &amp;p-&gt;val;</span><br><span class="line">				<span class="hljs-keyword">if</span> (Z_TYPE_P(data) == IS_INDIRECT) &#123;</span><br><span class="line">					data = Z_INDIRECT_P(data);</span><br><span class="line">					<span class="hljs-keyword">if</span> (Z_TYPE_P(data) != IS_UNDEF) &#123;</span><br><span class="line">						<span class="hljs-keyword">return</span> <span class="hljs-literal">NULL</span>;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					<span class="hljs-keyword">return</span> <span class="hljs-literal">NULL</span>;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				ZEND_ASSERT(&amp;p-&gt;val != pData);</span><br><span class="line">				data = &amp;p-&gt;val;</span><br><span class="line">				<span class="hljs-keyword">if</span> ((flag &amp; HASH_UPDATE_INDIRECT) &amp;&amp; Z_TYPE_P(data) == IS_INDIRECT) &#123;</span><br><span class="line">					data = Z_INDIRECT_P(data);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> (ht-&gt;pDestructor) &#123;</span><br><span class="line">				ht-&gt;pDestructor(data);</span><br><span class="line">			&#125;</span><br><span class="line">			ZVAL_COPY_VALUE(data, pData);</span><br><span class="line">			<span class="hljs-keyword">return</span> data;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!ZSTR_IS_INTERNED(key)) &#123;</span><br><span class="line">			zend_string_addref(key);</span><br><span class="line">			ht-&gt;u.flags &amp;= ~HASH_FLAG_STATIC_KEYS;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!ZSTR_IS_INTERNED(key)) &#123;</span><br><span class="line">		zend_string_addref(key);</span><br><span class="line">		ht-&gt;u.flags &amp;= ~HASH_FLAG_STATIC_KEYS;</span><br><span class="line">		zend_string_hash_val(key);</span><br><span class="line">	&#125;</span><br><span class="line">	ZEND_HASH_IF_FULL_DO_RESIZE(ht);		<span class="hljs-comment">/* If the Hash table is full, resize it */</span></span><br><span class="line">add_to_hash:</span><br><span class="line">	idx = ht-&gt;nNumUsed++; 						         <span class="hljs-comment">//获取存储位置，idx</span></span><br><span class="line">	ht-&gt;nNumOfElements++; 						         <span class="hljs-comment">//有效计数+1</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (ht-&gt;nInternalPointer == HT_INVALID_IDX) &#123;</span><br><span class="line">		ht-&gt;nInternalPointer = idx; 首次插入，更新nInternalPointer</span><br><span class="line">	&#125;</span><br><span class="line">	zend_hash_iterators_update(ht, HT_INVALID_IDX, idx);</span><br><span class="line">	p = ht-&gt;arData + idx;</span><br><span class="line">	p-&gt;key = key;</span><br><span class="line">	p-&gt;h = h = ZSTR_H(key);</span><br><span class="line">	ZVAL_COPY_VALUE(&amp;p-&gt;val, pData); 			      <span class="hljs-comment">//value赋值</span></span><br><span class="line">	nIndex = h | ht-&gt;nTableMask; 				        <span class="hljs-comment">//计算idx在散列表的位置</span></span><br><span class="line">	Z_NEXT(p-&gt;val) = HT_HASH(ht, nIndex); 		  <span class="hljs-comment">// 拉链，指向当前散列表上标记的元素， #define Z_NEXT(zval)	(zval).u2.next</span></span><br><span class="line">	HT_HASH(ht, nIndex) = HT_IDX_TO_HASH(idx);  <span class="hljs-comment">//更新散列表元素值</span></span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;p-&gt;val;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>针对插入过程，除去一些初始化检查，压缩数组类型变化及是否需要扩容check操作，比较核心的是goto标记add_to_hash位置开始的内容：<br>首先按照插入顺序，放入Buckdet数组下一个可以位置，哈希表计数更新。以此位置为索引，填充传入的value。当发生碰撞，采用头插法，(zval).u2.next记录下一个相同散列值元素的位置。最后更新散列表中的索引值。</p>
+<h2 id="扩容resize-zend-hash-do-resize-HashTable-ht"><a href="#扩容resize-zend-hash-do-resize-HashTable-ht" class="headerlink" title="扩容resize: zend_hash_do_resize(HashTable *ht)"></a>扩容resize: zend_hash_do_resize(HashTable *ht)</h2><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> ZEND_FASTCALL <span class="hljs-title">zend_hash_do_resize</span><span class="hljs-params">(HashTable *ht)</span></span></span><br><span class="line"><span class="hljs-function"></span>&#123;</span><br><span class="line">  IS_CONSISTENT(ht);</span><br><span class="line">	HT_ASSERT_RC1(ht);</span><br><span class="line">	<span class="hljs-keyword">if</span> (ht-&gt;nNumUsed &gt; ht-&gt;nNumOfElements + (ht-&gt;nNumOfElements &gt;&gt; <span class="hljs-number">5</span>)) &#123; 		<span class="hljs-comment">/* additional term is there to amortize the cost of compaction */</span></span><br><span class="line">		zend_hash_rehash(ht);</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (ht-&gt;nTableSize &lt; HT_MAX_SIZE) &#123;									    <span class="hljs-comment">/* Let's double the table size */</span></span><br><span class="line">		<span class="hljs-keyword">void</span> *new_data, *old_data = HT_GET_DATA_ADDR(ht); 						     <span class="hljs-comment">//获取索引数组的头指针</span></span><br><span class="line">		<span class="hljs-keyword">uint32_t</span> nSize = ht-&gt;nTableSize + ht-&gt;nTableSize; 						     <span class="hljs-comment">//计算新表容量</span></span><br><span class="line">		Bucket *old_buckets = ht-&gt;arData;</span><br><span class="line">		new_data = pemalloc(HT_SIZE_EX(nSize, -nSize), GC_FLAGS(ht) &amp; IS_ARRAY_PERSISTENT);</span><br><span class="line">		ht-&gt;nTableSize = nSize;</span><br><span class="line">		ht-&gt;nTableMask = -ht-&gt;nTableSize;</span><br><span class="line">		HT_SET_DATA_ADDR(ht, new_data); 										                <span class="hljs-comment">//重置Bucket首指针</span></span><br><span class="line">		<span class="hljs-built_in">memcpy</span>(ht-&gt;arData, old_buckets, <span class="hljs-keyword">sizeof</span>(Bucket) * ht-&gt;nNumUsed);			<span class="hljs-comment">//由于Bucket数组按照插入顺序放置元素，直接拷贝旧数据到新表</span></span><br><span class="line">		pefree(old_data, GC_FLAGS(ht) &amp; IS_ARRAY_PERSISTENT); 					    <span class="hljs-comment">//释放旧数据</span></span><br><span class="line">		zend_hash_rehash(ht); 													                    <span class="hljs-comment">//rehash，重新计算索引</span></span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		zend_error_noreturn(E_ERROR, <span class="hljs-string">"Possible integer overflow in memory allocation (%u * %zu + %zu)"</span>, ht-&gt;nTableSize * <span class="hljs-number">2</span>, <span class="hljs-keyword">sizeof</span>(Bucket) + <span class="hljs-keyword">sizeof</span>(<span class="hljs-keyword">uint32_t</span>), <span class="hljs-keyword">sizeof</span>(Bucket));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>比较简单，<em>double size</em> =》<em>alloc memory</em> =》<em>rehash</em></p>
+<h2 id="rehash-zend-hash-rehash-HashTable-ht）"><a href="#rehash-zend-hash-rehash-HashTable-ht）" class="headerlink" title="rehash: zend_hash_rehash(HashTable *ht）"></a>rehash: zend_hash_rehash(HashTable *ht）</h2><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function">ZEND_API <span class="hljs-keyword">int</span> ZEND_FASTCALL <span class="hljs-title">zend_hash_rehash</span><span class="hljs-params">(HashTable *ht)</span></span></span><br><span class="line"><span class="hljs-function"></span>&#123;</span><br><span class="line">	Bucket *p;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> nIndex, i;</span><br><span class="line">	IS_CONSISTENT(ht);</span><br><span class="line">	<span class="hljs-keyword">if</span> (UNEXPECTED(ht-&gt;nNumOfElements == <span class="hljs-number">0</span>)) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (ht-&gt;u.flags &amp; HASH_FLAG_INITIALIZED) &#123;</span><br><span class="line">			ht-&gt;nNumUsed = <span class="hljs-number">0</span>;</span><br><span class="line">			HT_HASH_RESET(ht);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> SUCCESS;</span><br><span class="line">	&#125;</span><br><span class="line">	HT_HASH_RESET(ht);             <span class="hljs-comment">//重置所有索引数组值为-1</span></span><br><span class="line">	i = <span class="hljs-number">0</span>;</span><br><span class="line">	p = ht-&gt;arData;</span><br><span class="line">	<span class="hljs-keyword">if</span> (HT_IS_WITHOUT_HOLES(ht)) &#123; <span class="hljs-comment">//没有UNDEF的value，遍历Bucket数组，计算索引值，并填充索引数组</span></span><br><span class="line">		<span class="hljs-keyword">do</span> &#123;</span><br><span class="line">			nIndex = p-&gt;h | ht-&gt;nTableMask;</span><br><span class="line">			Z_NEXT(p-&gt;val) = HT_HASH(ht, nIndex);</span><br><span class="line">			HT_HASH(ht, nIndex) = HT_IDX_TO_HASH(i);</span><br><span class="line">			p++;</span><br><span class="line">		&#125; <span class="hljs-keyword">while</span> (++i &lt; ht-&gt;nNumUsed);</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">do</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (UNEXPECTED(Z_TYPE(p-&gt;val) == IS_UNDEF)) &#123;</span><br><span class="line">				<span class="hljs-keyword">uint32_t</span> j = i;</span><br><span class="line">				Bucket *q = p;</span><br><span class="line">				<span class="hljs-keyword">if</span> (EXPECTED(ht-&gt;u.v.nIteratorsCount == <span class="hljs-number">0</span>)) &#123;       <span class="hljs-comment">//没有迭代器在使用</span></span><br><span class="line">					<span class="hljs-keyword">while</span> (++i &lt; ht-&gt;nNumUsed) &#123;</span><br><span class="line">						p++;</span><br><span class="line">						<span class="hljs-keyword">if</span> (EXPECTED(Z_TYPE_INFO(p-&gt;val) != IS_UNDEF)) &#123; <span class="hljs-comment">//有效的数据重新拷贝到前一个位置，并重置索引，无效的跳过，被后面的有效值覆盖掉</span></span><br><span class="line">							ZVAL_COPY_VALUE(&amp;q-&gt;val, &amp;p-&gt;val);</span><br><span class="line">							q-&gt;h = p-&gt;h;</span><br><span class="line">							nIndex = q-&gt;h | ht-&gt;nTableMask;</span><br><span class="line">							q-&gt;key = p-&gt;key;</span><br><span class="line">							Z_NEXT(q-&gt;val) = HT_HASH(ht, nIndex);</span><br><span class="line">							HT_HASH(ht, nIndex) = HT_IDX_TO_HASH(j);</span><br><span class="line">							<span class="hljs-keyword">if</span> (UNEXPECTED(ht-&gt;nInternalPointer == i)) &#123;</span><br><span class="line">								ht-&gt;nInternalPointer = j;</span><br><span class="line">							&#125;</span><br><span class="line">							q++;</span><br><span class="line">							j++;</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					<span class="hljs-keyword">uint32_t</span> iter_pos = zend_hash_iterators_lower_pos(ht, <span class="hljs-number">0</span>);</span><br><span class="line">					<span class="hljs-keyword">while</span> (++i &lt; ht-&gt;nNumUsed) &#123;</span><br><span class="line">						p++;</span><br><span class="line">						<span class="hljs-keyword">if</span> (EXPECTED(Z_TYPE_INFO(p-&gt;val) != IS_UNDEF)) &#123;</span><br><span class="line">							ZVAL_COPY_VALUE(&amp;q-&gt;val, &amp;p-&gt;val);</span><br><span class="line">							q-&gt;h = p-&gt;h;</span><br><span class="line">							nIndex = q-&gt;h | ht-&gt;nTableMask;</span><br><span class="line">							q-&gt;key = p-&gt;key;</span><br><span class="line">							Z_NEXT(q-&gt;val) = HT_HASH(ht, nIndex);</span><br><span class="line">							HT_HASH(ht, nIndex) = HT_IDX_TO_HASH(j);</span><br><span class="line">							<span class="hljs-keyword">if</span> (UNEXPECTED(ht-&gt;nInternalPointer == i)) &#123;</span><br><span class="line">								ht-&gt;nInternalPointer = j;</span><br><span class="line">							&#125;</span><br><span class="line">							<span class="hljs-keyword">if</span> (UNEXPECTED(i == iter_pos)) &#123; <span class="hljs-comment">//更新迭代器的信息</span></span><br><span class="line">								zend_hash_iterators_update(ht, i, j);</span><br><span class="line">								iter_pos = zend_hash_iterators_lower_pos(ht, iter_pos + <span class="hljs-number">1</span>);</span><br><span class="line">							&#125;</span><br><span class="line">							q++;</span><br><span class="line">							j++;</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				ht-&gt;nNumUsed = j;</span><br><span class="line">				<span class="hljs-keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			nIndex = p-&gt;h | ht-&gt;nTableMask;</span><br><span class="line">			Z_NEXT(p-&gt;val) = HT_HASH(ht, nIndex);</span><br><span class="line">			HT_HASH(ht, nIndex) = HT_IDX_TO_HASH(i);</span><br><span class="line">			p++;</span><br><span class="line">		&#125; <span class="hljs-keyword">while</span> (++i &lt; ht-&gt;nNumUsed);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>rehash首先重置散列表到初始状态，如果当前哈希表内没有被标记为UNDEF的value，那么从Bucket数组的首地址开始遍历，重新设置散列表，并执行头插。<br>如果哈希表里有标记为UNDEF的value，则在遍历的过程中，忽略掉UNDEF的value，并使用下一个有效的value，覆盖当前UNDEF的value，同时完成散列表的更新和碰撞拉链。<br>如果当前哈希表有关联的迭代器，还需要把迭代器里的position更新为新的索引值。</p>
+<h2 id="查找的入口：Bucket-zend-hash-find-bucket-const-HashTable-ht-zend-string-key-zend-bool-known-hash"><a href="#查找的入口：Bucket-zend-hash-find-bucket-const-HashTable-ht-zend-string-key-zend-bool-known-hash" class="headerlink" title="查找的入口：Bucket *zend_hash_find_bucket(const HashTable *ht, zend_string *key, zend_bool known_hash)"></a>查找的入口：Bucket *zend_hash_find_bucket(const HashTable *ht, zend_string *key, zend_bool known_hash)</h2><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">static</span> zend_always_inline Bucket *<span class="hljs-title">zend_hash_find_bucket</span><span class="hljs-params">(<span class="hljs-keyword">const</span> HashTable *ht, zend_string *key, zend_bool known_hash)</span></span></span><br><span class="line"><span class="hljs-function"></span>&#123;</span><br><span class="line">	zend_ulong h;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> nIndex;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> idx;</span><br><span class="line">	Bucket *p, *arData;</span><br><span class="line">	<span class="hljs-keyword">if</span> (known_hash) &#123;                <span class="hljs-comment">//hash值是否已经保存在string的字段中</span></span><br><span class="line">		h = ZSTR_H(key);</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		h = zend_string_hash_val(key);</span><br><span class="line">	&#125;</span><br><span class="line">	arData = ht-&gt;arData;</span><br><span class="line">	nIndex = h | ht-&gt;nTableMask;</span><br><span class="line">	idx = HT_HASH_EX(arData, nIndex); <span class="hljs-comment">//计算Bucket数组中的idx</span></span><br><span class="line">	<span class="hljs-keyword">while</span> (EXPECTED(idx != HT_INVALID_IDX)) &#123;</span><br><span class="line">		p = HT_HASH_TO_BUCKET_EX(arData, idx);</span><br><span class="line">		<span class="hljs-keyword">if</span> (EXPECTED(p-&gt;key == key)) &#123;  <span class="hljs-comment">/* check for the same interned string */</span></span><br><span class="line">			<span class="hljs-keyword">return</span> p;	                    <span class="hljs-comment">//key的内存地址一样</span></span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (EXPECTED(p-&gt;h == h) &amp;&amp;</span><br><span class="line">		     EXPECTED(p-&gt;key) &amp;&amp;</span><br><span class="line">		     EXPECTED(zend_string_equal_content(p-&gt;key, key))) &#123;<span class="hljs-comment">//key的内容一样</span></span><br><span class="line">			<span class="hljs-keyword">return</span> p;</span><br><span class="line">		&#125;</span><br><span class="line">		idx = Z_NEXT(p-&gt;val);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>哈希表的查找过程也比较简单：<em>locate bucket</em> =》<em>search for collision chain</em> =》<em>compare key and return value</em></p>
+<h2 id="删除的入口：-zend-hash-del-HashTable-ht-zend-string-key"><a href="#删除的入口：-zend-hash-del-HashTable-ht-zend-string-key" class="headerlink" title="删除的入口： zend_hash_del(HashTable *ht, zend_string *key)"></a>删除的入口： zend_hash_del(HashTable *ht, zend_string *key)</h2><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function">ZEND_API <span class="hljs-keyword">int</span> ZEND_FASTCALL <span class="hljs-title">zend_hash_del</span><span class="hljs-params">(HashTable *ht, zend_string *key)</span></span></span><br><span class="line"><span class="hljs-function"></span>&#123;</span><br><span class="line">	zend_ulong h;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> nIndex;</span><br><span class="line">	<span class="hljs-keyword">uint32_t</span> idx;</span><br><span class="line">	Bucket *p;</span><br><span class="line">	Bucket *prev = <span class="hljs-literal">NULL</span>;</span><br><span class="line">	IS_CONSISTENT(ht);</span><br><span class="line">	HT_ASSERT_RC1(ht);</span><br><span class="line">	h = zend_string_hash_val(key);</span><br><span class="line">	nIndex = h | ht-&gt;nTableMask;</span><br><span class="line">	idx = HT_HASH(ht, nIndex);</span><br><span class="line">	<span class="hljs-keyword">while</span> (idx != HT_INVALID_IDX) &#123;</span><br><span class="line">		p = HT_HASH_TO_BUCKET(ht, idx);</span><br><span class="line">		<span class="hljs-keyword">if</span> ((p-&gt;key == key) ||</span><br><span class="line">			(p-&gt;h == h &amp;&amp;</span><br><span class="line">		     p-&gt;key &amp;&amp;</span><br><span class="line">		     zend_string_equal_content(p-&gt;key, key))) &#123; <span class="hljs-comment">//找到当前元素，并标记前驱节点</span></span><br><span class="line">			_zend_hash_del_el_ex(ht, idx, p, prev);</span><br><span class="line">			<span class="hljs-keyword">return</span> SUCCESS;</span><br><span class="line">		&#125;</span><br><span class="line">		prev = p;</span><br><span class="line">		idx = Z_NEXT(p-&gt;val);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> FAILURE;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">static</span> zend_always_inline <span class="hljs-keyword">void</span> _zend_hash_del_el_ex(HashTable *ht, <span class="hljs-keyword">uint32_t</span> idx, Bucket *p, Bucket *prev)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!(ht-&gt;u.flags &amp; HASH_FLAG_PACKED)) &#123; <span class="hljs-comment">//非压缩数组</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (prev) &#123;                            <span class="hljs-comment">//有前驱节点，前驱节点的后继指向当前节点的后继</span></span><br><span class="line">			Z_NEXT(prev-&gt;val) = Z_NEXT(p-&gt;val);</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;                               <span class="hljs-comment">//否则，更新散列表中的值为后继节点的idx</span></span><br><span class="line">			HT_HASH(ht, p-&gt;h | ht-&gt;nTableMask) = Z_NEXT(p-&gt;val);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (HT_IDX_TO_HASH(ht-&gt;nNumUsed - <span class="hljs-number">1</span>) == idx) &#123;</span><br><span class="line">		<span class="hljs-comment">//如果删除的是Bucket数组中最后一个填充的元素，循环往前忽略掉UNDEF的Bucket</span></span><br><span class="line">		<span class="hljs-keyword">do</span> &#123;</span><br><span class="line">			ht-&gt;nNumUsed--;</span><br><span class="line">		&#125; <span class="hljs-keyword">while</span> (ht-&gt;nNumUsed &gt; <span class="hljs-number">0</span> &amp;&amp; (UNEXPECTED(Z_TYPE(ht-&gt;arData[ht-&gt;nNumUsed<span class="hljs-number">-1</span>].val) == IS_UNDEF)));</span><br><span class="line">	&#125;</span><br><span class="line">	ht-&gt;nNumOfElements--;</span><br><span class="line">	<span class="hljs-keyword">if</span> (HT_IDX_TO_HASH(ht-&gt;nInternalPointer) == idx || UNEXPECTED(ht-&gt;u.v.nIteratorsCount)) &#123;</span><br><span class="line">		<span class="hljs-keyword">uint32_t</span> new_idx;                       <span class="hljs-comment">//删除的是nInternalPointer位置的元素</span></span><br><span class="line">		new_idx = idx = HT_HASH_TO_IDX(idx);</span><br><span class="line">		<span class="hljs-keyword">while</span> (<span class="hljs-number">1</span>) &#123;</span><br><span class="line">			new_idx++;</span><br><span class="line">			<span class="hljs-keyword">if</span> (new_idx &gt;= ht-&gt;nNumUsed) &#123;</span><br><span class="line">				new_idx = HT_INVALID_IDX;</span><br><span class="line">				<span class="hljs-keyword">break</span>;</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Z_TYPE(ht-&gt;arData[new_idx].val) != IS_UNDEF) &#123; <span class="hljs-comment">//找到第一个非UNDEF的元素为foreach的起点</span></span><br><span class="line">				<span class="hljs-keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (ht-&gt;nInternalPointer == idx) &#123;</span><br><span class="line">			ht-&gt;nInternalPointer = new_idx;</span><br><span class="line">		&#125;</span><br><span class="line">		zend_hash_iterators_update(ht, idx, new_idx); <span class="hljs-comment">//更新迭代器的位置</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (p-&gt;key) &#123;</span><br><span class="line">		zend_string_release(p-&gt;key); <span class="hljs-comment">//释放key</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (ht-&gt;pDestructor) &#123;         <span class="hljs-comment">//当前的value设为undef，如果Destructor不为空，destory掉老的value</span></span><br><span class="line">		zval tmp;</span><br><span class="line">		ZVAL_COPY_VALUE(&amp;tmp, &amp;p-&gt;val);</span><br><span class="line">		ZVAL_UNDEF(&amp;p-&gt;val);</span><br><span class="line">		ht-&gt;pDestructor(&amp;tmp);</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		ZVAL_UNDEF(&amp;p-&gt;val);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在执行元素的删除时，首先按照hash find的方式，查找的目标key所在的Bucket，因为涉及到collision chain的调整，所以还需要标记一下当前节点的前驱节点。<br>真正在执行元素删除时，如果有前驱节点，则把前驱节点的后继指向下一个节点，否则直接更新散列表的值为后继节点的位置。<br>如果发现删除的元素是Bucket数组中的最后一个元素，此时会在Bucket数组中回溯，忽略掉UNDEF的value。相当于执行一次已删除元素的清理。<br>如果删除的是nInterPointer位置的元素，还需要更新一下这个值，指向第一个非UNDEF的元素位置，为foreach的起点，保证foreach的正确性。<br>最后如果设置的destructor则执行对于的销毁操作，并把当前的value置为UNDEF。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/03/21/php-hashtable/">PHP哈希表内核实现</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/03/21/php-hashtable/">https://gsmtoday.github.io/2018/03/21/php-hashtable/</a></li>
+            <li><strong>发布时间：</strong>2018-03-21</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/PHP/">PHP</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/03/26/rocketmq-broker/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">RocketMQ源码分析4--Broker模块</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/03/11/rocketmq-store/">
+                <span class="level-item">RocketMQ源码分析3--Store数据存储</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

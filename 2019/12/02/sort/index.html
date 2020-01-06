@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>工程中遇到的排序算法-实践篇 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="总结下经典的排序算法和工程中遇到的排序。">
+<meta name="keywords" content="算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="工程中遇到的排序算法-实践篇">
+<meta property="og:url" content="https://gsmtoday.github.io/2019/12/02/sort/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="总结下经典的排序算法和工程中遇到的排序。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.212Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="工程中遇到的排序算法-实践篇">
+<meta name="twitter:description" content="总结下经典的排序算法和工程中遇到的排序。">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/starbuck.jpeg" alt="工程中遇到的排序算法-实践篇">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-02T02:42:00.000Z">2019-12-02</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    13 分钟 读完 (大约 1952 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                工程中遇到的排序算法-实践篇
+            
+        </h1>
+        <div class="content">
+            <p>总结下经典的排序算法和工程中遇到的排序。<br><a id="more"></a></p>
+<h1 id="开发语言的基础排序"><a href="#开发语言的基础排序" class="headerlink" title="开发语言的基础排序"></a>开发语言的基础排序</h1><h2 id="使用场景之C语言的qsort"><a href="#使用场景之C语言的qsort" class="headerlink" title="使用场景之C语言的qsort()"></a>使用场景之C语言的qsort()</h2><p>C语言的qsort() : </p>
+<ol>
+<li>当数据小的时候使用<strong>归并排序</strong>；</li>
+<li>当数据大的时候使用<strong>快速排序</strong>。并且选择分区点的方法就是三数取中法。qsort()自己实现了一个堆，手动模拟递归，避免递归太深导致的堆栈溢出。</li>
+<li>并且当要排序的区间元素个数&lt;=4的时候，qsort()就退化为<strong>插入排序</strong>，不再使用递归做快排。(对于小规模数据的排序，O(n2) 的排序算法并不一定比 $O(nlogn)$排序算法执行的时间长。对于小数据量的排序，就选择比较简单、不需要递归的插入排序算法。)</li>
+<li>插入排序使用了哨兵做优化，少了一次判断。</li>
+</ol>
+<h2 id="使用场景之Java的Arrays-sort"><a href="#使用场景之Java的Arrays-sort" class="headerlink" title="使用场景之Java的Arrays.sort()"></a>使用场景之Java的Arrays.sort()</h2><p>Java的Arrays.sort()主要使用了<a href="https://www.cnblogs.com/nullzx/p/5880191.html" target="_blank" rel="noopener">双轴快速排序（by Vladimir Yaroslavskiy, Jon Bentley, and Joshua Bloch)</a>，算法时间复杂度$O(nlogn)$。算法性能强于单哨兵的快排。但是并非单纯使用了一种算法就解决了所有排序问题，而是根据具体数组的情况采用合适的算法实现。</p>
+<p>算法原理：</p>
+<ul>
+<li>待排序元素length &lt; 47， 使用插入排序；</li>
+<li>待排序元素length &lt; 286，使用双轴快速排序；</li>
+<li>待排序元素length &gt; 286, 检测数组的连续升序和连续降序性好不好，如果好的话就选择TimSort算法（（一种改进的归并排序算法），不好的话使用双轴快速排序。</li>
+</ul>
+<p>可以看出整体思路与c语言的qsort()大致相同。</p>
+<h1 id="MySQL的排序"><a href="#MySQL的排序" class="headerlink" title="MySQL的排序"></a>MySQL的排序</h1><p>一句话概括：</p>
+<ol>
+<li>当内存放得下待排序数据（待排序数据小于sort_buffer_size时候），使用<strong>快速排序</strong>；</li>
+<li>当内存放不下，就使用<strong>归并排序算法</strong>外部排序临时文件。</li>
+<li>如果是Top-K场景并且没有超过K个数据大小没超过sort_buffer_size还会使用<strong>优先队列排序算法</strong>，利用堆来线性时间取Top-K优化性能, 并且不需要临时文件。</li>
+</ol>
+<p>具体还会根据select 的字段长度，避免内存装不下，分为了全字段排序和row id排序。rowid排序可以一次排序更多行，但是要回表取数据。</p>
+<p>MySQL做排序是一个成本比较高的操作，涉及到内存是否可以放下待排序数据，回表等问题。因此，更多时候可以利用覆盖索引技巧避免执行排序。</p>
+<h1 id="Redis的ZSET排序"><a href="#Redis的ZSET排序" class="headerlink" title="Redis的ZSET排序"></a>Redis的ZSET排序</h1><p>借助了跳表的数据结构实现了排序和$O(logn)$查找，跳表维持数据的动态插入和删除时间复杂度也是$O(logn)$。</p>
+<p>之所以选择跳表这个数据结构。是因为Redis ZSET核心操作主要有下面这几个：</p>
+<ul>
+<li>插入/删除/查找一个数据</li>
+<li>按照区间查找数据。</li>
+</ul>
+<p>对于按照区间查找数据这个操作，跳表可以做到$O(logn)$的时间复杂度定位区间的起点，然后在原始链表中顺序往后遍历就可以了。这样做相比于红黑树会非常高效。<br>另外，Redis之所以使用跳表实现有序结合，还有其他原因，比如跳表容易实现，更加灵活。</p>
+<h1 id="高性能定时器"><a href="#高性能定时器" class="headerlink" title="高性能定时器"></a>高性能定时器</h1><p>定时器需要判断每个任务是否到达任务执行时间，如果每过1s就扫描一遍任务列表的做法比较低效。</p>
+<ol>
+<li>任务的约定执行时间距离当前时间可能还有很久，前面很多次扫描都是徒劳的；</li>
+<li>每次都要扫描整个任务列表，如果任务列表很大的话，势必会比较耗时。</li>
+</ol>
+<p>Java的定时任务@Scheduled 使用<strong>堆</strong>组织任务，不必每秒都轮询一次。用优先级队列来解决。按照任务设定的执行时间，将这些任务存储在优先级队列中，队列首部（小顶堆的堆顶）存储的是最先执行的任务。<br>这样，定时起就不需要每隔1s就扫描一次任务列表里，它拿任务队首任务的执行时间点，与当前时间点相减，得到时间间隔T。 这个时间间隔T 就是从当前时间开始，需要等待多久，才会有第一个任务需要被执行。这样定时器就可以设定在Ts 之后，再来执行任务。从当前时间点到（T-1）秒这段时间里，定时器都不需要做任何事情。当 T 秒时间过去之后，定时器取优先级队列中队首的任务执行。然后再计算新的队首任务的执行时间点与当前时间点的差值，把这个值作为定时器执行下一个任务需要等待的时间。这样，定时器既不用间隔 1 秒就轮询一次，也不用遍历整个任务列表，性能也就提高了。</p>
+<h2 id="接口延时99分位"><a href="#接口延时99分位" class="headerlink" title="接口延时99分位"></a>接口延时99分位</h2><p>使用堆排序还可以解决求接口延时99分位值。</p>
+<p>99分位概念：如果有 100 个接口访问请求，每个接口请求的响应时间都不同，比如 55 毫秒、100 毫秒、23 毫秒等，我们把这 100 个接口的响应时间按照从小到大排列，排在第 99 的那个数据就是 99% 响应时间，也叫 99 百分位响应时间。总结一下，如果有 n 个数据，将数据从小到大排列之后，99 百分位数大约就是第 n<em>99% 个数据，同类，80 百分位数大约就是第 n</em>80% 个数据。</p>
+<p>求99分位延时：<br>维护两个堆，一个大顶堆，一个小顶堆。假设当前总数据个数是n, 大顶堆中保存n <em> 99%个数据，小顶堆中保存n</em>1%个数据。 大顶堆堆顶就是要找的99%响应时间。每次插入一个数据的时候，我们要判断这个数据跟大顶堆和小顶堆堆顶数据的大小关系，然后决定插入到哪个堆中。如果这个新插入的数据比大顶堆的堆顶数据小，那就插入大顶堆；如果这个新插入的数据比小顶堆的堆顶数据大，那就插入小顶堆。 </p>
+<p>但是，为了保持大顶堆中的数据占 99%，小顶堆中的数据占 1%，在每次新插入数据之后，我们都要重新计算，这个时候大顶堆和小顶堆中的数据个数，是否还符合 99:1 这个比例。如果不符合，我们就将一个堆中的数据移动到另一个堆，直到满足这个比例。移动的方法类似前面求中位数的方法。</p>
+<p>通过这样的方法，每次插入数据，可能会涉及几个数据的堆化操作，所以时间复杂度是 O(logn)。每次求 99% 响应时间的时候，直接返回大顶堆中的堆顶数据即可，时间复杂度是 O(1)。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/12/02/sort/">工程中遇到的排序算法-实践篇</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/12/02/sort/">https://gsmtoday.github.io/2019/12/02/sort/</a></li>
+            <li><strong>发布时间：</strong>2019-12-02</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/算法/">算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/12/03/temp-file-table/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">关于MySQL的临时表和临时文件</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/11/24/kafka-problem/">
+                <span class="level-item">一次Kafka消费不到数据的踩坑记录</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#开发语言的基础排序">
+        <span class="has-mr-6">1</span>
+        <span>开发语言的基础排序</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#使用场景之C语言的qsort">
+        <span class="has-mr-6">1.1</span>
+        <span>使用场景之C语言的qsort()</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用场景之Java的Arrays-sort">
+        <span class="has-mr-6">1.2</span>
+        <span>使用场景之Java的Arrays.sort()</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#MySQL的排序">
+        <span class="has-mr-6">2</span>
+        <span>MySQL的排序</span>
+        </a></li><li>
+        <a class="is-flex" href="#Redis的ZSET排序">
+        <span class="has-mr-6">3</span>
+        <span>Redis的ZSET排序</span>
+        </a></li><li>
+        <a class="is-flex" href="#高性能定时器">
+        <span class="has-mr-6">4</span>
+        <span>高性能定时器</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#接口延时99分位">
+        <span class="has-mr-6">4.1</span>
+        <span>接口延时99分位</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

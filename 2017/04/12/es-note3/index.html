@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Elastic Search 学习笔记-3 (深入了解ES搜索原理) - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="We will not venture into Lucene’s implementation details, but rather stick to how the inverted indexis used and built. That is what influences how we can search and index.">
+<meta name="keywords" content="ElasticSearch">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elastic Search 学习笔记-3 (深入了解ES搜索原理)">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/04/12/es-note3/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="We will not venture into Lucene’s implementation details, but rather stick to how the inverted indexis used and built. That is what influences how we can search and index.">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/images/elas_1102.png">
+<meta property="og:image" content="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/images/elas_1103.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.801Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Elastic Search 学习笔记-3 (深入了解ES搜索原理)">
+<meta name="twitter:description" content="We will not venture into Lucene’s implementation details, but rather stick to how the inverted indexis used and built. That is what influences how we can search and index.">
+<meta name="twitter:image" content="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/images/elas_1102.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/lu.jpg" alt="Elastic Search 学习笔记-3 (深入了解ES搜索原理)">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-04-12T14:47:09.000Z">2017-04-12</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    13 分钟 读完 (大约 1969 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Elastic Search 学习笔记-3 (深入了解ES搜索原理)
+            
+        </h1>
+        <div class="content">
+            <p>We will not venture into Lucene’s implementation details, but rather stick to how the inverted index<br>is used and built. That is what influences how we can search and index.</p>
+<a id="more"></a>
+<h2 id="inverted-indexes-and-index-terms"><a href="#inverted-indexes-and-index-terms" class="headerlink" title="inverted indexes and index terms"></a>inverted indexes and index terms</h2><p>倒排索引将单词（terms）映射为包含该单词的文本。可以说，an index term is the unit of search. 由分词产生的terms直接决定哪些类型的搜索高效，哪些类型的搜索不高效。由于单词在倒排索引中是有序的，因此we can efficiently find the things given term <strong>prefixes</strong>.</p>
+<p>When all we have is an inverted index, we want everything to look like a string prefix problem. – ngram分词。</p>
+<h2 id="building-indexes"><a href="#building-indexes" class="headerlink" title="building indexes"></a>building indexes</h2><p>当创建一个倒排索引时候，有许多性能优化点要关注：<code>search speed</code>，<code>index compactness</code>, <code>indexing speed</code> and <code>the time it takes for new changes to become visible</code>.</p>
+<p><code>search speed</code>和<code>index compactness</code>是有关系的，</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">inverted index compatness(+) -&gt;</span><br><span class="line">data to be processed (-) -&gt;</span><br><span class="line">the data fit in memory(+) -&gt;</span><br><span class="line">the efficicency of update(-)</span><br></pre></td></tr></table></figure>
+<p>倒排索引被压缩地越小，要处理的数据就越小，进而可以放更多的数据到内存，这样查询速度也越快。但是，倒排索引被压缩程度越大，这也导致更新性能的牺牲。</p>
+<p>事实上，ES的倒排索引写到硬盘之后是不变的（immutable）。这样便于并发处理，不需要加锁。而且一旦倒排索引被读入内存后，不需要再修改缓存，提高了查询性能。（因此，在Lucene存储经常变化的数据并不是一个好方法）</p>
+<p>而在ES/Lucene中update a document 操作是先从索引中删除该document（删除是一个位图操作不算update），再重新插入该document。可见update操作是一个耗费资源的操作。there is no in-place update of values.</p>
+<p>当新插入索引中一个文档的时候，索引的变化先被缓冲在内存中，最后一起flush to硬盘。 而什么时候flush to硬盘取决于 1. how quickly changes must be visble 2. 内存中可供缓存的容量 3. IO saturation.</p>
+<h2 id="index-update"><a href="#index-update" class="headerlink" title="index update"></a>index update</h2><p>既然倒排索引由于查询性能需要是不可变的，那么需要一个方法在保留不变形的前提下实现倒排索引的更新。<br>这也是索引分段的原因。</p>
+<p>通过增加新的补充索引反映新近的修改，而不是重新写整个倒排索引。每个倒排索引都会被轮流查询到，<br>从最早的开发，查询完再对结果进行合并。</p>
+<p>在per segment search基础上，Lucene introduce the concept of “commit point”, 提交点列出所有<br>已知的文件.</p>
+<p>逐段搜索会以如下流程进行工作：</p>
+<ol>
+<li><p>新文档被收集到内存索引缓存（ES与硬盘之间是文档系统缓存）， 见 Figure 1, “一个在内存缓存中包含新文档的 Lucene 索引” 。</p>
+</li>
+<li><p>不时地, 缓存被提交 ：</p>
+<ul>
+<li><p>一个新的段–一个追加的倒排索引–被写入磁盘。</p>
+</li>
+<li><p>一个新的包含新段名字的 提交点 被写入磁盘。</p>
+</li>
+<li><p>磁盘进行 同步 — 所有在文件系统缓存中等待的写入都刷新到磁盘，以确保它们被写入物理文件。</p>
+</li>
+</ul>
+</li>
+<li><p>新的段被开启，让它包含的文档可见以被搜索。</p>
+</li>
+<li><p>内存缓存被清空，等待接收新的文档。</p>
+</li>
+</ol>
+<p><img src="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/images/elas_1102.png" alt="analyzer" title="analyzer" width="350" height="350"><br><img src="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/images/elas_1103.png" alt="analyzer" title="analyzer" width="350" height="350"></p>
+<p>当一个查询被触发，所有已知的段按顺序被查询。词项统计会对所有段的结果进行聚合，以保证每个词和每个文档的关联都被准确计算。 这种方式可以用相对较低的成本将新文档添加到索引。</p>
+<h2 id="Near-real-time-search"><a href="#Near-real-time-search" class="headerlink" title="Near real time search"></a>Near real time search</h2><p>之所以说ES，Lucene是近实时搜索，是因为upddates buffer flush to disk机制使得一个新的文档从索引到可被搜索的延迟显著降低了。而由于per-segment search按段搜索的发展，新文档在几分钟之内可被检索。</p>
+<h2 id="index-segments"><a href="#index-segments" class="headerlink" title="index segments"></a>index segments</h2><p>Lucene中索引由多个不可改变的index segment/子索引组成。当新创建/更新一个文档, 索引先写到内存中缓冲着，触发一定限制条件后(flush)写入硬盘，生成一个独立的子索引 –  子索引在Lucene中叫做segment。当执行搜索的时候，Lucene在每个分段上执行搜索，过滤出所有删除，在所有分段上合并结果。每隔一段时间，这些segments会<strong>触发一次合并</strong>，被标记为删除的document会被抛弃，这也解释了为什么插入更多的document会导致a smaller index size.</p>
+<p>Merge的触发： 通过配置mergefactor这个参数控制硬盘中有多少个segments. MergeFactor越大耗费内存越多，索引速度也会越快些。但太大譬如300，最后合并的时候还是很慢。Batch indexing 应 MergeFactor&gt;10。</p>
+<p>segments flush to disk最常见的原因是 “continuous index refreshing”(默认每秒refresh一次)。当segment被flush 到硬盘之后，这些更改的数据可以被搜索到，enables近实时搜索near real-time search.<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a flush = a new segment to be created + invalidate some caches + trigger a merge</span><br></pre></td></tr></table></figure></p>
+<p>When indexing throughput is important, e.g. when batch (re-)indexing, it is not very productive to spend a lot of time flushing and merging small segments. Therefore, in these cases it is usually a good idea to temporarily increase the refresh_interval-setting, or even disable automatic refreshing altogether. One can always refresh manually, and/or when indexing is done.</p>
+<p>但是，per-segment search 还有瓶颈-磁盘，一个新的文档更改形成新的段之后，需要linux文件操作<code>fsync</code>来确保被物理性地写入磁盘，这样在断电的时候就不会丢失数据。但是<code>fsync</code>操作代价很大，如果每次索引一个文档都去执行一次的话会造成很大的性能问题。</p>
+<p>因此，ES将<code>fsync</code>从整个过程中移除，允许新段被写入和打开–使其包含的文档在未进行一次完整提交时便对搜索可见。 这种方式比进行一次提交代价要小得多，并且在不影响性能的前提下可以被频繁地执行。可以通过配置<code>refresh_interval</code>来配置新段在缓存中被打开–namely 在缓存中可以被搜索的概率。</p>
+<p>refresh_interval 可以在既存索引上进行动态更新。 在生产环境中，当你正在建立一个大的新索引时，可以先关闭自动刷新，待开始使用该索引时，再把它们调回来：</p>
+<p>PUT /my_logs/_settings<br>{ “refresh_interval”: -1 }</p>
+<p>PUT /my_logs/_settings<br>{ “refresh_interval”: “1s” }</p>
+<h2 id="elasticsearch-indexes"><a href="#elasticsearch-indexes" class="headerlink" title="elasticsearch indexes"></a>elasticsearch indexes</h2><p>以上讲的Lucene index, 现在让我们重回ES index. 一个ES index 由 若干主分片组成和若干副本组成。<br>每个分片都是一个Lucene index.<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">a ElasticSearch index = &#123;Lucene indexes&#125;n = &#123;index segments&#125;n*m</span><br><span class="line"></span><br><span class="line">ES index -&gt; Lucene indexes -&gt; Lucene index segments</span><br><span class="line"></span><br><span class="line">n is # Lucene indexes</span><br><span class="line">m is # index segments</span><br></pre></td></tr></table></figure></p>
+<p>当你在ES索引上执行搜索的时候，最终搜索会落在所有segment上。所以可以说下面两个场景实质上是一样的：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. search 2 ES index with 1 shard each</span><br><span class="line">2. search 1 index with 2 shard</span><br></pre></td></tr></table></figure></p>
+<h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><p>To summarize, these are the important properties to be aware of when it comes to how Lucene builds, updates and searches indexes on a single node:</p>
+<p>How we process the text we index dictates how we can search. Proper text analysis is important.<br>Indexes are built first in-memory, then occasionally flushed in segments to disk.<br>Index segments are immutable. Deleted documents are marked as such.<br>An index is made up of multiple segments. A search is done on every segment, with the results merged.<br>Segments are occasionally merged.<br>Field and filter caches are per segment.<br>Elasticsearch does not have transactions</p>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference:"></a>Reference:</h2><p>1 . <a href="https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up" target="_blank" rel="noopener">https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up</a><br>2 . <a href="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/dynamic-indices.html" target="_blank" rel="noopener">http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/dynamic-indices.html</a></p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/04/12/es-note3/">Elastic Search 学习笔记-3 (深入了解ES搜索原理)</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/04/12/es-note3/">https://gsmtoday.github.io/2017/04/12/es-note3/</a></li>
+            <li><strong>发布时间：</strong>2017-04-12</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/ElasticSearch/">ElasticSearch</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/04/18/es-note4/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Elastic Search学习笔记-4 (常见搜索类型实践)</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/04/08/es-note2/">
+                <span class="level-item">Elastic Search 学习笔记-2 (搜索相关)</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

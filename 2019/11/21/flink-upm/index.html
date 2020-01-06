@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>使用Flink进行权限申请实时推荐 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="题图不相关，图为2019鸟巢五月天演唱会所拍。">
+<meta name="keywords" content="Flink">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Flink进行权限申请实时推荐">
+<meta property="og:url" content="https://gsmtoday.github.io/2019/11/21/flink-upm/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="题图不相关，图为2019鸟巢五月天演唱会所拍。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/11/21/flink-upm/UPM业务形式.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/11/21/flink-upm/archi.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/11/21/flink-upm/product.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.803Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用Flink进行权限申请实时推荐">
+<meta name="twitter:description" content="题图不相关，图为2019鸟巢五月天演唱会所拍。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2019/11/21/flink-upm/UPM业务形式.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/wuyuetian.jpeg" alt="使用Flink进行权限申请实时推荐">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-21T11:09:25.000Z">2019-11-21</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    16 分钟 读完 (大约 2337 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                使用Flink进行权限申请实时推荐
+            
+        </h1>
+        <div class="content">
+            <p>题图不相关，图为2019鸟巢五月天演唱会所拍。<br><a id="more"></a><br>本文是笔者将Flink用到公司业务上的一次实践，目的是为了实现实时推荐效果，提升笔者所负责的系统的用户体验。</p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>权限申请服务是滴滴UPM统一权限系统一个重要的用户使用入口。目前，权限申请量已达周10000单， 申请用户周4000人。 随着申请量日益增多，我们发现用户反馈大量集中在：“用户想要要访问xxx页面/想做xxx，要申请UPM权限，但是用户不知道这个xxx页面是UPM的什么业务子系统”，“用户要访问xxx页面，用户虽然知道这是xxx系统的，但是不知道申请什么角色”。</p>
+<p>抽象来说，很多用户使用UPM的痛点为不清楚要申请哪一系统的哪个权限。矛盾点在于UPM的定位是公司级统一权限系统（最新数据显示接入UPM系统1000+个，使用UPM鉴权系统近800个）。这种平台定位就会导致用户要先选择业务系统，再选择并申请权限。而用户的核心诉求就是申请权限，然而由于很多用户对业务系统的了解不足, 会出现用户在UPM申请权限难的困境。为了提升用户申请权限的体验，我们做了权限申请实时推荐。</p>
+<h1 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h1><p>首先调研了近5天鉴权的用户发起申请率。在UPM中，用户，业务系统，UPM三者的关系如下图所示，用户访问业务系统，业务系统会携带用户信息（通常是用户账号）调用UPM鉴权接口到UPM服务端进行鉴权。UPM服务端返回给业务系统鉴权结果，服务端据此做判断，在界面返回给用户是否有权限。<br><img src="/2019/11/21/flink-upm/UPM业务形式.png" width="500" height="400" align="center"><br>用户从业务系统使用受阻转而到访问UPM的行为路径：用户使用某一业务系统（访问业务系统页面），业务系统判断用户没有权限，推荐来权限系统UPM申请权限。</p>
+<p>如果用户真的需要访问这一页面的权限（还有很多用户是误点进来），用户就会到UPM去申请权限。</p>
+<h2 id="鉴权的用户发起申请率"><a href="#鉴权的用户发起申请率" class="headerlink" title="鉴权的用户发起申请率"></a>鉴权的用户发起申请率</h2><p>鉴权的用户发起申请率 =  发起申请的用户中有过鉴权记录 /  发起申请的用户数</p>
+<p>调研发现近5天（10-29~11.3）鉴权的用户发起申请率 为 77.51%。据此判断针对用户在UPM鉴权记录进行权限实时推荐来解决用户申请权限难的痛点是有必要的。</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>根据用户鉴权日志（UPM鉴权日志 1.2亿 line/天， 120G/天）实现权限实时申请推荐的数据链路如图所示：<br><img src="/2019/11/21/flink-upm/archi.png" width="1000" height="800" align="center"></p>
+<ol>
+<li>业务数据采集：UPM鉴权业务日志采集到Kafka;</li>
+<li>Flink聚合计算：由于申请权限推荐这一场景对于鉴权日志分析到实时性比较高，因此采用Flink流计算对鉴权日志实时处理, 并输出结果到下游Kafka。</li>
+<li>业务应用部分：根据用户最新鉴权记录，进行下游Kafka消费，并根据业务具体情况制定具体推荐策略，例如只推荐开放申请的app, app推荐黑名单机制（如果有定时调用鉴权接口的系统，会被纳入黑名单不进行推荐。）等等。并将用户的最近鉴权记录格式化存储到MySQL和Redis中。</li>
+<li>推荐API部分：业务提供接口根据用户名推荐用户要申请权限的系统和权限。</li>
+</ol>
+<p>Flink实时计算鉴权日志部分，为避免大量重复鉴权记录对下游kafka造成积压，因此采用了10s的window对鉴权结果记录进行聚合。计算逻辑为以下几点：</p>
+<ul>
+<li>针对鉴权日志map出每条鉴权日志涉及到到业务系统appId, 鉴权用户的用户名 username，鉴权接口upmAPI, 鉴权时间authenticatedTime等字段；</li>
+<li>filter过滤留下response 鉴权结果日志（除去request部分）；</li>
+<li>针对不同的接口的返回，记录用户鉴权失败与否，作为扩展功能，记录在authenticatedResult字段。鉴权接口分为两类：<ul>
+<li>鉴权返回yes or no 的 /user/check/feature接口 (流量Top1接口）。这类接口根据接口返回结果是否等于false可以直接判断用户鉴权是否失败。</li>
+<li>第二类是获取用户所有权限后业务方自行逻辑判断的接口。例如 /user/get/roles (流量Top2接口，获取用户所有角色）, /user/get/areas（获取用户所有地区）, /user/get/flags(获取用户所有flags) 等等。这一类接口由于有业务方自行判断的逻辑，目前认为返回接口为空的时候，为用户鉴权失败。</li>
+</ul>
+</li>
+<li>格式化结果数据，sink到下游kafka.<br>Flink 清洗鉴权日志核心代码如下：<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;StreamMessage&lt;UPMCoreLog&gt;&gt; inStream = sourceStream</span><br><span class="line">      .flatMap(<span class="hljs-keyword">new</span> UPMFlagMapFunc())</span><br><span class="line">      <span class="hljs-comment">// 只留response</span></span><br><span class="line">      .filter(<span class="hljs-keyword">new</span> UPMFliterFunc())</span><br><span class="line">      <span class="hljs-comment">// watermark </span></span><br><span class="line">      .assignTimestampsAndWatermarks(<span class="hljs-keyword">new</span> AscendingTimestampExtractor&lt;StreamMessage&lt;UPMCoreLog&gt;&gt;() &#123;</span><br><span class="line">         <span class="hljs-meta">@Override</span></span><br><span class="line">         <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">long</span> <span class="hljs-title">extractAscendingTimestamp</span><span class="hljs-params">(StreamMessage&lt;UPMCoreLog&gt; element)</span> </span>&#123;</span><br><span class="line">            <span class="hljs-comment">//鉴权实践作为eventTime时间戳</span></span><br><span class="line">            <span class="hljs-keyword">long</span> timestamp = element.getPyload().getAuthenticatedTime().getTime();</span><br><span class="line">            <span class="hljs-keyword">return</span> timestamp;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;)</span><br><span class="line">      <span class="hljs-comment">// key by &#123;appid+username&#125;</span></span><br><span class="line">      .keyBy(<span class="hljs-keyword">new</span> KeySelector&lt;StreamMessage&lt;UPMCoreLog&gt;, Object&gt;() &#123;</span><br><span class="line">         <span class="hljs-meta">@Override</span></span><br><span class="line">         <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getKey</span><span class="hljs-params">(StreamMessage&lt;UPMCoreLog&gt; streamMessage)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">            <span class="hljs-keyword">return</span> streamMessage.getPyload().generateIndentifying();</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;)</span><br><span class="line">      <span class="hljs-comment">// tumbling time window每10s统计一次鉴权情况</span></span><br><span class="line">      .window(TumblingEventTimeWindows.of(Time.seconds(<span class="hljs-number">10</span>)))</span><br><span class="line">      <span class="hljs-comment">// 聚合结果</span></span><br><span class="line">      .reduce(<span class="hljs-keyword">new</span> ReduceFunction&lt;StreamMessage&lt;UPMCoreLog&gt;&gt;() &#123;</span><br><span class="line">         <span class="hljs-meta">@Override</span></span><br><span class="line">         <span class="hljs-function"><span class="hljs-keyword">public</span> StreamMessage&lt;UPMCoreLog&gt; <span class="hljs-title">reduce</span><span class="hljs-params">(StreamMessage&lt;UPMCoreLog&gt; upmStreamMessage, StreamMessage&lt;UPMCoreLog&gt; t1)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">            <span class="hljs-comment">// 保留一条数据</span></span><br><span class="line">            UPMCoreLog baseline = upmStreamMessage.getPyload();</span><br><span class="line">            UPMCoreLog valuein = t1.getPyload();</span><br><span class="line">            <span class="hljs-comment">// 更新鉴权时间新的记录</span></span><br><span class="line">            <span class="hljs-keyword">if</span> (valuein.getAuthenticatedTime().after(baseline.getAuthenticatedTime())) &#123;</span><br><span class="line">               <span class="hljs-keyword">return</span> t1;</span><br><span class="line">            &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">               <span class="hljs-keyword">return</span> upmStreamMessage;</span><br><span class="line">            &#125;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;);</span><br><span class="line"><span class="hljs-comment">//sink</span></span><br><span class="line">DataStream&lt;String&gt; outStream = inStream.map(<span class="hljs-keyword">new</span> MapFunction&lt;StreamMessage&lt;UPMCoreLog&gt;, String&gt;() &#123;</span><br><span class="line">   <span class="hljs-meta">@Override</span></span><br><span class="line"></span><br><span class="line">   <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">map</span><span class="hljs-params">(StreamMessage&lt;UPMCoreLog&gt; value)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      UPMCoreLog pyload = value.getPyload();</span><br><span class="line">      <span class="hljs-keyword">return</span> pyload.toString();</span><br><span class="line">   &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>通过Flink对用户的每条鉴权结果进行判断，清洗出格式化的用户鉴权记录存储到下游Kafka，消息记录如下所示：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-string">"username"</span>:<span class="hljs-string">"XXX"</span>, <span class="hljs-comment">// 用户</span></span><br><span class="line">    <span class="hljs-string">"appId"</span>:<span class="hljs-number">962</span>, <span class="hljs-comment">// 业务系统ID</span></span><br><span class="line">    <span class="hljs-string">"authenticatedTime"</span>:<span class="hljs-number">1572770351000</span>,</span><br><span class="line">    <span class="hljs-string">"upmAPI"</span>:<span class="hljs-string">"/user/get/roles"</span>, <span class="hljs-comment">// 鉴权接口</span></span><br><span class="line">    <span class="hljs-string">"isReq"</span>:<span class="hljs-keyword">false</span>, </span><br><span class="line">    <span class="hljs-string">"authenticatedResult"</span>:<span class="hljs-keyword">false</span> <span class="hljs-comment">// 鉴权是否成功</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>有了下游Kafka存储用户鉴权结果的格式化记录后，就可以实时消费用户鉴权结果消息，将用户最新被拦截无权限的业务系统信息存储到Redis/MySQL 中，以此做权限申请推荐。</p>
+<p>产品效果:<br><img src="/2019/11/21/flink-upm/product.png" width="500" height="400" align="center"></p>
+<h1 id="难点-amp-接下来工作"><a href="#难点-amp-接下来工作" class="headerlink" title="难点&amp;接下来工作"></a>难点&amp;接下来工作</h1><ol>
+<li><p>用户申请权限的实时推荐逻辑是基于用户访问业务系统的的鉴权结果日志进行的，但是由于业务方使用UPM鉴权接口比较多样，有时候会造成推荐结果不准确/难以cover住用户真正想要。例如，有的业务方针对自己业务系统比较多的情况，做了一个类似网关的门户系统，门户系统整合了业务方的所有系统。当用户访问门户系统，门户系统携带用户的身份信息及门户系统管理的所有系统appId, 分别到UPM这里鉴权。这样会导致UPM难以获得用户在某一业务系统的最实时的鉴权记录，从而导致推荐的不准确。</p>
+</li>
+<li><p>用户申请权限终究是想申请业务系统的角色/标识位/地区等。因此，接下来我们会重点做权限的推荐。权限的推荐难度有以下几点：</p>
+</li>
+</ol>
+<ul>
+<li><p>根据上文所述，鉴权接口分为两类，鉴权返回yes or no 的 /user/check/feature接口 (流量Top1接口）。这类接口根据接口返回结果是否等于false可以直接判断用户鉴权是否失败。业务可以通过feature失败的记录，为用户推荐关联的角色。但是如果业务方设置关联feature 权限点的角色太多的话，也会造成给用户推荐的角色太多的情况， 这样很可能导致用户更为迷惑。</p>
+</li>
+<li><p>第二类是获取用户所有权限后业务方自行逻辑判断的接口。例如 /user/get/roles (流量Top2接口，获取用户所有角色）, /user/get/areas（获取用户所有地区）, /user/get/flags(获取用户所有flags) 等等。这一类接口由于有业务方自行判断的逻辑，目前认为返回接口为空的时候，为用户鉴权失败。这一类接口，UPM服务端是无法猜测用户需要申请的角色。因此使用这类接口的业务方，我们无法做去权限推荐。</p>
+</li>
+</ul>
+<ol>
+<li>用户申请权限推荐只根据鉴权记录这一维度是否有些单一，后续还需要调研是否需要结合用户岗位进行推荐。</li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/11/21/flink-upm/">使用Flink进行权限申请实时推荐</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/11/21/flink-upm/">https://gsmtoday.github.io/2019/11/21/flink-upm/</a></li>
+            <li><strong>发布时间：</strong>2019-11-21</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Flink/">Flink</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/24/kafka-problem/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">一次Kafka消费不到数据的踩坑记录</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/09/11/慢SQL排查-join太慢/">
+                <span class="level-item">慢SQL排查- join太慢</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#背景">
+        <span class="has-mr-6">1</span>
+        <span>背景</span>
+        </a></li><li>
+        <a class="is-flex" href="#方案">
+        <span class="has-mr-6">2</span>
+        <span>方案</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#鉴权的用户发起申请率">
+        <span class="has-mr-6">2.1</span>
+        <span>鉴权的用户发起申请率</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#实现">
+        <span class="has-mr-6">3</span>
+        <span>实现</span>
+        </a></li><li>
+        <a class="is-flex" href="#难点-amp-接下来工作">
+        <span class="has-mr-6">4</span>
+        <span>难点&amp;接下来工作</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 使用Flink进行权限申请实时推荐&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

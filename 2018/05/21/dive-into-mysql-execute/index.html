@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="前面一篇总结介绍了如何建立最好的索引，这些对于高性能来说必不可少。但是这些还不够，还需要合理的设计查询。如果查询写的很糟糕，即使库表结构再合理，索引再合理，也无法实现高性能。 这篇总结关注查询设计的一些基本原则，介绍一些更深的查询优化技巧，以及介绍MySQL优化器内部机制，也解答了MySQL是如何执行查询的和如何执行关联查询的。">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="前面一篇总结介绍了如何建立最好的索引，这些对于高性能来说必不可少。但是这些还不够，还需要合理的设计查询。如果查询写的很糟糕，即使库表结构再合理，索引再合理，也无法实现高性能。 这篇总结关注查询设计的一些基本原则，介绍一些更深的查询优化技巧，以及介绍MySQL优化器内部机制，也解答了MySQL是如何执行查询的和如何执行关联查询的。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/process.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/explain.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/nocache.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/op.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/join1.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/join2.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/join3.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/join4.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.784Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记">
+<meta name="twitter:description" content="前面一篇总结介绍了如何建立最好的索引，这些对于高性能来说必不可少。但是这些还不够，还需要合理的设计查询。如果查询写的很糟糕，即使库表结构再合理，索引再合理，也无法实现高性能。 这篇总结关注查询设计的一些基本原则，介绍一些更深的查询优化技巧，以及介绍MySQL优化器内部机制，也解答了MySQL是如何执行查询的和如何执行关联查询的。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/process.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/sheep.jpg" alt="一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-05-21T03:37:01.000Z">2018-05-21</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    34 分钟 读完 (大约 5072 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记
+            
+        </h1>
+        <div class="content">
+            <p><a href="https://gsmtoday.github.io/2018/05/21/mysql-reading-notes/">前面一篇总结</a>介绍了如何建立最好的索引，这些对于高性能来说必不可少。但是这些还不够，还需要合理的<strong>设计查询</strong>。如果查询写的很糟糕，即使库表结构再合理，索引再合理，也无法实现高性能。</p>
+<p>这篇总结关注查询设计的一些基本原则，介绍一些更深的查询优化技巧，以及介绍MySQL优化器内部机制，也解答了MySQL是如何执行查询的和如何执行关联查询的。<br><a id="more"></a><br>当向MySQL发送一个请求的时候，MySQL到底做了什么？<br><img src="/2018/05/21/dive-into-mysql-execute/process.png" width="500" height="400" align="center"></p>
+<ol>
+<li>客户端发送一条查询给服务器</li>
+<li>服务器先检查查询缓存，如果命中了缓存，则立刻返回存储在缓存中的结果。否则进入下一阶段。</li>
+<li>服务器端进行SQL解析、预处理、再由优化器生成对应的执行计划。</li>
+<li>MySQL根据优化器生成执行计划，调用存储引擎API来执行查询。</li>
+<li>将结果返回给客户端。</li>
+</ol>
+<h1 id="为什么查询速度会慢"><a href="#为什么查询速度会慢" class="headerlink" title="为什么查询速度会慢"></a>为什么查询速度会慢</h1><p>对于查询来说，真正重要的是响应时间。如果把查询看做是一个任务，那么它由一系列的子任务组成，每个子任务都会消耗一点时间，如果要优化查询，实际上要优化子任务，要么消除其中一些子任务，要么减少子任务的执行次数，要么让子任务运行的更快。</p>
+<p>查询的生命周期：客户端 -&gt; 服务端 -&gt; 在服务器上解析 -&gt; 生成执行计划 -&gt; 执行 -&gt; 返回结果给客户端。其中<strong>执行</strong>可以认为是整个生命周期中最重要的阶段，这其中包括了<em>大量为了检索数据到存储引擎的调用以及调用后的数据处理，包括排序分组</em>。</p>
+<p>在完成这些任务的时候，查询需要在不同的地方花费时间，包括网络，CPU计算，生成统计信息和执行计划，锁等待（互斥等待）等操作，尤其是向底层存储引擎检索数据的调用操作，这些调用需要在内存操作，CPU操作和内存不足时导致的I/O操作上消耗时间。根据存储引擎不同，可能还会产生大量的上下文切换以及系统调用。</p>
+<h2 id="优化数据访问"><a href="#优化数据访问" class="headerlink" title="优化数据访问"></a>优化数据访问</h2><p>查询性能低下的最基本的原因是<strong>访问的数据太多</strong>。大部分性能低下的查询都可以通过减少访问的数据量的方式进行优化。<br>对于低效的查询，我们发现通过下面两个步骤来分析总是很有效：</p>
+<ol>
+<li><p>确认应用程序是否在检索大量超过需要的数据。这通常意味着访问了太多的行，有时候也是发访问了太多的列。</p>
+</li>
+<li><p>确认MySQL服务器层是否在分析大量超过需要的数据行。</p>
+</li>
+</ol>
+<h3 id="是否向MySql请求了不需要的数据"><a href="#是否向MySql请求了不需要的数据" class="headerlink" title="是否向MySql请求了不需要的数据"></a>是否向MySql请求了不需要的数据</h3><ul>
+<li>避免多余行以及多余列。</li>
+<li><code>select *</code>：需要使用的时候确认是否需要真的返回全部列？<code>select *</code>取出全部列会让优化器无法完成索引覆盖扫描这些优化，还会给服务器带来额外的IO，内存和CPU消耗。</li>
+</ul>
+<h3 id="MySQL是否在扫描额外的记录"><a href="#MySQL是否在扫描额外的记录" class="headerlink" title="MySQL是否在扫描额外的记录"></a>MySQL是否在扫描额外的记录</h3><p>衡量查询开销的三个指标：</p>
+<ul>
+<li>响应时间<br>响应时间 = 服务时间+排队时间。<br>服务时间是指数据库处理这个查询真正花费了多场时间。排队时间是指服务器因为等待某些资源而没有真正执行查询的时间 - 等IO,等行锁等等。</li>
+<li>返回的行数</li>
+<li>扫描的行数<br>理想情况是扫描的行数=访问的行数。但是例如在做关联查询，服务器必须要扫描多行才能生成结果集中的一行。扫描的行数对于返回的行数比率通常很小，一般在1：1和10：1之间。在评估查询开销的时候，需要考虑从表中找到某一行数据的成本。有些访问类型可能需要扫描很多行才能返回一行数据，有些可能无需扫描。</li>
+</ul>
+<p><strong>访问类型（从慢到快）：全表扫描 ALL  -&gt; 索引扫描  -&gt;范围扫描 -&gt;唯一索引查询  -&gt; 常数引用</strong></p>
+<p>explain的type列反应了访问类型，例如下图id为主键索引：<br><img src="/2018/05/21/dive-into-mysql-execute/explain.png" width="800" height="600" align="center"></p>
+<p>这三个指标都会记录到MySQL的慢日志中，所以检查慢日志记录是找出扫描行数过多的查询的好办法。</p>
+<p>一般MySQL能够使用如下三种方式应用WHERE条件，从好到坏依次为：</p>
+<ul>
+<li>在<em>索引</em>中使用where条件来过滤不匹配的记录。这是在<em>存储引擎层</em>完成的。</li>
+<li>使用<em>索引覆盖</em>扫描(在Extra列出现了Using index)来返回记录，直接从索引中过滤不需要的记录并返回命中的结果。这是在<em>MySQL服务器层</em>完成的，但无须回表查询记录。</li>
+<li>从数据表中返回数据，然后过滤不满足条件的记录（在extra列中出现using where）.这在<em>MySQL服务器层</em>完成。MySQL需要先从数据表独处记录然后过滤。</li>
+</ul>
+<h2 id="重构查询的方式"><a href="#重构查询的方式" class="headerlink" title="重构查询的方式"></a>重构查询的方式</h2><p>“一个复杂的查询还是多个简单查询” - 在传统实现中，总是强调需要数据库层完成尽可能多的工作，这样做的逻辑在于<strong>以前总是认为网络通信，查询解析和优化是一件代价很高的事情</strong>。但是这样的想法对于MySQL并不适用，MySQL从设计上让连接和端口连接都很轻量级，在返回一个小的查询结果方面都很高效。现代的网络速度比以前要快得多，无论是带宽还是延迟。在某些版本的SQL，也能够运行每秒超过10w的查询。所以<strong>运行多个小查询已经不是大问题了</strong>。</p>
+<p>MySQL内部每秒能够扫描内存中上百万行数据，相比之下，MySQL响应数据给客户端就慢很多。在其他条件都相同的情况，使用尽可能少的查询当然是更好的。</p>
+<p><strong>很多高性能应用都会对关联查询进行分解。简单地，可以对每一个表进行一次单表查询，然后将结果在应用程序中进行关联。</strong><br>为什么？</p>
+<ul>
+<li>让缓存效率更高。许多应用程序可以方便地缓存单表查询对应的结果对象。如果关联中的某个表发生了变化，那么就无法使用查询缓存了，而拆分后，如果某个表很少改变，那么基于该表的查询就可以重复利用查询缓存结果了。</li>
+<li>关联多表查询不利于写操作。执行读操作的时候，会锁住被读的数据，阻塞其他业务对该部分数据的更新操作。如果涉及多个聚合函数，相当于同时锁住多个表，不能进行读写，直接影响其他业务，影响了系统的整体性能。因此将查询分解后，执行单个查询可以减少锁的竞争。</li>
+<li>不利于维护。业务发生表动时，比如join一张表改了，可能导致系统原有的SQL不可用，最终导致基于该SQL执行结果的上层显式失败。因此，在应用层做关联，可以更容易对数据库进行拆分，更容易做到高性能和可扩展。</li>
+<li>查询本身效率也可能会有所提升。使用in代替关联查询，可以让mysql按照id顺序进行查询，这可能比随机关联更高效。</li>
+<li>可以减少冗余记录的查询。在应用层做关联查询，意味着对于某条记录应用只需要查询一次，而在数据库中关联查询，则可能需要重复地访问一部分数据。从这点看，这样的重构还可能会减少网络和内存消耗。</li>
+<li>更进一步，这样做相当于在应用中实现了哈希关联，而不是使用MySQL的嵌套循环关联。</li>
+</ul>
+<p>因此，在很多场景，通过重构查询将关联放到应用程序中将会更加高效。例如：当应用能够很方便地缓存单个查询的结果的时候，当可以将数据分布到不同的MYSQL服务器上的时候，当能够使用IN（）方式代替关联查询到时候。</p>
+<h1 id="查询执行的基础"><a href="#查询执行的基础" class="headerlink" title="查询执行的基础"></a>查询执行的基础</h1><h3 id="1-连接"><a href="#1-连接" class="headerlink" title="1.连接"></a>1.连接</h3><p>MySQL的通信是半双工的。</p>
+<p>查询状态：对于一个MYSQL连接或者说一个线程，任何时刻都有一个状态，该状态表示了MySQL当前正在做什么。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SHOW FULL PROCESSLIST //查看所有MYSQL TCP/IP连接</span><br></pre></td></tr></table></figure></p>
+<p>在一个查询的生命周期中，状态会变化很多次：</p>
+<ul>
+<li>Sleep： 线程正在等待客户端发送新的请求 </li>
+<li>Query：线程正在执行查询或正在将结果发送给客户端</li>
+<li>Locked: 在MySQL服务器层，该线程正在等待表锁。在存储引擎级别实现的锁，例如InnoDB行锁，并不会体现在线程状态中。</li>
+<li>Anlyzing and statistics:线程正在收集存储引擎的统计信息，并生成查询的执行计划</li>
+<li>Copy to tmp table [on disk] 线程正在执行查询，并且将结果集都复制到一个临时表，这种状态一般要么是group by操作，要么是文件排序操作，或者是UNION操作。如果这个状态后面还有on disk,那标识Mysql正在将一个临时表存储在磁盘上</li>
+<li>Sorting result 线程正在对结果集排序</li>
+<li>Sending data 这表示多种情况：线程可能在多个状态之间传送数据，或者在生成结果集，或者在向客户端返回数据。<br>了解这些状态的含义非常有用，这可以让你很快地了解当前“谁正在持球”。在一个繁忙的服务器上，可能会看到大量的不正常的状态，例如sttaistics 正在占用大量的时间。这通常标识，某个地方有异常了。具体参考<a href="http://www.ywnds.com/?p=9337" target="_blank" rel="noopener">http://www.ywnds.com/?p=9337</a></li>
+</ul>
+<h2 id="2-查询缓存"><a href="#2-查询缓存" class="headerlink" title="2.查询缓存"></a>2.查询缓存</h2><p>在解析一个查询语句之前，如果查询缓存是打开的，那么MySQL会优先检查这个查询是否命中查询缓存中的数据。这个检查是通过一个对大小写敏感的哈希查找实现的。关于MySQL的缓存：</p>
+<ul>
+<li>执行计划缓存。 很多DB产品都能缓存查询的执行计划，对于相同类型的SQL就可以跳过SQL解析和执行计划生成阶段。</li>
+<li>查询缓存：缓存完成的SELECT查询结果。当查询命中该缓存，MySQL会立刻返回结果，跳过了解析、优化和执行阶段。</li>
+</ul>
+<p>查询缓存系统会跟踪查询中涉及的每个表，如果这些表发生变化，那么和这个表相关的所有缓存数据都将失效。</p>
+<h2 id="3-查询优化处理"><a href="#3-查询优化处理" class="headerlink" title="3.查询优化处理"></a>3.查询优化处理</h2><p>如果查询没有命中MySQL缓存，查询的生命周期的下一步是<strong>将一个SQL转换成一个执行计划</strong>，MySQL再依照这个执行计划和存储引擎交互。</p>
+<p>这包括多个子阶段：解析SQL，预处理，优化SQL执行计划。</p>
+<ul>
+<li>语法解析器和预处理<br>MySQL通过关键字将SQL语句进行解析，并生成一棵对应的解析树。MySQL解析器将使用MySQL语法规则验证和解析查询。</li>
+</ul>
+<p>预处理器则根据一些MySQL规则进一步检验解析树是否合法，检验表和列是否存在，别名是否有歧义。</p>
+<ul>
+<li>查询优化器：<br>现在语法树被认为是合法的了，并由优化器将其转换成执行计划。一条查询可以有很多种执行方式，最后都返回相同的结果。<strong>优化器的作用就是找到这其中最好的执行计划。</strong></li>
+</ul>
+<p>关于执行计划推荐此文：<a href="https://blog.csdn.net/wuseyukui/article/details/71512793" target="_blank" rel="noopener">https://blog.csdn.net/wuseyukui/article/details/71512793</a></p>
+<p>MySQL使用基于成本的<strong>优化器</strong>，它将尝试预测一个查询使用某种执行计划时的成本，并选择其中成本最小的一个。<br>可以通过查询当前会话的last_query_cost值来得知MySQL计算的当前查询的成本。<br><img src="/2018/05/21/dive-into-mysql-execute/nocache.png" width="500" height="400" align="center"><br>这个结果标识MySQL优化器认为大概需要做1040个数据页的随机查找才能完成上面的查询 - 这是根据一些列的统计信息来计算得到的：每个表或者索引的页面个数、索引的基数，索引和数据行的长度、索引分布情况。优化器在评估成本的时候并不考虑任何层面的缓存，它假设读取任何数据都需要一次磁盘IO.</p>
+<p>MySQL的查询优化器使用了静态优化策略和动态优化策略来生成一个最优的执行计划。MySQL可以处理的优化类型：</p>
+<ol>
+<li>列表in的比较。MySQL将in()列表中的数据线进行排序，然后通过二分 查找的方式来确定列表中的值是否满足条件，这是一个O(logn)复杂度的操作。而不是像其他数据库那样的相当于or（），对于in（）列表中有大量取值的时候，MySQL的处理速度将会更快。</li>
+<li>重新定义关联表的顺序 - 关联表的顺便并不总是按照在查询中指定的顺序进行。</li>
+<li>将外链接转换成内连接 - 并不是所有OUTER JOIN语句都必须以外连接的方式执行。诸多因素，例如where条件，库表结构都可能会让外连接等价于一个内连接。MySQL能够识别这点并重写查询，调整关联顺序。</li>
+<li>优化COUNT(),MIN()和MAX()<br>要找到某一列最小值，只需要查询对应B树索引最左端的记录，MySQL可以直接获取索引的第一行记录 - 优化器生成执行计划时候就利用了这一点。如下图，可以看到select tables optimized way. 它表示优化器已经从执行计划中移除了该表，并以一个常数取而代之。<br><img src="/2018/05/21/dive-into-mysql-execute/op.png" width="500" height="400" align="center"><br>没有任何where条件的count(*)查询通常也可以使用存储引擎提供的一些优化，例如MyIsam维护了一个变量来存放数据表的行数。</li>
+<li>覆盖索引扫描 - 无须回表</li>
+<li>提前终止查询：当发现已经满足查询需求的时候，MySQL总是能够立刻终止查询。</li>
+</ol>
+<h2 id="4-优化与执行"><a href="#4-优化与执行" class="headerlink" title="4. 优化与执行"></a>4. 优化与执行</h2><p>MySQL服务器层并没有任何统计信息，所以MySQL查询优化器在生成查询的执行计划时，需要调用引擎的API.</p>
+<p>MySQL会解析查询，并创建一个内部数据结构（解析树），然后对其进行各种优化。其中包括重写查询，决定查询的读表顺序，以及选择使用的索引等。用户可以通过特殊的关键字给优化器传递各种提示，影响它的决策过程。另外还可以请求服务器给出优化过程的各种说明，使用户可以知晓服务器是如何进行优化决策的，为用户提供一个参考基准。</p>
+<p>优化器并不关心某个表使用哪种存储引擎，但是存储引擎对服务器的查询优化过程有影响。优化器会请求存储引擎，为某种具体操作提供性能与开销方面的信息，以及表内数据的统计信息。</p>
+<h1 id="MySQL是如何执行关联查询的"><a href="#MySQL是如何执行关联查询的" class="headerlink" title="MySQL是如何执行关联查询的"></a>MySQL是如何执行关联查询的</h1><p>对于连接查询，MySQL先将一系列的单个查询结果放到一个临时表中，然后再重新读出临时表数据来完成UNION查询。</p>
+<p>MySQL关联执行的策略很简单： MySQL对任何关联都执行嵌套循环关联操作，即MySQL先在一个表中循环取出单条数据，然后再循环到下一个表中寻找匹配的行；依次下去，直到找到所有表中匹配的行为止。然后根据各个表匹配的行，返回查询中需要的各个列。MySQL会尝试在最后一个关联表中找到所有匹配的行，如果最后一个关联表无法找到更多的行以后，MySQL返回到上一层次关联表，看是否能够找到更多的匹配记录，以此类推执行。<br><img src="/2018/05/21/dive-into-mysql-execute/join1.png" width="500" height="400" align="center"><br><img src="/2018/05/21/dive-into-mysql-execute/join2.png" width="500" height="400" align="center"></p>
+<p>上面的执行计划对于单表查询和多表关联查询都适用，如果是一个单表查询，那么只需要完成上面外层的基本操作。<br>对于外连接<br><img src="/2018/05/21/dive-into-mysql-execute/join3.png" width="500" height="400" align="center"><br><img src="/2018/05/21/dive-into-mysql-execute/join4.png" width="500" height="400" align="center"></p>
+<p>从本质上说，MySQL对所有的类型的查询都以同样的方式运行。<br>例如，MySQL在From子句中遇到子查询时，先执行子查询并将其结果放到一个临时表中，然后将这个临时表当作一个普通表对待。</p>
+<p>MySQL优化器最重要的一部分就是关联查询优化，它决定了多个表关联时的顺序。通常多表关联的时候，可以有多重不同的关联顺序来获得相同的执行结果。关联查询优化器则通过评估不同顺序时的成本来选择一个代价最小的关联顺序。</p>
+<p>不过糟糕的是，如果有超过n个表的关联，那么需要检查n！种关联顺序 - 所有可能的执行计划的搜索空间。</p>
+<p>在关联查询的时候如果需要排序，MySQL会分两种情况进行排序。<br>1.如果order by子句中所有列都来自关联的第一个表，那么MySQL在关联处理第一个表的时候就进行文件排序。在MySQL的explain结果中可以看到extra字段会有using filesort.<br>2.其他情况，MySQL都会将先关联的结果存放到一个临时表中，然后在所有的关联都结束后，再进行排序。在MySQL的explain结果中可以看到extra字段会有using temporary;using filesort</p>
+<p>最新版本的MySQL，当使用limit的时候，MySQL不再对所有结果进行排序，而是根据实际情况，选择抛弃不满足条件的结果，然后再排序。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/">一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/">https://gsmtoday.github.io/2018/05/21/dive-into-mysql-execute/</a></li>
+            <li><strong>发布时间：</strong>2018-05-21</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/07/30/redis-rdb/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Redis RDB持久化 - Redis源码分析</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/05/21/mysql-reading-notes/">
+                <span class="level-item">MySQL索引二三事</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#为什么查询速度会慢">
+        <span class="has-mr-6">1</span>
+        <span>为什么查询速度会慢</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#优化数据访问">
+        <span class="has-mr-6">1.1</span>
+        <span>优化数据访问</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#是否向MySql请求了不需要的数据">
+        <span class="has-mr-6">1.1.1</span>
+        <span>是否向MySql请求了不需要的数据</span>
+        </a></li><li>
+        <a class="is-flex" href="#MySQL是否在扫描额外的记录">
+        <span class="has-mr-6">1.1.2</span>
+        <span>MySQL是否在扫描额外的记录</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#重构查询的方式">
+        <span class="has-mr-6">1.2</span>
+        <span>重构查询的方式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#查询执行的基础">
+        <span class="has-mr-6">2</span>
+        <span>查询执行的基础</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-连接">
+        <span class="has-mr-6">2.1.1</span>
+        <span>1.连接</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#2-查询缓存">
+        <span class="has-mr-6">2.2</span>
+        <span>2.查询缓存</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-查询优化处理">
+        <span class="has-mr-6">2.3</span>
+        <span>3.查询优化处理</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-优化与执行">
+        <span class="has-mr-6">2.4</span>
+        <span>4. 优化与执行</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#MySQL是如何执行关联查询的">
+        <span class="has-mr-6">3</span>
+        <span>MySQL是如何执行关联查询的</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

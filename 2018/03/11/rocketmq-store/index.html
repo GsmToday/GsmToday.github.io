@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>RocketMQ源码分析3--Store数据存储 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本文是RocketMQ源码分析系列之三，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta name="keywords" content="RocketMQ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码分析3--Store数据存储">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本文是RocketMQ源码分析系列之三，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/kafka-partition.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/kafka-log.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/consumequeue.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/store.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/reputservice.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/data-store.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/putMessage.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/getMessage.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/index_file.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.176Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码分析3--Store数据存储">
+<meta name="twitter:description" content="本文是RocketMQ源码分析系列之三，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/03/11/rocketmq-store/kafka-partition.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/mouse2.jpg" alt="RocketMQ源码分析3--Store数据存储">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-03-11T06:56:03.000Z">2018-03-11</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    27 分钟 读完 (大约 4075 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                RocketMQ源码分析3--Store数据存储
+            
+        </h1>
+        <div class="content">
+            <p>本文是<a href="https://gsmtoday.github.io/tags/RocketMQ/">RocketMQ源码分析系列</a>之三，如有疑问或者技术探讨，可以<a href="gsmuestc@163.com">email me</a>,欢迎探讨.</p>
+<a id="more"></a>
+<h1 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h1><p>关键词： CommitLog, ConsumeQueue, 内存映射文件</p>
+<p>一个产品的技术选型一般都要基于其使用场景，RocketMQ的数据存储也不例外。在数据存储方面，RocketMQ采用了将数据(所有topic的消息)只写在了一个唯一的文件(CommitLog)里面. 之所以这么设计，是有其历史原因的:RocketMQ的最初使用场景是为了支持淘宝双十一实时订单场景(大数据量，topic-partition多)，另外Rocket在设计上最初借鉴了Kafka并试图克服其在topic-partition增多时候的不足。</p>
+<p>先来看看Kafka是怎么做数据存储的。</p>
+<p>在Kafka的架构设计上，消息以topic分类，每个topic存储在多个partition上，一个partition对应一个单独的log文件上。消息不断追加到log的末尾（顺序写）。partition可以分布在不同的机器上，因此一个topic的消息可以水平扩展到多机器上。<br><img src="/2018/03/11/rocketmq-store/kafka-partition.png" alt="一个拥有四个partition的topic"><br><img src="/2018/03/11/rocketmq-store/kafka-log.png" width="600" height="300" alt="Kafka log" align="center"><br>当Producer想要写入消息时候，消息会根据其key的哈希值分派到对应的partition上，然后追加写到partition的log文件。但是从IO层面看，这种多topic-多partition方式，对于每个文件来说虽然是顺序IO，但是当并发读写多个partition，实际上是随机IO写到多个partition的。<a href="https://tech.meituan.com/about-desk-io.html" target="_blank" rel="noopener">由于磁盘是随机读写慢，顺序读写快</a>。因此，<a href="http://jm.taobao.org/2016/04/07/kafka-vs-rocketmq-topic-amout/" target="_blank" rel="noopener">实验证明</a>：topic数量增加到一定程度，Kafka性能急剧下降。</p>
+<p>为了解决这个问题，RocketMQ的消息是<strong>存储在一个单一的CommitLog文件里</strong>，从而避免是磁盘的随机IO。</p>
+<p>另外Kafka针对Producer和Consumer使用了同1份存储结构，而RocketMQ却为Producer和Consumer分别设计了不同的存储结构，Producer对应CommitLog, Consumer对应ConsumeQueue。RocketMQ把所有消息都存储在一个CommitLog里，然后再根据topic - queueId异步分发给ConsumeQueue。 ConsumeQueue是逻辑队列，并不真正存储消息的内容，仅仅存储消息在CommitLog的位移(offset)。之所以分成多个queue，是因为这样可以让多个消费者同时消费，而不需要上锁。</p>
+<p>对于消费者来说，ConsumeQueue其实是CommitLog的一个索引文件。Consumer消费消息的时候，要读2次：</p>
+<ol>
+<li>先读ConsumeQueue得到offset</li>
+<li>再根据offset从读CommitLog得到消息。</li>
+</ol>
+<p><img src="/2018/03/11/rocketmq-store/consumequeue.png" width="600" height="300" alt="RocketMQ数据逻辑存储" align="center"></p>
+<p>有关数据存储，可以看出通过将消息都追加写到一个CommitLog文件，实现了顺序写提高了磁盘IO性能。但是这里还有一个问题，Consumer在读消息的时候，实际上是一个随机读磁盘的过程。那么RocketMQ是怎么优化这一点的呢？</p>
+<p>对于CommitLog和ConsumeQueue源代码中都有一个成员MapedFileQueue – Consumer消费消息过程中使用了<strong>零拷贝（mmap+write）</strong>，<a href="https://www.cnblogs.com/huxiao-tee/p/4660352.html" target="_blank" rel="noopener">mmap</a>是一种内存映射文件的方法，即将一个文件或者其他对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中的一段虚拟地址的一一映射关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存。而系统会自动回写脏页面到对应的文件磁盘，即完成了对文件的操作而不比调用read,write等系统调用函数。相反，内核空间对区域的修改也直接反应到用户空间，从而实现不同进程间的文件共享。<a href="http://www.linuxjournal.com/article/6345" target="_blank" rel="noopener">有关零拷贝推荐此文</a>。</p>
+<p>通过使用零拷贝，解决了文件存储IO的瓶颈，从而实现了Broker的高吞吐量。</p>
+<h1 id="Store模块数据核心文件"><a href="#Store模块数据核心文件" class="headerlink" title="Store模块数据核心文件"></a>Store模块数据核心文件</h1><p>RocketMQ的数据存储功能在源码中为Store模块，其结构如下图所示:<br><img src="/2018/03/11/rocketmq-store/store.png" width="600" height="300" alt="Store模块结构" align="center"><br>业务层均通过DefaultMessageStore类提供的方法作为统一入口访问底层文件。RocketMQ存储核心围绕以下六类文件：</p>
+<ul>
+<li>IndexFile: 由IndexService类提供服务</li>
+<li>Consumequeue: 文件由Consumequeue类提供服务</li>
+<li>Commitlog: 文件由CommitLog类提供服务</li>
+<li>Checkpoint文件: 由StoreCheckPoint类提供访问服务。Checkpoint文件存储Commitlog，CQ 和Index file的刷盘时间。</li>
+<li>Config文件: 由ConfigMananger类提供访问服务，json格式存储相关配置。</li>
+<li>Lock文件</li>
+</ul>
+<p>对于IndexFile/Consumequeue/Commitlog这三类大文件，为了提供读写性能，底层采用java.nio.MappedByteBuffer类，该类是文件内存映射方案(零拷贝)，支持随机读/顺序写操作。大文件在存储时候会被分成固定大小的小文件，每个小文件均由MapedFile类提供操作服务；MapedFile类提供了顺序写、随机读、内存数据刷盘、内存清理等与文件相关的服务。MappedFileQueue中用集合list把这些MappedFile文件组成了一个逻辑上连续的队列，从而实现了整个大文件的串联。</p>
+<h2 id="MappedFile"><a href="#MappedFile" class="headerlink" title="MappedFile"></a>MappedFile</h2><p>MappedFileQueue + Maped File 保存存放在物理机器上的文件信息。<br>Mapped File: 存储具体的文件信息: 包括文件路径，文件名(文件起始偏移)，写位移，读位移等等信息，同时使用了虚拟内存提高IO效率。</p>
+<p>MappedFile提供API:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">appendMessage</span><span class="hljs-params">(<span class="hljs-keyword">final</span> <span class="hljs-keyword">byte</span>[] data)</span> <span class="hljs-comment">// 顺序写msg到MapedFile</span></span></span><br><span class="line"><span class="hljs-function"></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">commit</span><span class="hljs-params">(<span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> commitLeastPages)</span><span class="hljs-comment">//将内存消息刷盘</span></span></span><br><span class="line"><span class="hljs-function"></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> SelectMappedBufferResult <span class="hljs-title">selectMappedBuffer</span><span class="hljs-params">(<span class="hljs-keyword">int</span> pos, <span class="hljs-keyword">int</span> size)</span> <span class="hljs-comment">// 随机读消息</span></span></span><br></pre></td></tr></table></figure></p>
+<h2 id="CommitLog"><a href="#CommitLog" class="headerlink" title="CommitLog"></a>CommitLog</h2><p>CommitLog是保存消息元数据的物理存储文件,所有到达Broker的消息都会保存到Commitlog文件。这里需要强调的是所有topic的消息都会统一保存在commitLog中，举个例子：当前集群有TopicA, TopicB，这两个Toipc的消息会按照消息到达的先后顺序保存到同一个commitLog中，而不是每个Topic有自己独立的cCommitLog。</p>
+<p>每个CommitLog大小上限为1G，满1G之后会自动新建CommitLog文件做保存数据用。</p>
+<p>CommitLog的清理机制：</p>
+<ol>
+<li>按时间清理，默认清理三天前的commitlog文件</li>
+<li>按磁盘水位清理。当磁盘使用量到达磁盘容量的75%,开始清理最老的commitlog文件。</li>
+</ol>
+<h2 id="ConsumeQueue"><a href="#ConsumeQueue" class="headerlink" title="ConsumeQueue"></a>ConsumeQueue</h2><p>ConsumeQueue是消息的位置文件，主要存储消息在CommitLog的位置(offset)，多个文件构成一个队列。内部采用MappedFileQueue实现了消息位置文件队列功能。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">一个CQ存储单元 = 8字节commitlog offset + 4字节commit log item size + 8字节message tag hashcode.</span><br></pre></td></tr></table></figure></p>
+<h2 id="IndexFile"><a href="#IndexFile" class="headerlink" title="IndexFile"></a>IndexFile</h2><p>索引文件存储的消息的索引 - 方便根据<strong>topic+消息的key</strong>快速查询消息。</p>
+<p>具体说来：索引可以理解为一个类似hashtable的结构。建立索引时候根据每条消息的<code>topic + &quot;#&quot; + key</code>的hash值取模计算出实际文件位置absSlotPos，将消息在CommitLog的位移位置存储到slotPos对应的slot里面。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">int</span> absIndexPos = IndexHeader.INDEX_HEADER_SIZE + <span class="hljs-keyword">this</span>.hashSlotNum * hashSlotSize + <span class="hljs-keyword">this</span>.indexHeader.getIndexCount() * indexSize;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// 存入该消息的索引</span></span><br><span class="line"><span class="hljs-keyword">this</span>.mappedByteBuffer.putInt(absIndexPos, keyHash);</span><br><span class="line"><span class="hljs-keyword">this</span>.mappedByteBuffer.putLong(absIndexPos + <span class="hljs-number">4</span>, phyOffset);</span><br><span class="line"><span class="hljs-keyword">this</span>.mappedByteBuffer.putInt(absIndexPos + <span class="hljs-number">4</span> + <span class="hljs-number">8</span>, (<span class="hljs-keyword">int</span>) timeDiff);</span><br><span class="line"><span class="hljs-keyword">this</span>.mappedByteBuffer.putInt(absIndexPos + <span class="hljs-number">4</span> + <span class="hljs-number">8</span> + <span class="hljs-number">4</span>, slotValue);</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">this</span>.mappedByteBuffer.putInt(absSlotPos, <span class="hljs-keyword">this</span>.indexHeader.getIndexCount());</span><br></pre></td></tr></table></figure></p>
+<hr>
+<p>ConsumeQueue和IndexFile什么时候建立的呢？ – 在Broker启动的时候，会启动一个ReputMessageService线程服务:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">this</span>.reputMessageService.start();</span><br></pre></td></tr></table></figure></p>
+<p>该线程每隔一秒就会执行，根据<strong>CommitLog最新追加到的消息</strong>不断生成：</p>
+<ul>
+<li>消息的offset到CommitQueue</li>
+<li>消息索引到IndexFile</li>
+</ul>
+<p>具体流程为：<br><img src="/2018/03/11/rocketmq-store/reputservice.png" width="800" height="1000" alt="RocketMQ数据逻辑存储" align="center"><br>其中：reputOffset: broker启动时候CommitLog的最大offset.</p>
+<p>构建ConsumeQueue:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitLogDispatcherBuildConsumeQueue</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">CommitLogDispatcher</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">       <span class="hljs-meta">@Override</span></span><br><span class="line">       <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">dispatch</span><span class="hljs-params">(DispatchRequest request)</span> </span>&#123;</span><br><span class="line">           <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> tranType = MessageSysFlag.getTransactionValue(request.getSysFlag());</span><br><span class="line">           <span class="hljs-keyword">switch</span> (tranType) &#123;</span><br><span class="line">               <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">               <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">                   DefaultMessageStore.<span class="hljs-keyword">this</span>.putMessagePositionInfo(request);</span><br><span class="line">                   <span class="hljs-keyword">break</span>;</span><br><span class="line">               <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">               <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">                   <span class="hljs-keyword">break</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"> <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">  * 根据commitlog中该条消息的topic和queueID找到该条消息对应的ConsumeQueue</span></span><br><span class="line"><span class="hljs-comment">  */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">putMessagePositionInfo</span><span class="hljs-params">(DispatchRequest dispatchRequest)</span> </span>&#123;</span><br><span class="line">     ConsumeQueue cq = <span class="hljs-keyword">this</span>.findConsumeQueue(dispatchRequest.getTopic(), dispatchRequest.getQueueId());</span><br><span class="line">     cq.putMessagePositionInfoWrapper(dispatchRequest);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<p>构建IndexFile:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitLogDispatcherBuildIndex</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">CommitLogDispatcher</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">dispatch</span><span class="hljs-params">(DispatchRequest request)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (DefaultMessageStore.<span class="hljs-keyword">this</span>.messageStoreConfig.isMessageIndexEnable()) &#123;</span><br><span class="line">            DefaultMessageStore.<span class="hljs-keyword">this</span>.indexService.buildIndex(request);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">buildIndex</span><span class="hljs-params">(DispatchRequest req)</span> </span>&#123;</span><br><span class="line">        IndexFile indexFile = retryGetAndCreateIndexFile();</span><br><span class="line">        <span class="hljs-keyword">if</span> (indexFile != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">            <span class="hljs-keyword">long</span> endPhyOffset = indexFile.getEndPhyOffset();</span><br><span class="line">            DispatchRequest msg = req;</span><br><span class="line">            String topic = msg.getTopic();</span><br><span class="line">            String keys = msg.getKeys();</span><br><span class="line">            <span class="hljs-keyword">if</span> (msg.getCommitLogOffset() &lt; endPhyOffset) &#123;</span><br><span class="line">                <span class="hljs-keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());</span><br><span class="line">            <span class="hljs-keyword">switch</span> (tranType) &#123;</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">                    <span class="hljs-keyword">break</span>;</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">                    <span class="hljs-keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="hljs-keyword">if</span> (req.getUniqKey() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                indexFile = putKey(indexFile, msg, buildKey(topic, req.getUniqKey()));</span><br><span class="line">                <span class="hljs-keyword">if</span> (indexFile == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                    log.error(<span class="hljs-string">"putKey error commitlog &#123;&#125; uniqkey &#123;&#125;"</span>, req.getCommitLogOffset(), req.getUniqKey());</span><br><span class="line">                    <span class="hljs-keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="hljs-keyword">if</span> (keys != <span class="hljs-keyword">null</span> &amp;&amp; keys.length() &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">                String[] keyset = keys.split(MessageConst.KEY_SEPARATOR);</span><br><span class="line">                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; keyset.length; i++) &#123;</span><br><span class="line">                    String key = keyset[i];</span><br><span class="line">                    <span class="hljs-keyword">if</span> (key.length() &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">                        indexFile = putKey(indexFile, msg, buildKey(topic, key));</span><br><span class="line">                        <span class="hljs-keyword">if</span> (indexFile == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                            log.error(<span class="hljs-string">"putKey error commitlog &#123;&#125; uniqkey &#123;&#125;"</span>, req.getCommitLogOffset(), req.getUniqKey());</span><br><span class="line">                            <span class="hljs-keyword">return</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">            log.error(<span class="hljs-string">"build index error, stop building index"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="数据存储功能"><a href="#数据存储功能" class="headerlink" title="数据存储功能"></a>数据存储功能</h1><p>消息队列在使用过程中都会面临着如何承载消息堆积并在合适的时机投递的问题。处理堆积的最佳方式就是<a href="https://tech.meituan.com/mq-design.html" target="_blank" rel="noopener">数据存储</a>。</p>
+<p>下图是RocketMQ数据的存储管理方式。所有Producer生产的消息，按照插入顺序写入一个CommitLog文件。CommitLog按照固定的大小被切割为多个小文件，每个文件MappedFile都通过内存映射的方式加载入内存。MappedFile随着消息的写入，不断生成，并放在MappedFileQueue队列的最后，每次消息写入都在最后一个MappedFile后追加，直到达到最大的文件大小，重新生成一个新的MappedFile。每个MappedFile名字表示文件中第一条消息在CommitLog中的物理偏移量。每条消息有固定的格式，在写入CommitLog的过程中，RocketMQ会启动一个异步线程，读取MappedFile，根据生产消息时指定的topic和ConsumeQueue id将每条消息在整个CommitLog中的物理偏移量，以及消息的大小和标签码，组织为一条CQUnit，写入对应ConsumeQueue。ConsumeQueue的组织方式与CommitLog类似，每个topic的每个ConsumeQueue独占一个文件夹，文件夹里同样按照MappedFileQueue的方式，组织所有CQStoreUnit。</p>
+<p><img src="/2018/03/11/rocketmq-store/data-store.png" width="600" height="300" alt="data store" align="center"></p>
+<p>从功能上讲，数据存储用于存储：</p>
+<ul>
+<li>Producer生产的消息</li>
+<li>Consumer的逻辑队列: 记录消息在CommitLog中的offset</li>
+<li>索引：用于查询消息，当用户想要查询topic下的某个key消息时，能够快速响应.</li>
+<li>主从复制：用于实现Master - Slave之间的信息同步。</li>
+</ul>
+<p>核心类：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">DefaultMessageStore &#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> MessageStoreConfig messageStoreConfig; <span class="hljs-comment">//存储相关配置，例如存储路径，CommitLog路径及大小</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> CommitLog commitLog;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ConcurrentMap&lt;String<span class="hljs-comment">/* topic */</span>, ConcurrentMap&lt;Integer<span class="hljs-comment">/* queueId */</span>, ConsumeQueue&gt;&gt; consumeQueueTable; <span class="hljs-comment">//topic的消费队列表</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> FlushConsumeQueueService flushConsumeQueueService; <span class="hljs-comment">//CQ刷盘服务线程</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> CleanCommitLogService cleanCommitLogService;<span class="hljs-comment">//磁盘超过水位进行清理</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> CleanConsumeQueueService cleanConsumeQueueService;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> IndexService indexService; <span class="hljs-comment">//索引服务 - 用于创建索引文件集合，当用户想要查询某个topic下某个key的消息时，能够快速响应  主要用于查询消息用的，根据topic+key获取消息,</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> AllocateMappedFileService allocateMappedFileService;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ReputMessageService reputMessageService; <span class="hljs-comment">//CommitLog异步构建CQ和索引文件的服务。</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> HAService haService; <span class="hljs-comment">//主备同步服务</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ScheduleMessageService scheduleMessageService;<span class="hljs-comment">//延迟消息：先把消息投递到delay topic暂存，然后通过定时器把delay topic暂存的消息投递到真实的topic.</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> StoreStatsService storeStatsService; <span class="hljs-comment">//存储统计服务</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> TransientStorePool transientStorePool;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> RunningFlags runningFlags = <span class="hljs-keyword">new</span> RunningFlags();</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> SystemClock systemClock = <span class="hljs-keyword">new</span> SystemClock();</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ScheduledExecutorService scheduledExecutorService =</span><br><span class="line">        Executors.newSingleThreadScheduledExecutor(<span class="hljs-keyword">new</span> ThreadFactoryImpl(<span class="hljs-string">"StoreScheduledThread"</span>));</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> BrokerStatsManager brokerStatsManager; <span class="hljs-comment">//Broker统计服务</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> MessageArrivingListener messageArrivingListener; <span class="hljs-comment">//消息到达监听器</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> BrokerConfig brokerConfig;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">volatile</span> <span class="hljs-keyword">boolean</span> shutdown = <span class="hljs-keyword">true</span>;</span><br><span class="line">    <span class="hljs-keyword">private</span> StoreCheckpoint storeCheckpoint; <span class="hljs-comment">//检查点</span></span><br><span class="line">    <span class="hljs-keyword">private</span> AtomicLong printTimes = <span class="hljs-keyword">new</span> AtomicLong(<span class="hljs-number">0</span>);</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> LinkedList&lt;CommitLogDispatcher&gt; dispatcherList; <span class="hljs-comment">//转发CommitLog到CQ</span></span><br><span class="line">    <span class="hljs-keyword">private</span> RandomAccessFile lockFile;</span><br><span class="line">    <span class="hljs-keyword">private</span> FileLock lock;</span><br><span class="line">    <span class="hljs-keyword">boolean</span> shutDownNormal = <span class="hljs-keyword">false</span>;</span><br><span class="line">&#125; <span class="hljs-comment">//存储模块核心类,提供数据功能API</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="Producer生产消息"><a href="#Producer生产消息" class="headerlink" title="Producer生产消息"></a>Producer生产消息</h2><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PutMessageResult result = <span class="hljs-keyword">this</span>.commitLog.putMessage(msg); <span class="hljs-comment">// 向CommitLog追加消息</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2018/03/11/rocketmq-store/putMessage.png" alt="Producer-putMessage流程图"></p>
+<p>broker在接收到Producer发送的消息之后，会同步或者异步地刷盘。一般来说，数据存储为了追求高吞吐，会先将数据写入到内存，然后再刷盘到磁盘中进行持久化。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> FlushCommitLogService flushCommitLogService;</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>同步刷盘：当数据写到内存之后立刻刷盘，在保证刷盘成功的前提下响应client</li>
+<li>异步刷盘：数据写入内存后，直接响应client, 异步将内存中的数据持久化到磁盘上。</li>
+</ul>
+<h2 id="Consumer消费消息"><a href="#Consumer消费消息" class="headerlink" title="Consumer消费消息"></a>Consumer消费消息</h2><p>通过PullMessageProcessor处理消费消息。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> GetMessageResult <span class="hljs-title">getMessage</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String group, <span class="hljs-keyword">final</span> String topic, <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> queueId,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">          <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> offset, <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> maxMsgNums,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">          <span class="hljs-keyword">final</span> SubscriptionData subscriptionData)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p><img src="/2018/03/11/rocketmq-store/getMessage.jpg" width="200" height="50" alt="Consumer-getMessage流程图" align="center"></p>
+<p>在根据topic和queueId在指定consumeQueue中第offset个消息开始，拉取maxMsgNums条消息时，首先根据offset找到consumeQueue中的目标MappedFile，然后计算offset在MappedFile中真实的物理偏移量，开始依次读取maxMsgNums条consumeQueue记录CQStoreUnit，回顾之前的数据存储图，CQStoreUnit中存储了此条消息在commitlog中的真实物理偏移和大小，以此为依据在commitlog的消息记录（过程与读取consumeQueue的CQStoreUnit相似，都是先找MappedFile，再取数据）。</p>
+<p>为了防止一次性拉去的消息太多，阻塞其他任务，会从以拉取消息的个数和内存大小两个角度限制一次消息拉去的量。</p>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引组件用于创建索引文件集合，RocketMQ允许我们在消息体的property字段中设置一些属性信息记为keys，当消费者想要获取某个topic下的某个key的消息时候能够快速响应。索引组件的具体实现是通过IndexFile来操作的，逻辑结构图如下：</p>
+<p><img src="/2018/03/11/rocketmq-store/index_file.jpg" width="600" height="300" alt="data store" align="center"></p>
+<p>其实，IndexFile就是一个Hash表的具体实现。头字段（蓝色区域）用于记录当前IndexFile文件中内存的使用情况及最新修改的时间戳，哈希桶（紫色区域）用于记录索引信息的哈希值槽位，真实的索引信息（绿色区域）存储在最后，按照索引信息的录入顺序，依次存储。</p>
+<p>当录入索引信息的时候，以topic#key为键，计算其哈希值，对哈希桶的总数取余，定位当前索引信息的哈希槽位。由于索引信息按序录入，所以当索引信息一到的时候，其存储位置就固定了，只需要在哈希槽位中记录其位置信息即可，即上图的indexCount。在发生哈希碰撞的时候，采用头插，以最新索引信息的indexCount覆盖哈希槽位的旧值，并把旧值记录在索引信息中。</p>
+<p>当以某个topic和key取对应消息的物理点位时，首先定位槽位，然后遍历碰撞的“链表”，取到所需要的信息即可。</p>
+<p>IndexFile文件内部的查找就是Hash查找的过程，那如何查找IndexFile呢？这就需要用到IndexFile头中的beginTimeStamp字段和endTimeStamp字段了，它们代表了当前索引信息中第一条和最后一条索引的更新时间。消费者查找时，出了topic和关键字信息，还需要指定时间段。索引组件根据请求的时间段，从后往前匹配。</p>
+<h2 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h2><h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<li><a href="http://blog.csdn.net/chunlongyu/article/details/54576649" target="_blank" rel="noopener">travi’s blog很精彩-1</a></li>
+<li><a href="http://blog.csdn.net/chunlongyu/article/details/54376920" target="_blank" rel="noopener">travi’s blog很精彩-2</a></li>
+<li><a href="http://www.dengshenyu.com/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/2017/11/06/kafka-Meet-Kafka.html" target="_blank" rel="noopener">Dengshenyu - Kafka系列</a></li>
+<li><a href="http://blog.csdn.net/meilong_whpu" target="_blank" rel="noopener">meliong blog</a></li>
+<li><a href="https://www.jianshu.com/p/fad3339e3448" target="_blank" rel="noopener">零拷贝</a></li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/03/11/rocketmq-store/">RocketMQ源码分析3--Store数据存储</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/03/11/rocketmq-store/">https://gsmtoday.github.io/2018/03/11/rocketmq-store/</a></li>
+            <li><strong>发布时间：</strong>2018-03-11</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/RocketMQ/">RocketMQ</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/03/21/php-hashtable/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">PHP哈希表内核实现</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/03/06/distributed-redis/">
+                <span class="level-item">分布式Redis探讨</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#设计思路">
+        <span class="has-mr-6">1</span>
+        <span>设计思路</span>
+        </a></li><li>
+        <a class="is-flex" href="#Store模块数据核心文件">
+        <span class="has-mr-6">2</span>
+        <span>Store模块数据核心文件</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#MappedFile">
+        <span class="has-mr-6">2.1</span>
+        <span>MappedFile</span>
+        </a></li><li>
+        <a class="is-flex" href="#CommitLog">
+        <span class="has-mr-6">2.2</span>
+        <span>CommitLog</span>
+        </a></li><li>
+        <a class="is-flex" href="#ConsumeQueue">
+        <span class="has-mr-6">2.3</span>
+        <span>ConsumeQueue</span>
+        </a></li><li>
+        <a class="is-flex" href="#IndexFile">
+        <span class="has-mr-6">2.4</span>
+        <span>IndexFile</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#数据存储功能">
+        <span class="has-mr-6">3</span>
+        <span>数据存储功能</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Producer生产消息">
+        <span class="has-mr-6">3.1</span>
+        <span>Producer生产消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#Consumer消费消息">
+        <span class="has-mr-6">3.2</span>
+        <span>Consumer消费消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#索引">
+        <span class="has-mr-6">3.3</span>
+        <span>索引</span>
+        </a></li><li>
+        <a class="is-flex" href="#主从复制">
+        <span class="has-mr-6">3.4</span>
+        <span>主从复制</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#参考">
+        <span class="has-mr-6">4</span>
+        <span>参考</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

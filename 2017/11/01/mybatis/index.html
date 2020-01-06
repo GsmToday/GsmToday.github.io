@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>MyBatis generator自动生成代码详细配置 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="MyBatisMyBatis Generator (下文简称MGB)是Mybatis官方推出的MyBatis和iBatis代码生成器。引入MGB jar包后，MGB会根据指定的配置文件读取数据库表生成一个访问数据库的接口，实现对数据库进行基本的CRUD甚至是一些联表操作。">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MyBatis generator自动生成代码详细配置">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/11/01/mybatis/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="MyBatisMyBatis Generator (下文简称MGB)是Mybatis官方推出的MyBatis和iBatis代码生成器。引入MGB jar包后，MGB会根据指定的配置文件读取数据库表生成一个访问数据库的接口，实现对数据库进行基本的CRUD甚至是一些联表操作。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/11/01/mybatis/1.jpg.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/11/01/mybatis/generatorDir.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/11/01/mybatis/mbgplugin.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.001Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MyBatis generator自动生成代码详细配置">
+<meta name="twitter:description" content="MyBatisMyBatis Generator (下文简称MGB)是Mybatis官方推出的MyBatis和iBatis代码生成器。引入MGB jar包后，MGB会根据指定的配置文件读取数据库表生成一个访问数据库的接口，实现对数据库进行基本的CRUD甚至是一些联表操作。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2017/11/01/mybatis/1.jpg.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/pun.jpeg" alt="MyBatis generator自动生成代码详细配置">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-11-01T14:47:09.000Z">2017-11-01</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    13 分钟 读完 (大约 1892 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                MyBatis generator自动生成代码详细配置
+            
+        </h1>
+        <div class="content">
+            <h1 id="MyBatis"><a href="#MyBatis" class="headerlink" title="MyBatis"></a>MyBatis</h1><p>MyBatis Generator (下文简称MGB)是Mybatis官方推出的MyBatis和iBatis代码生成器。引入MGB jar包后，MGB会根据指定的配置文件读取数据库表生成一个访问数据库的接口，实现对数据库进行基本的CRUD甚至是一些联表操作。</p>
+<a id="more"></a>
+<p>使用MGB会生成：</p>
+<ul>
+<li>Java POJO类</li>
+<li>MyBatis/iBatis SQL Map XML 文件(具体sql代码)。</li>
+<li>mapper 文件(相当于DAO，定义操作数据库的java接口)</li>
+</ul>
+<p><img src="/2017/11/01/mybatis/1.jpg.png" alt="mgb"></p>
+<h2 id="1-使用mybatis-generator实现CRUD"><a href="#1-使用mybatis-generator实现CRUD" class="headerlink" title="1. 使用mybatis-generator实现CRUD"></a>1. 使用mybatis-generator实现CRUD</h2><h3 id="1-1-下载MGB-JAR"><a href="#1-1-下载MGB-JAR" class="headerlink" title="1.1. 下载MGB JAR"></a>1.1. 下载MGB JAR</h3><p><a href="http://repo1.maven.org/maven2/org/mybatis/generator/mybatis-generator-core/" target="_blank" rel="noopener">MBG下载地址</a></p>
+<h3 id="1-2-配置mybatis-generator-config-xml"><a href="#1-2-配置mybatis-generator-config-xml" class="headerlink" title="1.2. 配置mybatis-generator-config.xml"></a>1.2. 配置mybatis-generator-config.xml</h3><p>如果要想实现MGB代码生成器，需要先配置一个基础的XML配置文件(本文定义为mybatis-generator-config.xml)。该配置文件主要告诉MBG三件事：</p>
+<p>1.如何连接到数据库</p>
+<p>2.生成什么POJO对象(根据哪张表生成对象，对象存放在哪个文件路径下)</p>
+<p>3.mapper文件生成哪些操作数据库的方法</p>
+<p>mybatis-generator-config.xml 的文件结构为：<br><figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span><br><span class="line"><span class="hljs-meta">&lt;!DOCTYPE generatorConfiguration</span></span><br><span class="line"><span class="hljs-meta">        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"</span></span><br><span class="line"><span class="hljs-meta">        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd"&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">generatorConfiguration</span>&gt;</span></span><br><span class="line">    <span class="hljs-comment">&lt;!-- 具体配置内容 --&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">properties</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">properties</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">classPathEntry</span>&gt;</span> 指定mgb jar包位置</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">classPathEntry</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">context</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">property</span>&gt;</span> (0个或多个)</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">plugin</span>&gt;</span> (0个或多个) 使用哪些插件</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">commentGenerator</span>&gt;</span> (0个或1个) 生成的代码要不要注释</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">jdbcConnection</span>&gt;</span> (1个) 配置连接的jdbc</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">javaTypeResolver</span>&gt;</span> (0个或1个) 配置java数据类型和sql数据类型映射</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">javaModelGenerator</span>&gt;</span> (1个) 生成PO类的位置</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">sqlMapGenerator</span>&gt;</span> (0个或1个) mapper映射文件生成的位置</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">javaClientGenerator</span>&gt;</span> (0个或1个) mapper接口生成的位置</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">table</span>&gt;</span> (1个或多个) 根据哪个mysql table生成</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">context</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">generatorConfiguration</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p><a href="http://blog.csdn.net/isea533/article/details/42102297" target="_blank" rel="noopener">详细配置及对应含义可以参考</a>. 这里重点说下生产环境常用的配置。</p>
+<h3 id="context元素"><a href="#context元素" class="headerlink" title="context元素"></a>context元素</h3><p>context元素用于指定生成POJO对象的环境，例如指定连接的数据库，要生成对象的类型和路径。</p>
+<h4 id="context属性defaultModelType"><a href="#context属性defaultModelType" class="headerlink" title="context属性defaultModelType"></a>context属性<code>defaultModelType</code></h4><p>定义了MBG如何生成<strong>实体类</strong>。一般选择<code>flat模型</code>,该模型为每一张表只生成一个实体类。这个实体类包含表中的所有字段。<strong>这种模型最简单，推荐使用。</strong></p>
+<p>一般情况下，我们使用如下的配置即可：<br><figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">context</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"Mysql"</span> <span class="hljs-attr">defaultModelType</span>=<span class="hljs-string">"flat"</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="lt-plugin-gt-元素使用插件。"><a href="#lt-plugin-gt-元素使用插件。" class="headerlink" title="&lt;plugin&gt;元素使用插件。"></a><code>&lt;plugin&gt;</code>元素使用插件。</h4><p>插件用于扩展或修改通过MyBatis Generator (MBG)代码生成器生成的代码。生产环境常见的插件：</p>
+<ul>
+<li><code>&lt;plugin type=&quot;org.mybatis.generator.plugins.RenameExampleClassPlugin&quot;/&gt;</code><ul>
+<li>该插件用于重命名生成的XXXExample类，通过配置 searchString和replaceString属性来完成。具体通过配置<code>searchString</code>和<code>replaceString</code>属性使用正则表达式实现。</li>
+</ul>
+</li>
+<li><code>&lt;plugin type=&quot;org.mybatis.generator.plugins.EqualsHashCodePlugin&quot;/&gt;</code><ul>
+<li>这个插件用来给生成的Java POJO类生成equals和hashcode方法</li>
+</ul>
+</li>
+<li><code>&lt;plugin type=&quot;org.mybatis.generator.plugins.SerializablePlugin&quot;/&gt;</code><ul>
+<li>这个插件用来给生成的Java POJO类生成的Java模型类添加序列化接口，并生成serialVersionUID字段</li>
+</ul>
+</li>
+</ul>
+<p>更多插件可以参见mybatis官方插件库<a href="http://www.mybatis.org/generator/reference/plugins.html" target="_blank" rel="noopener">mybatis官方插件库</a>和<a href="https://github.com/itfsw/mybatis-generator-plugin" target="_blank" rel="noopener">第三方插件库</a>.</p>
+<p>一份完整的mybatis-generator-config 示例：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span><br><span class="line"><span class="hljs-meta">&lt;!DOCTYPE generatorConfiguration</span></span><br><span class="line"><span class="hljs-meta">        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"</span></span><br><span class="line"><span class="hljs-meta">        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd"&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">generatorConfiguration</span>&gt;</span></span><br><span class="line">    <span class="hljs-comment">&lt;!-- step 1: classPathEntry:数据库的JDBC驱动,换成你自己的驱动路径 --&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">classPathEntry</span></span></span><br><span class="line"><span class="hljs-tag">            <span class="hljs-attr">location</span>=<span class="hljs-string">"D:\Program Files\apache-maven-3.0.3-bin\maven-repository\mysql\mysql-connector-java\5.1.20\mysql-connector-java-5.1.20.jar"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">context</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"MBG"</span> <span class="hljs-attr">targetRuntime</span>=<span class="hljs-string">"MyBatis3"</span> <span class="hljs-attr">defaultModelType</span>=<span class="hljs-string">"flat"</span>&gt;</span>  </span><br><span class="line">        <span class="hljs-comment">&lt;!-- defaultModelType指定生成pojo的模型 --&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!-- 使用插件 --&gt;</span></span><br><span class="line">        <span class="hljs-comment">&lt;!--&lt;plugin type="plugin.SelectByPagePlugin" /&gt; --&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">plugin</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"org.mybatis.generator.plugins.RenameExampleClassPlugin"</span>&gt;</span></span><br><span class="line">          <span class="hljs-comment">&lt;!-- 此处是将Example改名为Criteria --&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"searchString"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Example$"</span>/&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"replaceString"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"Criteria"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">plugin</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">plugin</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"org.mybatis.generator.plugins.EqualsHashCodePlugin"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">plugin</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"org.mybatis.generator.plugins.SerializablePlugin"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">commentGenerator</span>&gt;</span></span><br><span class="line">            <span class="hljs-comment">&lt;!-- 去除自动生成的注释 --&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"suppressAllComments"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"suppressDate"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">commentGenerator</span>&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!--数据库连接的信息：驱动类、连接地址、用户名、密码 --&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">jdbcConnection</span> <span class="hljs-attr">driverClass</span>=<span class="hljs-string">"com.mysql.jdbc.Driver"</span></span></span><br><span class="line"><span class="hljs-tag">                        <span class="hljs-attr">connectionURL</span>=<span class="hljs-string">"jdbc:mysql:loadbalance://xxx.xxx.xxx.xxx:3306/database_name?useUnicode=true&amp;amp;characterEncoding=UTF8"</span></span></span><br><span class="line"><span class="hljs-tag">                        <span class="hljs-attr">userId</span>=<span class="hljs-string">"username"</span> <span class="hljs-attr">password</span>=<span class="hljs-string">"password"</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">jdbcConnection</span>&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!-- 默认false，把JDBC DECIMAL 和 NUMERIC 类型解析为 Integer，为 true时把JDBC DECIMAL 和</span></span><br><span class="line"><span class="hljs-comment">      NUMERIC 类型解析为java.math.BigDecimal --&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">javaTypeResolver</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"forceBigDecimals"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"false"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">javaTypeResolver</span>&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!--  targetProject:生成PO类的位置 --&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">javaModelGenerator</span> <span class="hljs-attr">targetPackage</span>=<span class="hljs-string">"com.jd.myproject.domain.actPC"</span></span></span><br><span class="line"><span class="hljs-tag">                            <span class="hljs-attr">targetProject</span>=<span class="hljs-string">"D:\GitPro\myproject\myproject-domain\src\main\java"</span>&gt;</span></span><br><span class="line">            <span class="hljs-comment">&lt;!-- enableSubPackages:是否让schema作为包的后缀 --&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"enableSubPackages"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">            <span class="hljs-comment">&lt;!-- 从数据库返回的值被清理前后的空格 --&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"trimStrings"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">javaModelGenerator</span>&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!-- targetProject:mapper映射文件生成的位置</span></span><br><span class="line"><span class="hljs-comment">           如果maven工程只是单独的一个工程，targetProject="src/main/java"</span></span><br><span class="line"><span class="hljs-comment">           若果maven工程是分模块的工程，targetProject="所属模块的名称"，例如：</span></span><br><span class="line"><span class="hljs-comment">           targetProject="ecps-manager-mapper"，下同--&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">sqlMapGenerator</span> <span class="hljs-attr">targetPackage</span>=<span class="hljs-string">"actPC"</span></span></span><br><span class="line"><span class="hljs-tag">                         <span class="hljs-attr">targetProject</span>=<span class="hljs-string">"</span></span></span><br><span class="line"><span class="hljs-tag"><span class="hljs-string">                         D:\GitPro\myproject\myproject-dao\src\main\resources\sqlmap"</span>&gt;</span></span><br><span class="line">            <span class="hljs-comment">&lt;!-- enableSubPackages:是否让schema作为包的后缀 --&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"enableSubPackages"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">sqlMapGenerator</span>&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!-- targetPackage：mapper接口生成的位置 --&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">javaClientGenerator</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"XMLMAPPER"</span></span></span><br><span class="line"><span class="hljs-tag">                             <span class="hljs-attr">targetPackage</span>=<span class="hljs-string">"com.jd.myproject.dao.actPC.mapper"</span></span></span><br><span class="line"><span class="hljs-tag">                             <span class="hljs-attr">targetProject</span>=<span class="hljs-string">"D:\GitPro\myproject\myproject-dao\src\main\java"</span>&gt;</span></span><br><span class="line">            <span class="hljs-comment">&lt;!-- enableSubPackages:是否让schema作为包的后缀 --&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"enableSubPackages"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">javaClientGenerator</span>&gt;</span></span><br><span class="line">        <span class="hljs-comment">&lt;!-- tableName:用于自动生成代码的数据库表；domainObjectName:对应于数据库表的javaBean类名 --&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">&lt;!-- 指定数据表 --&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">tableName</span>=<span class="hljs-string">"student_audit"</span> <span class="hljs-attr">domainObjectName</span>=<span class="hljs-string">"StudentAudit"</span></span></span><br><span class="line"><span class="hljs-tag">               <span class="hljs-attr">enableCountByExample</span>=<span class="hljs-string">"true"</span> <span class="hljs-attr">enableUpdateByExample</span>=<span class="hljs-string">"true"</span></span></span><br><span class="line"><span class="hljs-tag">               <span class="hljs-attr">enableDeleteByExample</span>=<span class="hljs-string">"false"</span> <span class="hljs-attr">enableSelectByExample</span>=<span class="hljs-string">"true"</span></span></span><br><span class="line"><span class="hljs-tag">               <span class="hljs-attr">selectByExampleQueryId</span>=<span class="hljs-string">"true"</span> <span class="hljs-attr">enableInsert</span>=<span class="hljs-string">"true"</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">context</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">generatorConfiguration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>添加到如下路径</p>
+<p><img src="/2017/11/01/mybatis/generatorDir.png" alt="directory"></p>
+<h3 id="1-3-生成mybatis-generator-maven-plugin"><a href="#1-3-生成mybatis-generator-maven-plugin" class="headerlink" title="1.3. 生成mybatis-generator-maven-plugin"></a>1.3. 生成mybatis-generator-maven-plugin</h3><p>在domain的pom文件中添加mybatis-generator的maven plugin插件。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependencies&gt;</span><br><span class="line">    ...</span><br><span class="line">       &lt;build&gt;</span><br><span class="line">        &lt;plugins&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.mybatis.generator&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;mybatis-generator-maven-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;1.3.5&lt;/version&gt;</span><br><span class="line">                &lt;configuration&gt;</span><br><span class="line">                    &lt;!--配置文件的位置--&gt;</span><br><span class="line">                    &lt;configurationFile&gt;src/main/resources/mybatis-generator-config.xml</span><br><span class="line">                    &lt;/configurationFile&gt;</span><br><span class="line">                    &lt;verbose&gt;true&lt;/verbose&gt;</span><br><span class="line">                    &lt;overwrite&gt;true&lt;/overwrite&gt;</span><br><span class="line">                &lt;/configuration&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line">        &lt;/plugins&gt;</span><br><span class="line">    &lt;/build&gt;</span><br></pre></td></tr></table></figure>
+<p>使用idea的maven插件直接快速生成, 对domain进行 <code>mvn clean</code>,<code>mvn package</code>。会发现maven 生成了一个 MGB的一个插件<br><img src="/2017/11/01/mybatis/mbgplugin.png" alt="plugins"></p>
+<h2 id="1-4-MGB生成代码"><a href="#1-4-MGB生成代码" class="headerlink" title="1.4. MGB生成代码"></a>1.4. MGB生成代码</h2><p>直接点击mybatis-generator:generate就可生成。</p>
+<h2 id="2-使用mybatis-generator实现高级操作"><a href="#2-使用mybatis-generator实现高级操作" class="headerlink" title="2. 使用mybatis-generator实现高级操作"></a>2. 使用mybatis-generator实现高级操作</h2><figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">&lt;!-- 指定数据表 --&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">tableName</span>=<span class="hljs-string">"test_table"</span> <span class="hljs-attr">domainObjectName</span>=<span class="hljs-string">"TestPojo"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">enableCountByExample</span>=<span class="hljs-string">"true"</span> <span class="hljs-attr">enableUpdateByExample</span>=<span class="hljs-string">"true"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">enableDeleteByExample</span>=<span class="hljs-string">"false"</span> <span class="hljs-attr">enableSelectByExample</span>=<span class="hljs-string">"true"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">selectByExampleQueryId</span>=<span class="hljs-string">"true"</span> <span class="hljs-attr">enableInsert</span>=<span class="hljs-string">"true"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>在<code>mybatis-generator-config.xml</code>中我们定义了一系列<code>ByExample</code>形式的操作数据库的java接口。如果把<code>enableCountByExample</code> 等等这些<code>ByExample</code>接口都置为false，那么MGB只会生成基本的CRUD增删改查的接口，难以满足生产环境mysql的复杂语句，例如根据条件搜索，统计数量，甚至是一些联表操作。</p>
+<p>当把<code>enableCountByExample</code> 等等这些<code>ByExample</code>接口都置为true后，会生成一个<code>xxxExample</code>类，该类可以理解为一个动态配置where条件的对象。<code>xxxExample</code>类包括一个静态内部类<code>Creteria</code>，<code>Creteria</code>包含一个Criteria条件集合，集合内的条件是由<code>And</code>逻辑与连接的。当使用<code>or</code>方法会创建一个Criteria属性，Criteria和Criteria对象之间是逻辑或。</p>
+<p>另外：Example类的distinct字段用于指定DISTINCT查询。orderByClause字段用于指定ORDER BY条件,这个条件没有构造方法,直接通过传递字符串值指定。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StudentExample</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">protected</span> String orderByClause;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">boolean</span> distinct;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">protected</span> List&lt;Criteria&gt; oredCriteria;</span><br><span class="line"></span><br><span class="line">     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">or</span><span class="hljs-params">(Criteria criteria)</span> </span>&#123;</span><br><span class="line">        oredCriteria.add(criteria);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Criteria <span class="hljs-title">or</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        Criteria criteria = createCriteriaInternal();</span><br><span class="line">        oredCriteria.add(criteria);</span><br><span class="line">        <span class="hljs-keyword">return</span> criteria;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>另外，如果仍然有一些情况mgb自动生成的代码仍然满足不了我们的需求，如进行联表。我们可以扩展example类。</p>
+<p>例如实现联表操作。在xxxExample类增加方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> Criteria <span class="hljs-title">multiColumnOrClause</span><span class="hljs-params">(String value)</span> </span>&#123;</span><br><span class="line">    addCriterion(<span class="hljs-string">"(b.name like "</span> +<span class="hljs-string">"\"%"</span> +value +<span class="hljs-string">"%\""</span> + <span class="hljs-string">" OR id = "</span> + Integer.valueOf(value)+<span class="hljs-string">")"</span>);</span><br><span class="line">    <span class="hljs-keyword">return</span> (Criteria)<span class="hljs-keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在mapper中增加联表语句即可。</p>
+<h2 id="3-使用mybatis打印sql操作日志"><a href="#3-使用mybatis打印sql操作日志" class="headerlink" title="3. 使用mybatis打印sql操作日志"></a>3. 使用mybatis打印sql操作日志</h2><p>MyBatis内置有日志工厂，可以使用Log4j对每一条数据库操作进行日志打印。这对开发环境快速定位问题非常重要。通过配置<code>log4j.properties</code>可以实现：</p>
+<ul>
+<li>日志记录每一条数据库操作语句</li>
+<li>日志记录每一条数据库操作的输入</li>
+<li>日志记录每一条数据库操作的结果</li>
+</ul>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">log4j.rootLogger=DEBUG,FileLog</span><br><span class="line">log4j.logger.java.sql = DEBUG</span><br><span class="line">log4j.logger.java.sql.Connection = DEBUG</span><br><span class="line">log4j.logger.java.sql.Statement = DEBUG</span><br><span class="line">log4j.logger.java.sql.PreparedStatement = DEBUG</span><br><span class="line">log4j.logger.java.sql.ResultSet = DEBUG</span><br><span class="line">log4j.logger.com.ibatis = DEBUG</span><br><span class="line">log4j.logger.com.ibatis.common.jdbc.SimpleDataSource = DEBUG</span><br><span class="line">log4j.logger.com.ibatis.common.jdbc.ScriptRunner = DEBUG</span><br><span class="line">log4j.logger.com.ibatis.sqlmap.engine.impl.SqlMapClientDelegate = DEBUG</span><br><span class="line"></span><br><span class="line"># Console config 屏幕打印</span><br><span class="line">#log4j.appender.stdout=org.apache.log4j.ConsoleAppender</span><br><span class="line">#log4j.appender.stdout.Target=System.out</span><br><span class="line">#log4j.appender.stdout.layout=org.apache.log4j.PatternLayout</span><br><span class="line">#log4j.appender.stdout.layout.ConversionPattern=%d&#123;yyyy-MM-dd HH:mm:ss&#125; [%7r] [%5p] - %30.30c - %m \n</span><br><span class="line"></span><br><span class="line">#File Log config 文件输出</span><br><span class="line">log4j.appender.FileLog=org.apache.log4j.DailyRollingFileAppender</span><br><span class="line">log4j.appender.FileLog.File=D:/export/ejshop/jshope.log</span><br><span class="line">log4j.appender.FileLog.layout=org.apache.log4j.PatternLayout</span><br><span class="line">log4j.appender.FileLog.layout.ConversionPattern=%d&#123;yyyy-MM-dd HH:mm:ss&#125; [%<span class="hljs-number">7</span>r] [%<span class="hljs-number">5</span>p] - %<span class="hljs-number">30.30</span>c - %m \n</span><br><span class="line">log4j.appender.FileLog.encoding=UTF-<span class="hljs-number">8</span></span><br></pre></td></tr></table></figure>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<li><a href="http://www.mybatis.org/generator/generatedobjects/exampleClassUsage.html" target="_blank" rel="noopener">MBG官网</a></li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/11/01/mybatis/">MyBatis generator自动生成代码详细配置</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/11/01/mybatis/">https://gsmtoday.github.io/2017/11/01/mybatis/</a></li>
+            <li><strong>发布时间：</strong>2017-11-01</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/11/28/git-submodule/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Git子模块实践</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/10/29/nginx-principle/">
+                <span class="level-item">Nginx高性能和高扩展性背后的设计原理[译]</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

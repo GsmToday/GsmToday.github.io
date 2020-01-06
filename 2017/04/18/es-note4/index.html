@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Elastic Search学习笔记-4 (常见搜索类型实践) - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="keywords" content="ElasticSearch">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elastic Search学习笔记-4 (常见搜索类型实践)">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/04/18/es-note4/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/04/18/es-note4/esquerytype.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.801Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Elastic Search学习笔记-4 (常见搜索类型实践)">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2017/04/18/es-note4/esquerytype.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/zebra.jpg" alt="Elastic Search学习笔记-4 (常见搜索类型实践)">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-04-18T14:55:46.000Z">2017-04-18</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    23 分钟 读完 (大约 3517 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Elastic Search学习笔记-4 (常见搜索类型实践)
+            
+        </h1>
+        <div class="content">
+            <p><img src="/2017/04/18/es-note4/esquerytype.png" alt="查询分类"></p>
+<a id="more"></a>
+<ul>
+<li><a href="#1">结构化查询</a><ul>
+<li><a href="#1.1">精确匹配 term</a></li>
+<li><a href="#1.2">组合过滤器 bool </a></li>
+</ul>
+</li>
+<li><a href="#2">全文检索</a><ul>
+<li><a href="#2.1">match查询</a></li>
+<li><a href="#2.2">组合过滤器 bool </a></li>
+</ul>
+</li>
+<li><a href="#3">多字段查询</a><ul>
+<li><a href="#3.1">best fields</a></li>
+<li><a href="#3.2">most fields</a></li>
+<li><a href="#3.3">cross fields</a></li>
+</ul>
+</li>
+<li><a href="#4">邻近匹配</a><ul>
+<li><a href="#3.1">best fields</a></li>
+<li><a href="#3.2">most fields</a></li>
+<li><a href="#3.3">cross fields</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="1">结构化查询</h2><br>精确值查找使用filter, 由于该类搜索有缓存，因此搜索速度相较于全文检索要更快。<br><br><strong>关于缓存</strong>：<br>ES在运行精确查找的时候会执行多个操作：<br><br>1. 查找匹配文档，term查询在倒排索引中查找满足条件的所有文档。<br>2. 创建bitset(一个包含0和1的数组)，它描述了哪个文档包含该term. 匹配则置为1，[1,0,0,0]说明第一个文档匹配。<br>3. 迭代bitsets. 一旦为每个查询生成了bitsets, ES会循环迭代bitsets 从而找到满足所有过滤条件的匹配文档集合。<br>4. 增量使用技术。 ES会为每个索引跟踪保留查询使用的历史状态，如果查询在最近的256次查询中会被用到，那么它就会被缓存到内存中。当bitset被缓存后，缓存会在那些容量低于10000个文档的段中忽略。（因为这些容量小的端会消失，为他们分配缓存是一种浪费。）<br><br>一旦缓存bitset, bitset可以复用任何已经使用过的相同过滤器，而无需再次计算整个过滤器。这是因为，属于查询组件的bitset是独立于它所属搜索请求其他部分的，这意味着，一旦被缓存，一个查询可以被用作多个搜索请求。<br><br><h3 id="1.1">精确匹配 term</h3><br><br>term query finds documents that contain the exact term specified in the inverted index(精确匹配，term过滤器)。<br><br>例外，term过滤器匹配过程是 <em>包含</em> ，而非等值。如果我们有一个 term（词项）过滤器<code>{ &quot;term&quot; : { &quot;tags&quot; : &quot;search&quot; } }</code>  ，它会与以下两个文档同时 匹配：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123; &quot;tags&quot; : [&quot;search&quot;] &#125;</span><br><span class="line">&#123; &quot;tags&quot; : [&quot;search&quot;, &quot;open_source&quot;] &#125;</span><br></pre></td></tr></table></figure><br><br>查询条件分为以下两种情况：<br><br>- 非string字段<br>    默认精确搜索<br>- string字段<br>    如果要使用精确搜索，需要在mapping - 字段index配置项指定“not_analyzed”<br><br>示例：在倒排索引中查询user字段是否精确匹配<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">POST _search</span><br><span class="line">&#123;</span><br><span class="line">&quot;query&quot;:&#123;</span><br><span class="line">    &quot;term&quot;:&#123;</span><br><span class="line">      &quot;user_id&quot;:200002</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>A <code>boost</code> parameter can be specified to give this term query a higher relevance score than another query, for instance<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">GET _search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;bool&quot;: &#123;</span><br><span class="line">      &quot;should&quot;: [</span><br><span class="line">        &#123;</span><br><span class="line">          &quot;term&quot;: &#123;</span><br><span class="line">            &quot;status&quot;: &#123;</span><br><span class="line">              &quot;value&quot;: &quot;urgent&quot;,</span><br><span class="line">              &quot;boost&quot;: 2.0</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          &quot;term&quot;: &#123;</span><br><span class="line">            &quot;status&quot;: &quot;normal&quot;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>通常当查找一个精确值的时候，我们不希望对查询进行评分计算。只希望对文档进行包括或排除的计算，所以我们会使用 constant_score 查询以非评分模式来执行 term 查询并以一作为统一评分。<br><br>term 更高效地写法：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line"> &quot;query&quot; : &#123;</span><br><span class="line">        &quot;constant_score&quot; : &#123;</span><br><span class="line">            &quot;filter&quot; : &#123;</span><br><span class="line">                &quot;term&quot; : &#123;</span><br><span class="line">                    &quot;category_name&quot; : &quot;服装&quot;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br><h3 id="1.2">组合过滤器bool</h3><br>类似sql 的and or查询，要使用bool过滤器（复合过滤器）。<br>格式：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">   &quot;bool&quot; : &#123;</span><br><span class="line">      &quot;must&quot; :     [],</span><br><span class="line">      &quot;should&quot; :   [],</span><br><span class="line">      &quot;must_not&quot; : [],</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">   &quot;query&quot; : &#123;</span><br><span class="line">      &quot;filtered&quot; : &#123;</span><br><span class="line">         &quot;filter&quot; : &#123;</span><br><span class="line">            &quot;bool&quot; : &#123;</span><br><span class="line">              &quot;should&quot; : [</span><br><span class="line">                 &#123; &quot;term&quot; : &#123;&quot;color_name&quot; : &quot;棕色&quot;&#125;&#125;,</span><br><span class="line">                 &#123; &quot;term&quot; : &#123;&quot;color_name&quot; : &quot;白色&quot;&#125;&#125;</span><br><span class="line">              ],</span><br><span class="line">              &quot;must_not&quot; : &#123;</span><br><span class="line">                 &quot;term&quot; : &#123;&quot;price&quot; : 30&#125;</span><br><span class="line">              &#125;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>等同于sql<br><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">where( color_name = &quot;棕色&quot; or color_name = &quot;白色&quot;  ) and (price != 30)</span><br></pre></td></tr></table></figure><br><br>####  嵌套布尔过滤器<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SELECT document</span><br><span class="line">FROM   products</span><br><span class="line">WHERE  productID      = &quot;KDKE-B-9947-#kL5&quot;</span><br><span class="line">  OR (     productID = &quot;JODL-X-1937-#pV7&quot;</span><br><span class="line">       AND price     = 30 )</span><br></pre></td></tr></table></figure><br><br>我们将其转换成一组嵌套的 bool 过滤器：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">GET /my_store/products/_search</span><br><span class="line">&#123;</span><br><span class="line">   &quot;query&quot; : &#123;</span><br><span class="line">      &quot;filtered&quot; : &#123;</span><br><span class="line">         &quot;filter&quot; : &#123;</span><br><span class="line">            &quot;bool&quot; : &#123;</span><br><span class="line">              &quot;should&quot; : [</span><br><span class="line">                &#123; &quot;term&quot; : &#123;&quot;productID&quot; : &quot;KDKE-B-9947-#kL5&quot;&#125;&#125;,</span><br><span class="line">                &#123; &quot;bool&quot; : &#123;</span><br><span class="line">                  &quot;must&quot; : [</span><br><span class="line">                    &#123; &quot;term&quot; : &#123;&quot;productID&quot; : &quot;JODL-X-1937-#pV7&quot;&#125;&#125;,</span><br><span class="line">                    &#123; &quot;term&quot; : &#123;&quot;price&quot; : 30&#125;&#125;</span><br><span class="line">                  ]</span><br><span class="line">                &#125;&#125;</span><br><span class="line">              ]</span><br><span class="line">           &#125;</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>####  查找多个精确值<br>等价于<code>where price = 20 or price =30</code><br><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;terms&quot;:&#123;</span><br><span class="line">        &quot;price&quot;:[20,30]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">GET /my_store/products/_search</span><br><span class="line">&#123;</span><br><span class="line">    &quot;query&quot; : &#123;</span><br><span class="line">        &quot;constant_score&quot; : &#123;</span><br><span class="line">            &quot;filter&quot; : &#123;</span><br><span class="line">                &quot;terms&quot; : &#123;</span><br><span class="line">                    &quot;price&quot; : [20, 30]</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>####  范围<br>range 查询：查询处于某个范围的文档。可供组合的选项如下：<br><br>- gt: &gt; 大于（greater than）<br>- lt: &lt; 小于（less than）<br>- gte: &gt;= 大于或等于（greater than or equal to）<br>- lte: &lt;= 小于或等于（less than or equal to）<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">GET /my_store/products/_search</span><br><span class="line">&#123;</span><br><span class="line">    &quot;query&quot; : &#123;</span><br><span class="line">        &quot;constant_score&quot; : &#123;</span><br><span class="line">            &quot;filter&quot; : &#123;</span><br><span class="line">                &quot;range&quot; : &#123;</span><br><span class="line">                    &quot;price&quot; : &#123;</span><br><span class="line">                        &quot;gte&quot; : 20,</span><br><span class="line">                        &quot;lt&quot;  : 40</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>Note: 数字和日期字段的索引方式使高效地范围计算成为可能。 但字符串却并非如此，要想对其使用范围过滤，Elasticsearch 实际上是在为范围内的每个词项都执行 term 过滤器，这会比日期或数字的范围过滤慢许多。<br><br>字符串范围在过滤 低基数（low cardinality） 字段（即只有少量唯一词项）时可以正常工作，但是唯一词项越多，字符串范围的计算会越慢。<br><br><h2 id="2">全文检索</h2><br>全文检索两个最重要的方面是：<br><br>- 相关性 Relevance<br>    它是评价查询与其结果间的相关程度，并根据这种相关程度对结果进行排名的一种能力，这种相关程度的计算方法可以是TF/IDF，地理位置临近，模糊相似，或者其他算法。<br>- 分析 Analysis<br>    它是将文本块拆分为有区别的、规范化的token的一个过程。目的是为了 <strong>创建倒排索引</strong> 以及 <strong>查询倒排索引</strong><br><br><h3 id="2.1">match查询</h3><br>匹配查询match是个 <strong>核心</strong> 查询。无论需要查询什么字段，match查询都应该会是首选的查询方式。 它是一个高级全文查询，这表示它既能处理全文字段，又能处理精确字段.这就是说， <span style="color:red;"> match 查询主要的应用场景就是进行全文搜索. </span><br><br>match的单词匹配<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">GET /my_index/my_type/_search</span><br><span class="line">&#123;</span><br><span class="line">    &quot;query&quot;: &#123;</span><br><span class="line">        &quot;match&quot;: &#123;</span><br><span class="line">            &quot;title&quot;: &quot;QUICK!&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>Elasticsearch 执行单词匹配这个 match 查询的步骤是：<br><br>1. 检查字段类型 。<br><br>    标题 title 字段是一个 string 类型（ analyzed ）已分析的全文字段，这意味着查询字符串本身也应该被分析。<br><br>2. 分析查询字符串 。<br><br>    将查询的字符串 QUICK! 传入标准分析器中，输出的结果是单个项 quick 。因为只有一个单词项，所以 match 查询执行的是单个底层 term 查询。<br><br>3. 查找匹配文档 。<br><br>    用 term 查询在倒排索引中查找 quick 然后获取一组包含该项的文档，本例的结果是文档：1、2 和 3 。<br><br>4. 为每个文档评分 。<br><br>    用 term 查询计算每个文档相关度评分 <em>score</em> ，这是种将 词频（term frequency，即词 quick 在相关文档的 title 字段中出现的频率）和反向文档频率（inverse document frequency，即词 quick 在所有文档的 title 字段中出现的频率），以及字段的长度（即字段越短相关度越高）相结合的计算方式。参见 相关性的介绍 。<br><br>match的多次匹配<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">GET /my_index/my_type/_search</span><br><span class="line">&#123;</span><br><span class="line">    &quot;query&quot;: &#123;</span><br><span class="line">        &quot;match&quot;: &#123;</span><br><span class="line">            &quot;title&quot;: &quot;BROWN DOG!&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>因为 match 查询必须查找两个词（ [“brown”,”dog”] ），<span style="color:red;">它在内部实际上先执行两次 term 查询，然后将两次查询的结果合并作为最终结果输出。为了做到这点，它将两个 term 查询包入一个 bool 查询中</span><br><br>以上示例告诉我们一个重要信息：即任何文档只要 title 字段里包含 指定词项中的至少一个词 就能匹配，被匹配的词项越多，文档就越相关<br><br>如果想提高精度，让所有词都能匹配<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;query&quot;: &#123;</span><br><span class="line">        &quot;match&quot;: &#123;</span><br><span class="line">            &quot;category_name&quot;: &#123;      </span><br><span class="line">                &quot;query&quot;:    &quot;服装，食品&quot;,</span><br><span class="line">                &quot;operator&quot;: &quot;and&quot;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br>还可以控制精度，如果有如果用户给定 5 个查询词项，想查找只包含其中 4 个的文档，该如何处理？<br><br>match 查询支持 minimum_should_match 最小匹配参数， 这让我们可以指定必须匹配的词项数用来表示一个文档是否相关。我们可以将其设置为某个具体数字，更常用的做法是将其设置为一个百分数，因为我们无法控制用户搜索时输入的单词数量：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GET /my_index/my_type/_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;match&quot;: &#123;</span><br><span class="line">      &quot;title&quot;: &#123;</span><br><span class="line">        &quot;query&quot;:                &quot;quick brown dog&quot;,</span><br><span class="line">        &quot;minimum_should_match&quot;: &quot;75%&quot;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br><h3 id="2.2">结构化查询</h3><br>类似于过滤器的写法，全文检索的bool查询也接受<code>must</code>, <code>must_not</code>, <code>should</code>. 所有 must 语句必须匹配，所有 must_not 语句都必须不匹配，但有多少 should 语句应该匹配呢？ 默认情况下，没有 should 语句是必须匹配的（should条件项可以不满足，但是一旦满足，评分会更高。），只有一个例外：那就是当没有 must 语句的时候，至少有一个 should 语句必须匹配。<br><br>全文检索的bool query会为每个文档计算相关度评分<code>_score</code>,<br><br><code>_queryscore = (all_matched_must_score +　all_matched_should_score) / (must + should 语句总数)</code><br><br>同样，可以通过 minimum_should_match 参数控制需要匹配的 should 语句的数量， 它既可以是一个绝对的数字，又可以是个百分比<br><br>### 查询语句权重<br>bool查询不仅限于组合查询单个词<code>match</code>查询，它可以组合任意其他的查询。通过汇总多个独立查询的分数，从而达到为每个文档微调相关度评分<code>_score</code>。<br><br>调整评分方法：<br>- <code>should</code> 查询语句匹配得越多表示文档的相关度越高。<br><br>- 可以通过指定 <code>boost</code>来控制任何查询语句的相对的权重， <code>boost</code> 的默认值为 1 ，大于 1 会提升一个语句的相对权重<br><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">GET /_search</span><br><span class="line">&#123;</span><br><span class="line">    &quot;query&quot;: &#123;</span><br><span class="line">        &quot;bool&quot;: &#123;</span><br><span class="line">            &quot;must&quot;: &#123;</span><br><span class="line">                &quot;match&quot;: &#123;  </span><br><span class="line">                    &quot;content&quot;: &#123;</span><br><span class="line">                        &quot;query&quot;:    &quot;full text search&quot;,</span><br><span class="line">                        &quot;operator&quot;: &quot;and&quot;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            &quot;should&quot;: [</span><br><span class="line">                &#123; &quot;match&quot;: &#123;</span><br><span class="line">                    &quot;content&quot;: &#123;</span><br><span class="line">                        &quot;query&quot;: &quot;Elasticsearch&quot;,</span><br><span class="line">                        &quot;boost&quot;: 3</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;&#125;,</span><br><span class="line">                &#123; &quot;match&quot;: &#123;</span><br><span class="line">                    &quot;content&quot;: &#123;</span><br><span class="line">                        &quot;query&quot;: &quot;Lucene&quot;,</span><br><span class="line">                        &quot;boost&quot;: 2</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;&#125;</span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><br><h2 id="2">多字段查询</h2>
+
+<p>最简单的一种，将不同查询字符串映射到不同字段，进而写多个match查询。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GET /_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;bool&quot;: &#123;</span><br><span class="line">      &quot;should&quot;: [</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;title&quot;:  &quot;War and Peace&quot; &#125;&#125;,</span><br><span class="line">        &#123; &quot;match&quot;: &#123; &quot;author&quot;: &quot;Leo Tolstoy&quot;   &#125;&#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>bool查询 ： 查询条件匹配的越多越好。 因此匹配多个查询条件的文档评分要高于只匹配一个查询条件的文档。</p>
+<h3 id="single-query-string"><a href="#single-query-string" class="headerlink" title="single query string"></a>single query string</h3><ul>
+<li><p>best fields<br>  searching for words that represent a concept, such as “brown fox”, the words mean more together than they do individually.</p>
+</li>
+<li><p>most fields</p>
+<ul>
+<li>最常见的bool 查询，查询条件匹配地越多越好。</li>
+<li>通过将一个词索引到多个fields, 微调查询相关性。</li>
+</ul>
+</li>
+<li><p>cross fields</p>
+<ul>
+<li>适合实体信息分散在多个field（子field）中的场景，例如Person field由first_name 和 last_name两个子field组成。我们希望在 任何 这些列出的字段中找到尽可能多的词，这有如在一个大字段中进行搜索，这个大字段包括了所有列出的字段。</li>
+</ul>
+</li>
+</ul>
+<p>每一种搜索都有自己的一套策略。</p>
+<h3 id="3.1">最佳字段查询</h3>
+
+<p><code>dis_max</code>如果查询是“albino elephant”，<code>dis_max</code>确保匹配一个字段的“albino”和匹配另一个字段的“elephant”得到比匹配两个字段的“albino”更高的分数。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;query&quot;: &#123;</span><br><span class="line">        &quot;dis_max&quot;: &#123;</span><br><span class="line">            &quot;queries&quot;: [</span><br><span class="line">                &#123; &quot;match&quot;: &#123; &quot;title&quot;: &quot;Brown fox&quot; &#125;&#125;,</span><br><span class="line">                &#123; &quot;match&quot;: &#123; &quot;body&quot;:  &quot;Brown fox&quot; &#125;&#125;</span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还可以通过<code>tie_breaker</code>来调优，当两个文档中都不具有同时包含 两个词 的 相同字段时候，剩下的结果还是需要bool查询来排序的。</p>
+<p>tie_breaker 参数提供了一种<code>dis_max</code>和<code>bool</code>之间的折中选择，它的评分方式如下：</p>
+<ol>
+<li><p>获得最佳匹配语句的评分 <code>_score</code> 。</p>
+</li>
+<li><p>将其他匹配语句的评分结果与 <code>tie_breaker</code> 相乘。</p>
+</li>
+<li><p>对以上评分求和并规范化。</p>
+</li>
+</ol>
+<p><code>multi_match</code><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;multi_match&quot;: &#123;</span><br><span class="line">        &quot;query&quot;:                &quot;Quick brown fox&quot;,</span><br><span class="line">        &quot;type&quot;:                 &quot;best_fields&quot;,</span><br><span class="line">        &quot;fields&quot;:               [ &quot;title&quot;, &quot;body&quot; ],</span><br><span class="line">        &quot;tie_breaker&quot;:          0.3,</span><br><span class="line">        &quot;minimum_should_match&quot;: &quot;30%&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="3.2">多数字段 most_fields</h3>
+
+<p>为了对相关度进行微调，常用的一个技术就是<strong>将相同的数据索引到不同的字段，它们各自具有独立的分析链。</strong></p>
+<p>主字段包括<code>词源</code>，<code>同义词</code>以及<code>变音词</code>用来匹配尽可能多的文档。</p>
+<p>相同的文本被索引到其他字段，以提供更精确的匹配。– 其他字段作为匹配每个文档时提高相关度评分的信号，匹配字段越多则越好。</p>
+<p>示例：如果我们有两个文档，其中一个包含词 jumped ，另一个包含词 jumping ，用户很可能期望后者能排的更高，因为它正好与输入的搜索条件（jumping rabbits）一致。</p>
+<p>title字段多个索引<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">PUT /my_index</span><br><span class="line">&#123;</span><br><span class="line">    &quot;settings&quot;: &#123; &quot;number_of_shards&quot;: 1 &#125;,</span><br><span class="line">    &quot;mappings&quot;: &#123;</span><br><span class="line">        &quot;my_type&quot;: &#123;</span><br><span class="line">            &quot;properties&quot;: &#123;</span><br><span class="line">                &quot;title&quot;: &#123;</span><br><span class="line">                    &quot;type&quot;:     &quot;string&quot;,</span><br><span class="line">                    &quot;analyzer&quot;: &quot;english&quot;,</span><br><span class="line">                    &quot;fields&quot;: &#123;</span><br><span class="line">                        &quot;std&quot;:   &#123;</span><br><span class="line">                            &quot;type&quot;:     &quot;string&quot;,</span><br><span class="line">                            &quot;analyzer&quot;: &quot;standard&quot;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>most_field 微调精度 示例<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">GET /my_index/_search</span><br><span class="line">&#123;</span><br><span class="line">   &quot;query&quot;: &#123;</span><br><span class="line">        &quot;multi_match&quot;: &#123;</span><br><span class="line">            &quot;query&quot;:  &quot;jumping rabbits&quot;,</span><br><span class="line">            &quot;type&quot;:   &quot;most_fields&quot;,</span><br><span class="line">            &quot;fields&quot;: [ &quot;title&quot;, &quot;title.std&quot; ]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>用广度匹配字段 title 包括尽可能多的文档——以提升召回率——同时又使用字段 title.std 作为 信号 将相关度更高的文档置于结果顶部。</p>
+<p></p><h3 id="3.3">cross-fields entity search</h3><br>person 字段可能是这么索引的<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;firstname&quot;:  &quot;Peter&quot;,</span><br><span class="line">    &quot;lastname&quot;:   &quot;Smith&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p></p>
+<p>与most-fields（多字段-多个查询字符串）相比，cross-fields 查询情景为单个字符串在多个字段中进行搜索。</p>
+<p>用户可能想搜索 “Peter Smith” 这个人，这些词出现在不同的字段中，如果使用dis_max 或者best_fields查询是错误的方式。</p>
+<p>我们想要的结果是：<code>词 peter 和 smith 都必须出现，但是可以出现在任意字段中 只要词都出现就可以。</code></p>
+<p>而most_fields是只要出现一个就行。</p>
+<p>要用 title 和 description 字段搜索图书，可能希望为 title 分配更多的权重。使用“Peter smith”跨字段查询示例：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">GET /books/_search</span><br><span class="line">&#123;</span><br><span class="line">    &quot;query&quot;: &#123;</span><br><span class="line">        &quot;multi_match&quot;: &#123;</span><br><span class="line">            &quot;query&quot;:       &quot;peter smith&quot;,</span><br><span class="line">            &quot;type&quot;:        &quot;cross_fields&quot;,</span><br><span class="line">            &quot;fields&quot;:      [ &quot;title^2&quot;, &quot;description&quot; ]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>比较dis_max 和cross_field</p>
+</blockquote>
+<p><code>dis_max</code>是在多字段中查找，但是查询条件需要同时出现在一个字段;字段中心式<br><code>cross_field</code>在多字段中查找，但是查询条件不需要同时出现在一个字段;词中心式</p>
+<p><a href="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/_ranges.html" target="_blank" rel="noopener">参考的教程</a></p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/04/18/es-note4/">Elastic Search学习笔记-4 (常见搜索类型实践)</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/04/18/es-note4/">https://gsmtoday.github.io/2017/04/18/es-note4/</a></li>
+            <li><strong>发布时间：</strong>2017-04-18</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/ElasticSearch/">ElasticSearch</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/05/28/post/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">徒步奶子沟</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/04/12/es-note3/">
+                <span class="level-item">Elastic Search 学习笔记-3 (深入了解ES搜索原理)</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

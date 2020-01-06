@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Redis AOF 持久化- Redis源码分析 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="在《Redis RDB持久化》一文中，我们对RDB持久化的流程，格式以及实现方式进行了阐述。本文重点关注下另外一种持久化方式：AOF持久化。">
+<meta name="keywords" content="Redis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis AOF 持久化- Redis源码分析">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/07/30/redis-01/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="在《Redis RDB持久化》一文中，我们对RDB持久化的流程，格式以及实现方式进行了阐述。本文重点关注下另外一种持久化方式：AOF持久化。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-01/append%20aof.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-01/flush%20aof.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-01/rewrite.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-01/rewrite%20detail.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-01/rewrite父子进程通讯模型.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.140Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis AOF 持久化- Redis源码分析">
+<meta name="twitter:description" content="在《Redis RDB持久化》一文中，我们对RDB持久化的流程，格式以及实现方式进行了阐述。本文重点关注下另外一种持久化方式：AOF持久化。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/07/30/redis-01/append%20aof.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/raccon.jpg" alt="Redis AOF 持久化- Redis源码分析">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-07-30T10:37:48.000Z">2018-07-30</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    31 分钟 读完 (大约 4615 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Redis AOF 持久化- Redis源码分析
+            
+        </h1>
+        <div class="content">
+            <p>在《Redis RDB持久化》一文中，我们对RDB持久化的流程，格式以及实现方式进行了阐述。本文重点关注下另外一种持久化方式：AOF持久化。<br><a id="more"></a></p>
+<h3 id="初始AOF"><a href="#初始AOF" class="headerlink" title="初始AOF"></a>初始AOF</h3><p>与RDB将整个内存快照写入文件的方式不同，AOF以协议文本的方式，将所有对数据库进行过写入的命令（及其参数）记录到 AOF 文件，以此达到记录数据库状态的目的。</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">reids&gt; RPUSH <span class="hljs-built_in">list</span> <span class="hljs-number">1</span> <span class="hljs-number">2</span> <span class="hljs-number">3</span> <span class="hljs-number">4</span></span><br><span class="line">redis&gt; LRANGE <span class="hljs-built_in">list</span> <span class="hljs-number">0</span> <span class="hljs-number">-1</span></span><br><span class="line">redis&gt; RPOP <span class="hljs-built_in">list</span></span><br><span class="line">redis&gt; LPUSH <span class="hljs-built_in">list</span> <span class="hljs-number">1</span></span><br><span class="line">redis&gt; LRANGE <span class="hljs-built_in">list</span> <span class="hljs-number">0</span> <span class="hljs-number">-1</span></span><br></pre></td></tr></table></figure>
+<p>执行上述命令后生成的快照文件如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">*2</span><br><span class="line">$6</span><br><span class="line">SELECT</span><br><span class="line">$1</span><br><span class="line">0</span><br><span class="line">*6</span><br><span class="line">$5</span><br><span class="line">RPUSH</span><br><span class="line">$4</span><br><span class="line">list</span><br><span class="line">$1</span><br><span class="line">1</span><br><span class="line">$1</span><br><span class="line">2</span><br><span class="line">$1</span><br><span class="line">3</span><br><span class="line">$1</span><br><span class="line">4</span><br><span class="line">*2</span><br><span class="line">$4</span><br><span class="line">RPOP</span><br><span class="line">$4</span><br><span class="line">list</span><br><span class="line">*3</span><br><span class="line">$5</span><br><span class="line">LPUSH</span><br><span class="line">$4</span><br><span class="line">list</span><br><span class="line">$1</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+<h3 id="AOF命令协议"><a href="#AOF命令协议" class="headerlink" title="AOF命令协议"></a>AOF命令协议</h3><p>由于在我们执行的指令中，有4条对数据库执行内容变更的操作，最终写入aof文件的也只有4条。</p>
+<p>AOF存储一条命令的格式如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">*&lt;count&gt;     <span class="hljs-comment">/*接下来的命令有count个参数*/</span></span><br><span class="line">$&lt;len&gt;       <span class="hljs-comment">/*第一个参数的长度*/</span></span><br><span class="line">&lt;content&gt;    <span class="hljs-comment">/*第一个参数的内容*/</span></span><br><span class="line">$&lt;len&gt;       <span class="hljs-comment">/*第二个参数的长度*/</span></span><br><span class="line">&lt;content&gt;    <span class="hljs-comment">/*第二个参数的长度*/</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>完全符合示例中生成的aof文件内容。需要指出的就是第一条SELECT命令是Redis自己加上的，为了保证两条相邻的指令操作了不同的内部数据库时，能够正确的区分。</p>
+<h3 id="AOF实现原理"><a href="#AOF实现原理" class="headerlink" title="AOF实现原理"></a>AOF实现原理</h3><p>简单的来说，AOF的实现原理就是基于配置项”appendonly yes/no”来控制是否将更新命令写入appendonly文件，如果设置为yes，则每次数据更新的命令都会被追加到内存缓存server.aof_buf里，然后根据配置项appendfsync，决定何时将aof_buf刷盘。下面就看看此流程中的实现细节。</p>
+<h4 id="Append-aof-buf"><a href="#Append-aof-buf" class="headerlink" title="Append  aof_buf"></a>Append  aof_buf</h4><p>追加aof_buf的入口函数在feedAppendOnlyFile中，具体的执行流程如下图：<br><img src="/2018/07/30/redis-01/append aof.png" width="300" height="200" align="center"></p>
+<ol>
+<li>如果当前更新操作和上一次aof记录操作的数据库不一致，则自动生成一个SELECT命令，控制选择正确的数据库</li>
+<li>如果当前操作指令中包含expire信息，如setex，expire等，需要特殊处理把设置到期时间的功能统一使用PEXPIRE命令记录</li>
+<li>按照AOF命令协议的格式，拼装当前操作的核心指令</li>
+<li>如果系统开启了写AOF的配置，则将拼装的命令写入buf；如果有在运行的rewrite子进程（参见下一小节的AOF重写），为了记录rewrite期间的数据差异，还需要将指令追加到<strong>aof_rewrite_buf</strong>中。</li>
+</ol>
+<h4 id="Flush-aof-buf"><a href="#Flush-aof-buf" class="headerlink" title="Flush aof_buf"></a>Flush aof_buf</h4><h5 id="刷盘流程"><a href="#刷盘流程" class="headerlink" title="刷盘流程"></a>刷盘流程</h5><p><img src="/2018/07/30/redis-01/flush aof.png" width="600" height="400" align="center"></p>
+<p>刷盘的流程整体上分为write()将aof_buf写入系统缓存以及fsync写磁盘两个步骤。首先，在设置了每秒flush一次aof_buf配置情况下，如果后台有正在运行的fsync任务，并且距离上次write等待没超过2秒，直接返回，等待上一次延迟的任务执行完成。否则，调用aofWrite循环write()。由于无法保证write()一定成功，所以当写入不完全时，会执行特定的出错处理机制。如果完全写入，表示aof_buf的内容已写入系统缓存，此时增加aof_current_size的计数。到此为止，就完成了通过write调用将aof_buf写入系统缓存的工作。一旦系统缓存写入成功，即使Redis程序崩溃或者退出，只要系统正常运行，那么aof_buf也一定能刷入磁盘中。</p>
+<p>如果aof文件fsync的策略配置为AOF_FSYNC_ALWAYS，则直接在当前主进程中执行一次fsync，如果fsync的策略配置为AOF_FSYNC_EVERYSEC，并且后台没有正在执行的fsync任务，则为aof文件的fd创建一个新的fsync任务在后台异步执行。</p>
+<p>AOF_FSYNC_ALWAYS和AOF_FSYNC_EVERYSEC两种刷盘策略是在安全性和效率之前的不同取舍方案。</p>
+<ol>
+<li>AOF_FSYNC_ALWAYS能保证每次执行的命令都会同步的写入内核缓存和同步磁盘，但每次操作都需要在主进程中写缓存写磁盘，势必会影响Redis处理后续指令的速度。</li>
+<li>AOF_FSYNC_EVERYSEC的策略下，异步刷盘和延迟等待的功能，减小了写AOF对Redis主进程执行命令的影响，同时保证最多丢失2s内的操作数据。但由于fsync和write调用都是阻塞的，比如出现写磁盘被阻塞时，那么后续write调用因为都操作相同的文件描述符也会相应的等待，进而影响整个Redis主流程的执行。</li>
+</ol>
+<h5 id="异步刷盘"><a href="#异步刷盘" class="headerlink" title="异步刷盘"></a>异步刷盘</h5><p>由于fsync操作可能阻塞主流程的执行，所以Redis使用了一个独立的线程来处理异步fsync文件到磁盘的工作。Redis对所有需要异步线程操作的任务做了一个统一的封装，代码在bio.c文件中。实现的逻辑也比较简单，针对目前支持的close_file, aof_fsync, lazy_free三种后台任务，各启动一个线程并分配一个任务队列。线程循环等待任务并执行，最后修改任务的等待状态。</p>
+<h5 id="刷盘时机"><a href="#刷盘时机" class="headerlink" title="刷盘时机"></a>刷盘时机</h5><p>Redis源码中调用flushAppendOnlyFile执行flush aof_buf的地方一共有4个：</p>
+<ol>
+<li>服务器主进程处理完本次IO和时间事件后，等待下一次事件(epoll_wait)到来之前</li>
+<li>服务器定时器serverCron中，默认每秒执行一次</li>
+<li>服务器退出之前的准备工作prepareForShutdown()，执行一次<strong>强制</strong>刷盘</li>
+<li>通过配置指令关闭AOF功能时，执行一次<strong>强制</strong>刷盘</li>
+</ol>
+<p>在第一种情况下，服务器在处理客户端请求的操作指令时，如果涉及到数据库内容的更新，并且配置开启了AOF功能，那么上一小节的feedAppendOnlyFile将会被调用，把操作命名以协议格式追加到buf中。在服务器完成进入下一次时间循环之前，flushAppendOnlyFile会被执行一次。</p>
+<p>从刷盘流程的流程图中，不难看出，写aof_buf到内核缓存在一次flushAppendOnlyFile的调用中不一定会执行（阻塞或者2s内的延迟等待）。如果后续一直没有新的事件到来，那么本次写入aof_buf的操作就有丢失的可能。所以在服务器每秒一次的定时任务中，会根据当前是否有被延迟执行的刷盘操作以及写aof_buf出错1秒后重试等条件，触发一次对flushAppendOnlyFile的调用。</p>
+<p>后面两种case比较类似，都是在正常退出之前，强制执行一次刷盘。强制执行的时候会忽略前面等待的任务而直接写内核缓存并创建新的刷盘任务。</p>
+<h3 id="AOF-Rewrite"><a href="#AOF-Rewrite" class="headerlink" title="AOF Rewrite"></a>AOF Rewrite</h3><h4 id="为什么要rewrite"><a href="#为什么要rewrite" class="headerlink" title="为什么要rewrite"></a>为什么要rewrite</h4><p>AOF文件只是简单的存储了写操作相关的命令，而并没有进行合并。随着Redis服务器在运行过程中不断接受命令，如果Redis只是将客户端修改数据库的命令存储在AOF文件中，AOF文件会急剧膨胀而导致效率低下（AOF文件越大，占用存储空间越大，数据还原过程耗时越多）。所以Redis提供了一种rewrite的机制，以当前数据库的数据空间为终态，压缩重写AOF文件。Rewrite可以理解对同一个key先后modify的指令合并为一条指令的过程，具体的实现流程就是遍历当前数据库的键空间，将每个key对应的对象用一条命令来表达并保存到AOF文件中。</p>
+<h4 id="Rewrite的具体流程"><a href="#Rewrite的具体流程" class="headerlink" title="Rewrite的具体流程"></a>Rewrite的具体流程</h4><p>由于rewrite操作需要访问整个内存数据库，与RDB持久化类似，为了防止数据访问的冲突，Redis也fork了一个新的子进程来独立的完成rewrite的过程。<br><img src="/2018/07/30/redis-01/rewrite.png" width="600" height="400" align="center"></p>
+<ol>
+<li>因为子进程可能会对父进程做一份完整的内存拷贝，为了减少大规模内存拷贝的次数并防止内存被占满，如果有正在运行的RDB子进程，直接返回。否则执行步骤2</li>
+<li>父进程创建管道，并监听子进程给父进程同步数据管道上的可读事件。</li>
+<li>fork子进程。子进程执行步骤4，父进程执行步骤5。</li>
+<li>子进程开始扫描从父进程copy来得内存数据，并生成相应的set指令，写入rewrite文件，最后通知父进程执行完成，子进程退出。</li>
+<li>父进程做一些统计和设置状态的工作，由于父进程已经将管道加入了事件监听器中，所以父进程可以直接返回，无需再等待子进程执行完成。</li>
+</ol>
+<p>在aof_rewrite的父子进程模型中，存在两类管道：第一种是与rdb持久化执行过程中提到的父进程用于监听子进程正常退出的通信管道。由于子进程只能获取到fork()之前的内存数据，为了保持最终录入结果的正确性，在rewrite期间父进程新产生的操作指令也需要通过给子进程写入rewrite文件。这就是第二类管道，专门用于同步差异数据的。回顾Append aof_buf小节<strong>aof_rewrite_buf</strong>就是父进程用于缓冲差异数据，并最终通过管道同步给子进程的。前述流程中提到的管道都是第二类管道。第二类管道包含3对双向管道，分别用于：父进程给子进程同步数据的读写管道，子进程给父进程同步状态用的读写管道，父进程确认收到子进程数据的读写管道。</p>
+<p>我们注意到在父进程返回之前，把当前aof_select_db重置为-1，这是为了保证下一次调用feedAppendOnlyFile()记录操作命令的时候就会强制生成一条SELECT指令，保证父进程同步给子进程的数据能够安全地合并到rewrite文件中。</p>
+<p>下面就来看一些rewrite文件生成的具体流程，即上流程图中蓝色标记的具体实现方式：<br><img src="/2018/07/30/redis-01/rewrite detail.png" width="600" height="400" align="center"></p>
+<ol>
+<li>创建新的临时文件</li>
+<li>Redis 4.0新加入了混合模式的持久化文件，综合了RDB文件内容更紧凑恢复更快，AOF机制更安全耐久的优点。如果开启了混合模式，则先用RDB格式将内存快照写入文件（恢复的时候，识别RDB的协议头可以判断是否是混合模式）。否则，遍历整个内存数据空间，根据相应的key-value类型，生成对应的set命令，写入文件。</li>
+<li>由于父进程可能还在持续的发送差异数据，所以先执行一次刷盘，完成大部分数据的写入，使下一次差异指令的刷盘过程更快。</li>
+<li>持续等待并读取父进程从管道写入的差异数据，直到20ms内没有新的数据到来或者已经等待了1s后退出循环。</li>
+<li>利用管道通知父进程停止发送差异数据，并开始<strong>同步</strong>等待父进程确认收到停止发送的指令。如果5秒内父进程没有响应则执行步骤6，否则执行步骤7。</li>
+<li>关闭创建的临时文件描述符，删除临时文件退出，本次rewrite失败。</li>
+<li>再从管道读取一次数据，确保收到父进程停止发送差异前的所有数据。刷盘，关闭文件描述符，并通过rename原子性的完成临时文件的重命名到指定的目标文件中。</li>
+</ol>
+<h4 id="Rewrite时机"><a href="#Rewrite时机" class="headerlink" title="Rewrite时机"></a>Rewrite时机</h4><p>Rewrite的触发机制主要有一下三个：</p>
+<ol>
+<li>手动调用bgrewriteaof命令，如果当前有正在运行的rewrite子进程，则本次rewrite会推迟执行，否则，直接触发一次rewrite；</li>
+<li>通过配置指令手动开启AOF功能，如果没有rdb子进程的情况下，会触发一次rewrite，将当前数据库中的数据写入rewrite文件；</li>
+<li>在Redis定时器中，如果有需要退出执行的rewrite并且没有正在运行的rdb或者rewrite子进程时，触发一次或者aof文件大小已经到达配置的rewrite条件也会自动触发一次。</li>
+</ol>
+<p>这里重点看一下，Redis基于aof文件大小，自动触发rewrite的策略：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"> <span class="hljs-comment">/* Trigger an AOF rewrite if needed. */</span></span><br><span class="line"><span class="hljs-keyword">if</span> (server.aof_state == AOF_ON &amp;&amp;</span><br><span class="line">    server.rdb_child_pid == <span class="hljs-number">-1</span> &amp;&amp;</span><br><span class="line">    server.aof_child_pid == <span class="hljs-number">-1</span> &amp;&amp;</span><br><span class="line">    server.aof_rewrite_perc &amp;&amp;</span><br><span class="line">    server.aof_current_size &gt; server.aof_rewrite_min_size)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span> base = server.aof_rewrite_base_size ?</span><br><span class="line">        server.aof_rewrite_base_size : <span class="hljs-number">1</span>;</span><br><span class="line">    <span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span> growth = (server.aof_current_size*<span class="hljs-number">100</span>/base) - <span class="hljs-number">100</span>;</span><br><span class="line">    <span class="hljs-keyword">if</span> (growth &gt;= server.aof_rewrite_perc) &#123;</span><br><span class="line">        serverLog(LL_NOTICE,<span class="hljs-string">"Starting automatic rewriting of AOF on %lld%% growth"</span>,growth);</span><br><span class="line">        rewriteAppendOnlyFileBackground();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从代码中不难看出，在开启了aof功能并且没有正在运行的rdb或者rewrite子进程时，触发rewrite需要满足两个条件：</p>
+<ol>
+<li>当前aof文件的大小超过了配置的aof_rewrite文件大小的最小基准值；</li>
+<li>aof当前文件大小相对于上一次rewrite后aof文件大小的增长率，超过了配置的比例；</li>
+</ol>
+<h3 id="AOF-Rewrite父子进程通讯模型"><a href="#AOF-Rewrite父子进程通讯模型" class="headerlink" title="AOF Rewrite父子进程通讯模型"></a>AOF Rewrite父子进程通讯模型</h3><p>在上一节中，我们从rewrite子进程的视角，介绍了具体的流程和出发时机，这一节，我们将从更高层的视角，来看一下整个rewrite过程中父子进程通讯的模型以及父进程在一些问题上处理细节。</p>
+<p><img src="/2018/07/30/redis-01/rewrite父子进程通讯模型.png" width="600" height="400" align="center" title="rewrite父子进程通讯模型"></p>
+<p>整个rewrite过程中，父子进程的通讯模型如上图。前面章节我们主要从右边子进程的维度，分析了整个执行流程。那么从父进程的角度，我们仍需要解决以下问题：</p>
+<ol>
+<li>如何有效的同步rewrite过程中的差异数据给子进程；</li>
+<li>如何有效的监听子进程同步过来的数据，实时的响应处理；</li>
+<li>子进程退出后，如何需要执行哪些善后处理</li>
+</ol>
+<h4 id="同步指令"><a href="#同步指令" class="headerlink" title="同步指令"></a>同步指令</h4><p>在rewrite子进程运行过程中，随着客户端请求命令的不断到来，父进程在feedAppendOnlyFile调用的最后，会将组装过了协议指令，先追加到缓存中，然后通过管道同步给子进程。由于主进程不能等待写管道完成才继续执行，所以需要缓存先存储这些需要同步给子进程的数据。为了避免realloc调用，触发的大规模内存拷贝，Redis对这部分数据，通过一个内存块<strong>aofrwblock</strong>的链表来维护，默认大小10M。</p>
+<p>追加数据到缓存的时候，首先在链表尾部的内存写入数据（不够就再创建新的内存块），同时在管道（上图的diff_data）上注册写事件，通过事件循环触发管道数据的写入。</p>
+<p>核心的写管道代码如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">while</span>(<span class="hljs-number">1</span>) &#123;</span><br><span class="line">        ln = listFirst(server.aof_rewrite_buf_blocks);</span><br><span class="line">        block = ln ? ln-&gt;value : <span class="hljs-literal">NULL</span>;</span><br><span class="line">        <span class="hljs-keyword">if</span> (server.aof_stop_sending_diff || !block) &#123;</span><br><span class="line">            aeDeleteFileEvent(server.el,server.aof_pipe_write_data_to_child,</span><br><span class="line">                              AE_WRITABLE);</span><br><span class="line">            <span class="hljs-keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">if</span> (block-&gt;used &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">            nwritten = write(server.aof_pipe_write_data_to_child,</span><br><span class="line">                             block-&gt;buf,block-&gt;used);</span><br><span class="line">            <span class="hljs-keyword">if</span> (nwritten &lt;= <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span>;</span><br><span class="line">            memmove(block-&gt;buf,block-&gt;buf+nwritten,block-&gt;used-nwritten);</span><br><span class="line">            block-&gt;used -= nwritten;</span><br><span class="line">            block-&gt;<span class="hljs-built_in">free</span> += nwritten;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">if</span> (block-&gt;used == <span class="hljs-number">0</span>) listDelNode(server.aof_rewrite_buf_blocks,ln);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h4 id="监听管道"><a href="#监听管道" class="headerlink" title="监听管道"></a>监听管道</h4><p>父进程对子进程响应管道<strong>child_ack</strong>的监听在管道创建的时候就注册了可读事件的处理函数。子进程写入数据后基于Redis的事件触发机制，回调该处理函数即可。</p>
+<h4 id="善后处理"><a href="#善后处理" class="headerlink" title="善后处理"></a>善后处理</h4><p>与RDB的父子进程执行模式一致，在子进程执行结束后，会通过管道（存储在server的结构体中）向父进程发送一些统计数据。在接收到子进程结束的通知后，除了清理子进程的状态和统计信息，最重要的工作是将子进程生成的aof临时文件，替换到配置的aof持久化文件中。为了保证替换的原子性，rename将会被调用。当我们用新的临时文件替换旧的aof文件时，存在以下两种场景会导致主进程的阻塞：</p>
+<ol>
+<li>aof功能被关闭，主进程不再持有旧aof文件的文件描述符（server.aof_fd=-1）, 当使用临时文件rename旧的aof文件后，由于没有进程再占用它，所以会触发操作系统unlink，即删除该文件的操作，这会阻塞主进程；</li>
+<li>aof功能仍旧开启，主进程虽然继续持有旧aof文件的描述符，rename不会触发unlink, 但当执行完文件替换后，需要将server.aof_fd重置为新打开的临时文件的描述符，并手动关闭旧的aof文件描述符。同样由于除了主进程，可能没有别的文件再占用它，所以也会触发系统的unlink操作，从而阻塞主进程</li>
+</ol>
+<p>为了解决上述两种场景，主进程在aof功能被关闭时，再次打开旧的文件，持有它的文件描述符。将1和2等价到一起。最后通过异步线程池的方式来主动关闭旧的aof文件。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/07/30/redis-01/">Redis AOF 持久化- Redis源码分析</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/07/30/redis-01/">https://gsmtoday.github.io/2018/07/30/redis-01/</a></li>
+            <li><strong>发布时间：</strong>2018-07-30</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Redis/">Redis</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/10/09/spain2/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">西班牙 - 下</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/07/30/Redis持久化总结/">
+                <span class="level-item">Redis持久化总结</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#初始AOF">
+        <span class="has-mr-6">1</span>
+        <span>初始AOF</span>
+        </a></li><li>
+        <a class="is-flex" href="#AOF命令协议">
+        <span class="has-mr-6">2</span>
+        <span>AOF命令协议</span>
+        </a></li><li>
+        <a class="is-flex" href="#AOF实现原理">
+        <span class="has-mr-6">3</span>
+        <span>AOF实现原理</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Append-aof-buf">
+        <span class="has-mr-6">3.1</span>
+        <span>Append  aof_buf</span>
+        </a></li><li>
+        <a class="is-flex" href="#Flush-aof-buf">
+        <span class="has-mr-6">3.2</span>
+        <span>Flush aof_buf</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#刷盘流程">
+        <span class="has-mr-6">3.2.1</span>
+        <span>刷盘流程</span>
+        </a></li><li>
+        <a class="is-flex" href="#异步刷盘">
+        <span class="has-mr-6">3.2.2</span>
+        <span>异步刷盘</span>
+        </a></li><li>
+        <a class="is-flex" href="#刷盘时机">
+        <span class="has-mr-6">3.2.3</span>
+        <span>刷盘时机</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#AOF-Rewrite">
+        <span class="has-mr-6">4</span>
+        <span>AOF Rewrite</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#为什么要rewrite">
+        <span class="has-mr-6">4.1</span>
+        <span>为什么要rewrite</span>
+        </a></li><li>
+        <a class="is-flex" href="#Rewrite的具体流程">
+        <span class="has-mr-6">4.2</span>
+        <span>Rewrite的具体流程</span>
+        </a></li><li>
+        <a class="is-flex" href="#Rewrite时机">
+        <span class="has-mr-6">4.3</span>
+        <span>Rewrite时机</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#AOF-Rewrite父子进程通讯模型">
+        <span class="has-mr-6">5</span>
+        <span>AOF Rewrite父子进程通讯模型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#同步指令">
+        <span class="has-mr-6">5.1</span>
+        <span>同步指令</span>
+        </a></li><li>
+        <a class="is-flex" href="#监听管道">
+        <span class="has-mr-6">5.2</span>
+        <span>监听管道</span>
+        </a></li><li>
+        <a class="is-flex" href="#善后处理">
+        <span class="has-mr-6">5.3</span>
+        <span>善后处理</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

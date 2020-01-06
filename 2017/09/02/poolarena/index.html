@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Netty 是怎么做内存管理--PoolArena - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="内存结构顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。  We use 2  available processors by default to reduce contention as we use 2  available pro">
+<meta name="keywords" content="Netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty 是怎么做内存管理--PoolArena">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/09/02/poolarena/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="内存结构顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。  We use 2  available processors by default to reduce contention as we use 2  available pro">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/09/02/poolarena/PoolArena.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/09/02/poolarena/example.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.132Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty 是怎么做内存管理--PoolArena">
+<meta name="twitter:description" content="内存结构顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。  We use 2  available processors by default to reduce contention as we use 2  available pro">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2017/09/02/poolarena/PoolArena.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/butterfly.jpg" alt="Netty 是怎么做内存管理--PoolArena">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-09-02T13:06:04.000Z">2017-09-02</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    20 分钟 读完 (大约 3058 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Netty 是怎么做内存管理--PoolArena
+            
+        </h1>
+        <div class="content">
+            <h2 id="内存结构"><a href="#内存结构" class="headerlink" title="内存结构"></a>内存结构</h2><p>顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。</p>
+<blockquote>
+<p>We use 2 <em> available processors by default to reduce contention as we use 2 </em> available processors for the number of EventLoops in NIO and EPOLL as well. If we choose a smaller number we will run into hot spots as allocation and de-allocation needs to be synchronized on the PoolArena.  </p>
+</blockquote>
+<a id="more"></a>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">final int defaultMinNumArena = NettyRuntime.availableProcessors() * 2;</span><br></pre></td></tr></table></figure>
+<p>PoolArena 内部对chunk与subpage的内存组织方式如下图：</p>
+<div align="center"><br><br><img src="/2017/09/02/poolarena/PoolArena.jpg" alt="PoolArena"><br><br></div>
+
+<p>每个PoolArena管理的所有chunk根据内存使用率的不同被划分为6种类型，以双向链表ChunkList的方式组织，并在不断的内存分配过程中根据chunk的使用率，对chunk的类型进行调整，放入合适的链表中。  </p>
+<p>在文章<a href="/2017/08/27/poolsubpage/" title="Netty 是怎么做内存管理-PoolSubpage">Netty 是怎么做内存管理-PoolSubpage</a>中，我们已经了解到，subpage是针对请求内存小于一个页面大小时的内存划分。根据请求内存大小，subpage有可以被分为，smallpage(&gt;=512 btyes)和tinypage(&lt;512 bytes)两种类型。在内存分配的过程中，为了保持subpage中内存的连续性，避免内存碎片，并方便根据内存偏移量进行定位，每个页面内分配的内存段应该具有统一的规格(PoolSubpage中的elemSize)。</p>
+<p>如上图所示，类似的chunk，PoolArena把subpage以数组的方式组织起来，把相同elemSize的subpage组成一个链表，放入数组中。由于subpage最小的内存段被限定为16bytes，所以tinysubpages共占据512/15=32个数组位置，而smallsubpage则在512的基础上依次翻倍，直到一整个页面大小，所以smallsubpages共有 <strong>log(pageSize/512)=pageShifts-9</strong> 个数组元素。</p>
+<h2 id="内存分配"><a href="#内存分配" class="headerlink" title="内存分配"></a>内存分配</h2><h3 id="整体流程"><a href="#整体流程" class="headerlink" title="整体流程"></a>整体流程</h3><p>PoolArena分配的入口代码如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">private void allocate(PoolThreadCache cache, PooledByteBuf&lt;T&gt; buf, final int reqCapacity) &#123;</span><br><span class="line">    final int normCapacity = normalizeCapacity(reqCapacity); // 请求内存规整化</span><br><span class="line">    if (isTinyOrSmall(normCapacity)) &#123; // capacity &lt; pageSize 页内分配</span><br><span class="line">        int tableIdx;</span><br><span class="line">        PoolSubpage&lt;T&gt;[] table;</span><br><span class="line">        boolean tiny = isTiny(normCapacity);</span><br><span class="line">        if (tiny) &#123; // &lt; 512</span><br><span class="line">            if (cache.allocateTiny(this, buf, reqCapacity, normCapacity)) &#123;</span><br><span class="line">                // was able to allocate out of the cache so move on</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">            tableIdx = tinyIdx(normCapacity);</span><br><span class="line">            table = tinySubpagePools;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            if (cache.allocateSmall(this, buf, reqCapacity, normCapacity)) &#123;</span><br><span class="line">                // was able to allocate out of the cache so move on</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">            tableIdx = smallIdx(normCapacity);</span><br><span class="line">            table = smallSubpagePools;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        final PoolSubpage&lt;T&gt; head = table[tableIdx];</span><br><span class="line"></span><br><span class="line">        synchronized (head) &#123;</span><br><span class="line">            final PoolSubpage&lt;T&gt; s = head.next;</span><br><span class="line">            if (s != head) &#123; //存在可分配的页面</span><br><span class="line">                assert s.doNotDestroy &amp;&amp; s.elemSize == normCapacity;</span><br><span class="line">                long handle = s.allocate(); //调用PoolSubpage的分配</span><br><span class="line">                assert handle &gt;= 0;</span><br><span class="line">                s.chunk.initBufWithSubpage(buf, handle, reqCapacity);</span><br><span class="line">                incTinySmallAllocation(tiny);</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        synchronized (this) &#123; //在chunk中寻找新的subpage并分配</span><br><span class="line">            allocateNormal(buf, reqCapacity, normCapacity);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        incTinySmallAllocation(tiny);</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line">    if (normCapacity &lt;= chunkSize) &#123; //chunk内分配</span><br><span class="line">        if (cache.allocateNormal(this, buf, reqCapacity, normCapacity)) &#123;</span><br><span class="line">            // was able to allocate out of the cache so move on</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line">        synchronized (this) &#123;</span><br><span class="line">            allocateNormal(buf, reqCapacity, normCapacity);</span><br><span class="line">            ++allocationsNormal;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        // Huge allocations are never served via the cache so just call allocateHuge</span><br><span class="line">        allocateHuge(buf, reqCapacity);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码的流程比较清晰：</p>
+<ol>
+<li>对请求的内存大小做规整化处理：大于chunkSize时调整为保持内存对齐即可；大于512时调整为大于等于请求值的2的最小幂；小于512调整为大于等于请求值的16的倍数</li>
+<li>当请求内存小于pageSize时，在页内分配：请求内存小于512在tinysubpages数组中定位并执行分配，大于512时在smallpages数组中定位并执行分配，当数组中没有可用的内存页时，在chunk中寻找新的内存页进行分配。</li>
+<li>请求内存大于pageSize小于chunkSize，在chunk内执行分配</li>
+<li>请求内存大于chunkSize，直接调用allocateHuge分配，不在内存池中管理。</li>
+</ol>
+<p>当然除了上述整体流程，还有一些细节上的实现需要我们深挖：如何根据请求内存的大小在subpages数组中定位？当需要在chunk中执行分配时，在chunkList中选择哪个chunk？分配完成后，如何使用返回的内存偏移量句柄对Bytebuf进行初始化？依次来看：</p>
+<h3 id="页面定位"><a href="#页面定位" class="headerlink" title="页面定位"></a>页面定位</h3><p>页面定位主要解决的是根据请求内存的大小，如何选择合适的subpage来进行分配的问题。首先来看tinysubpages：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">static int tinyIdx(int normCapacity) &#123;</span><br><span class="line">        return normCapacity &gt;&gt;&gt; 4;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们已经知道，tinysubpages管理的内存段自16byte开始，以16byte依次递增自512，共映射到32个数组元素中，所以按照请求内存的大小除以16即可完成定位。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">static int smallIdx(int normCapacity) &#123;</span><br><span class="line">    int tableIdx = 0;</span><br><span class="line">    int i = normCapacity &gt;&gt;&gt; 10;</span><br><span class="line">    while (i != 0) &#123;</span><br><span class="line">        i &gt;&gt;&gt;= 1;</span><br><span class="line">        tableIdx ++;</span><br><span class="line">    &#125;</span><br><span class="line">    return tableIdx;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>smallsubpages的定位也不难理解，计算请求内存相对于1024的倍数即为相应的数组下标。</p>
+<h3 id="Chunk定位"><a href="#Chunk定位" class="headerlink" title="Chunk定位"></a>Chunk定位</h3><p>回顾前述的内存结构，PoolArena根据内存使用率的情况把Chunk分成了6种类型：<strong>qInit</strong>,<strong>q000</strong>,<strong>q025</strong>,<strong>q50</strong>,<strong>q075</strong>,<strong>q100</strong>, 他们所对应的chunk使用率如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Type</th>
+<th style="text-align:left">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">qInit</td>
+<td style="text-align:left">[Integer.MIN_VALUE, 25)</td>
+</tr>
+<tr>
+<td style="text-align:left">q000</td>
+<td style="text-align:left">[1, 50)</td>
+</tr>
+<tr>
+<td style="text-align:left">q025</td>
+<td style="text-align:left">[25, 75)</td>
+</tr>
+<tr>
+<td style="text-align:left">q050</td>
+<td style="text-align:left">[50,100)</td>
+</tr>
+<tr>
+<td style="text-align:left">q075</td>
+<td style="text-align:left">[75,100)</td>
+</tr>
+<tr>
+<td style="text-align:left">q100</td>
+<td style="text-align:left">[100,Integer.MAX_VALUE)</td>
+</tr>
+</tbody>
+</table>
+<p>这里有一点需要注意的就是，相邻的ChunkList之间在使用率上存在一定的重叠区域，即一个chunk的使用率为35的chunk可能存在于q000中，也可能存在于q025中。这主要是为了防止，由于使用率不断变化，导致某个chunk在两个List中不停来回跳动的情况，加了这么一段重叠的缓存区域，可以减少跳动的次数。详细可以参考<a href="http://www.jianshu.com/p/a1debfe4ff02" target="_blank" rel="noopener">链接</a>中的分析。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">private void allocateNormal(PooledByteBuf&lt;T&gt; buf, int reqCapacity, int normCapacity) &#123;</span><br><span class="line">    if (q050.allocate(buf, reqCapacity, normCapacity) || q025.allocate(buf, reqCapacity, normCapacity) ||</span><br><span class="line">        q000.allocate(buf, reqCapacity, normCapacity) || qInit.allocate(buf, reqCapacity, normCapacity) ||</span><br><span class="line">        q075.allocate(buf, reqCapacity, normCapacity)) &#123;</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // Add a new chunk.</span><br><span class="line">    PoolChunk&lt;T&gt; c = newChunk(pageSize, maxOrder, pageShifts, chunkSize);</span><br><span class="line">    long handle = c.allocate(normCapacity);</span><br><span class="line">    assert handle &gt; 0;</span><br><span class="line">    c.initBuf(buf, handle, reqCapacity);</span><br><span class="line">    qInit.add(c);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先尝试在已经发生分配的ChunkList中，进行分配，如果有可用的chunk则直接返回，否则新建一个chunk，执行分配并初始化ByteBuf。新创建的Chunk将就被加入qInit链表中。<br>在qxxx中执行分配的过程比较简单，此处不再附上代码，其流程可以描述为：从ChunkList的链表头开始遍历，找到第一个可以分配的Chunk，并初始化ByteBuf，最后依据Chunk的使用率，判断是否需要将Chunk加入下一个ChunkList中。</p>
+<p>对于Netty选择ChunkList时候的顺序，摘抄<a href="http://www.jianshu.com/p/a1debfe4ff02" target="_blank" rel="noopener">文章</a>中的下面一段分析：</p>
+<blockquote>
+<p>分配内存时，为什么不从内存使用率较低的q000开始？在chunkList中，我们知道一个chunk随着内存的释放，会往当前chunklist的前一个节点移动。<br>q000存在的目的是什么？<br>q000是用来保存内存利用率在1%-50%的chunk，那么这里为什么不包括0%的chunk？<br>直接弄清楚这些，才好理解为什么不从q000开始分配。q000中的chunk，当内存利用率为0时，就从链表中删除，直接释放物理内存，避免越来越多的chunk导致内存被占满。<br>想象一个场景，当应用在实际运行过程中，碰到访问高峰，这时需要分配的内存是平时的好几倍，当然也需要创建好几倍的chunk，如果先从q0000开始，这些在高峰期创建的chunk被回收的概率会大大降低，延缓了内存的回收进度，造成内存使用的浪费。<br>那么为什么选择从q050开始？<br>1、q050保存的是内存利用率50%~100%的chunk，这应该是个折中的选择！这样大部分情况下，chunk的利用率都会保持在一个较高水平，提高整个应用的内存利用率；<br>2、qinit的chunk利用率低，但不会被回收；<br>3、q075和q100由于内存利用率太高，导致内存分配的成功率大大降低，因此放到最后；</p>
+</blockquote>
+<h3 id="ByteBuf初始化"><a href="#ByteBuf初始化" class="headerlink" title="ByteBuf初始化"></a>ByteBuf初始化</h3><p>对ByteBuf的初始化就是告诉ByteBuf，他可以使用的内存起点位置offset，请求内存的位置length和最大可用内存的位置maxLength。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">void initBuf(PooledByteBuf&lt;T&gt; buf, long handle, int reqCapacity) &#123;</span><br><span class="line">    int memoryMapIdx = memoryMapIdx(handle);</span><br><span class="line">    int bitmapIdx = bitmapIdx(handle);</span><br><span class="line">    if (bitmapIdx == 0) &#123; // 基于chunk的分配</span><br><span class="line">        byte val = value(memoryMapIdx);</span><br><span class="line">        assert val == unusable : String.valueOf(val);</span><br><span class="line">        buf.init(this, handle, runOffset(memoryMapIdx) + offset, reqCapacity, runLength(memoryMapIdx),</span><br><span class="line">                 arena.parent.threadCache());</span><br><span class="line">    &#125; else &#123; // 基于subpage的分配</span><br><span class="line">        initBufWithSubpage(buf, handle, bitmapIdx, reqCapacity);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">private static int memoryMapIdx(long handle) &#123;</span><br><span class="line">    return (int) handle;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">private static int bitmapIdx(long handle) &#123;</span><br><span class="line">        return (int) (handle &gt;&gt;&gt; Integer.SIZE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在PoolChunk或者PoolSubpage完成分配后，都会返回一个内存偏移量句柄handle作为标识。在执行初始化时，就是依据handle逆向初始化的过程。<br>PoolChunk返回的handle就是分配的内存在memoryMap中的节点编号，而PoolSubpage返回的handle中，低32表示当前page在chunk中的编号，高32包含了分配的内存段在bitmap中的索引。<br>所以，在handle中取低32位就能计算得到分配的内存在chunk中的节点编号，而取高32位信息就能计算得到分配的内存段在subpage中位图的索引位置。</p>
+<p>首先来看一下基于chunk的分配(buf.init)，ByteBuf三个内存参数的计算方式:</p>
+<h4 id="offset"><a href="#offset" class="headerlink" title="offset"></a>offset</h4><p><strong>offset = runOffset(memoryMapIdx)+offset</strong></p>
+<p>最后一个offset是初始化chunk时预留的offset，默认是0。重点看runOffet函数：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">private int runOffset(int id) &#123;</span><br><span class="line">    // represents the 0-based offset in #bytes from start of the byte-array chunk</span><br><span class="line">    int shift = id ^ 1 &lt;&lt; depth(id);</span><br><span class="line">    return shift * runLength(id);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">private int runLength(int id) &#123;</span><br><span class="line">    // represents the size in #bytes supported by node &apos;id&apos; in the tree</span><br><span class="line">    return 1 &lt;&lt; log2ChunkSize - depth(id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>shift的计算方式与<a href="/2017/08/27/poolsubpage/" title="Netty内存管理-PoolSubpage">Netty内存管理-PoolSubpage</a>一文中，计算叶子节点相对位置的方式相同。简单回顾一下，如图：</p>
+<div align="center"><br><br><img src="/2017/09/02/poolarena/example.jpg" alt="example"><br><br></div>
+
+<p>由完全二叉树的性质，每一层首节点的编号为2<sup>depth</sup>, 而当前层其他节点的编号则从左到右依次加1，所以当前层任意节点相对于首节点的位置，可以通过节点编号的异或运算去除高位的1计算得到。<br>所以shift表示了，当前节点相对于其所在层的首节点的相对位置(从0开始计算)。</p>
+<p>runLength表示了当前节点所在层里，每个节点拥有的内存大小值，所以shift*runLength即为当前节点在chunk中的相对位置偏移量。</p>
+<h3 id="length"><a href="#length" class="headerlink" title="length"></a>length</h3><p>length即为用户请求的内存大小：reqCapacity。</p>
+<h3 id="maxLength"><a href="#maxLength" class="headerlink" title="maxLength"></a>maxLength</h3><p>maxLength = runLength(memoryMapIdx), 由于把当前节点都分配给了ByteBuf的最大可用内存就是一个节点所拥有的内存大小。</p>
+<p>类似的，看一下基于subpage的分配：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">private void initBufWithSubpage(PooledByteBuf&lt;T&gt; buf, long handle, int bitmapIdx, int reqCapacity) &#123;</span><br><span class="line">    assert bitmapIdx != 0;</span><br><span class="line"></span><br><span class="line">    int memoryMapIdx = memoryMapIdx(handle);</span><br><span class="line"></span><br><span class="line">    PoolSubpage&lt;T&gt; subpage = subpages[subpageIdx(memoryMapIdx)];</span><br><span class="line">    assert subpage.doNotDestroy;</span><br><span class="line">    assert reqCapacity &lt;= subpage.elemSize;</span><br><span class="line"></span><br><span class="line">    buf.init(</span><br><span class="line">        this, handle,</span><br><span class="line">        runOffset(memoryMapIdx) + (bitmapIdx &amp; 0x3FFFFFFF) * subpage.elemSize + offset,</span><br><span class="line">            reqCapacity, subpage.elemSize, arena.parent.threadCache());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>由于subpage是chunk的叶子节点，所以首先需要根据memoryMapIdx定位到chunk中具体的哪一页：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private int subpageIdx(int memoryMapIdx) &#123;</span><br><span class="line">    return memoryMapIdx ^ maxSubpageAllocs; // remove highest set bit, to get offset</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>maxSubpageAllocs表示chunk中最多有多少个页面，由于完全二叉树的性质，其值与首个叶子节点的编号一致，所以可以计算出当前叶子节点的相对位置。</p>
+<h4 id="offset-1"><a href="#offset-1" class="headerlink" title="offset"></a>offset</h4><p><strong>runOffset(memoryMapIdx) + (bitmapIdx &amp; 0x3FFFFFFF) * subpage.elemSize + offset</strong></p>
+<p>runOffset与前面基于chunk的分配含义相同，计算得到当前叶子节点在chunk中的内存偏移；(bitmapIdx &amp; 0x3FFFFFFF) * subpage.elemSize 利用位图索引bitmapIdx计算分配的内存段在位图中的实际位置，此处与0x3FFFFFFF按位与是为了去除在构造handler时添加的高位1。用页的内存偏移加上页内偏移地址，即可得到分配的内存段全局的相对内存位置。</p>
+<h3 id="length-1"><a href="#length-1" class="headerlink" title="length"></a>length</h3><p>length即为用户请求的内存大小：reqCapacity。</p>
+<h3 id="maxLength-1"><a href="#maxLength-1" class="headerlink" title="maxLength"></a>maxLength</h3><p>当前页面内存段的大小：elemSize</p>
+<p>自此，基于内存池的内存分配逻辑以全部梳理完成。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/09/02/poolarena/">Netty 是怎么做内存管理--PoolArena</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/09/02/poolarena/">https://gsmtoday.github.io/2017/09/02/poolarena/</a></li>
+            <li><strong>发布时间：</strong>2017-09-02</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Netty/">Netty</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/09/03/netty-memory-pool-md/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Netty 是怎么做内存管理--内存池</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/08/27/poolsubpage/">
+                <span class="level-item">Netty 是怎么做内存管理--PoolSubPage</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>BeanUtils中HashMap触发死循环 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="一次HashMap多线程不安全的踩坑…">
+<meta name="keywords" content="Java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BeanUtils中HashMap触发死循环">
+<meta property="og:url" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="一次HashMap多线程不安全的踩坑…">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/monitor.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/monitor2.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/monitor3.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/jstack.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/ana.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.626Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="BeanUtils中HashMap触发死循环">
+<meta name="twitter:description" content="一次HashMap多线程不安全的踩坑…">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/monitor.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/WechatIMG472.jpeg" alt="BeanUtils中HashMap触发死循环">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-09-03T09:30:22.000Z">2019-09-03</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    6 分钟 读完 (大约 961 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                BeanUtils中HashMap触发死循环
+            
+        </h1>
+        <div class="content">
+            <p>一次HashMap多线程不安全的踩坑…<br><a id="more"></a></p>
+<h1 id="故障现场"><a href="#故障现场" class="headerlink" title="故障现场"></a>故障现场</h1><p>2019-09-03 下午16点48收到CPU Idle小于20%的报警。<br><img src="/2019/09/03/BeanUtils中HashMap触发死循环/monitor.png" width="800" height="600" align="center"></p>
+<p>这个时候立刻查看了接口成功率，调用量，延时等指标，发现均为正常：<br><img src="/2019/09/03/BeanUtils中HashMap触发死循环/monitor2.png" width="800" height="600" align="center"></p>
+<p>再看硬件指标：<br><img src="/2019/09/03/BeanUtils中HashMap触发死循环/monitor3.png" width="800" height="600" align="center"><br>发现只有这台（docker4）从16点37开始CPU idle不断下降，一个小时之内跌到0. 另外查看docker物理机监控，发现物理机CPU 情况正常，排除物理机问题。</p>
+<p>与此同时（报警时刻，CPU idle 20%），查看了JVM jstack :</p>
+<p>发现：<br><img src="/2019/09/03/BeanUtils中HashMap触发死循环/jstack.png" width="800" height="600" align="center"><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">"http-nio-8099-exec-72" #117 daemon prio=5 os_prio=0 tid=0x00007f6398041800 nid=0xdf7 runnable [0x00007f6358cc8000]</span><br><span class="line">   java.lang.Thread.State: RUNNABLE</span><br><span class="line">    at java.util.WeakHashMap.get(WeakHashMap.java:<span class="hljs-number">403</span>)</span><br><span class="line">    at ma.glasnost.orika.metadata.TypeKey.getTypeIndex(TypeKey.java:<span class="hljs-number">55</span>)</span><br><span class="line">    at ma.glasnost.orika.metadata.TypeKey.valueOf(TypeKey.java:<span class="hljs-number">47</span>)</span><br><span class="line">    at ma.glasnost.orika.metadata.TypeFactory.intern(TypeFactory.java:<span class="hljs-number">421</span>)</span><br><span class="line">    at ma.glasnost.orika.metadata.TypeFactory.valueOf(TypeFactory.java:<span class="hljs-number">69</span>)</span><br><span class="line">    at ma.glasnost.orika.impl.MapperFacadeImpl.typeOf(MapperFacadeImpl.java:<span class="hljs-number">1045</span>)</span><br><span class="line">    at ma.glasnost.orika.impl.MapperFacadeImpl.resolveMappingStrategy(MapperFacadeImpl.java:<span class="hljs-number">154</span>)</span><br><span class="line">    at ma.glasnost.orika.impl.MapperFacadeImpl.map(MapperFacadeImpl.java:<span class="hljs-number">675</span>)</span><br><span class="line">    at ma.glasnost.orika.impl.MapperFacadeImpl.map(MapperFacadeImpl.java:<span class="hljs-number">655</span>)</span><br><span class="line">    at com.xiaojukeji.sec.upm.common.utils.BeanUtils.mapList(BeanUtils.java:<span class="hljs-number">108</span>)</span><br><span class="line">    at com.xiaojukeji.sec.upm.core.api.controller.coreapi.UserController.userAreaList(UserController.java:<span class="hljs-number">155</span>)</span><br><span class="line">    at com.xiaojukeji.sec.upm.core.api.controller.coreapi.UserController$$FastClassBySpringCGLIB$$bc29b0e0.invoke(&lt;generated&gt;)</span><br><span class="line">    at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:<span class="hljs-number">204</span>)</span><br></pre></td></tr></table></figure></p>
+<p>多次top, 占用CPU的线程ID没有变过；jstack多次发现代码一直在WeakHashMap的get的函数上.</p>
+<p>这个时候查看报警时间（16点48）的业务日志，发现无论是访问日志还是error日志，都是正常的。在事后补看最开始CPU Idle发生变化的时间点的业务日志，发现15.37 服务程序发生了由于弹性云均衡热点导致的重启（弹性云记录）。</p>
+<h1 id="故障处理"><a href="#故障处理" class="headerlink" title="故障处理"></a>故障处理</h1><p>当时通知运维摘除了这个docker, 之后漂移重建了这个docker.</p>
+<p>事后反思：</p>
+<p>还是应该第一时间重启服务. （CPU 飚高 → 重启服务）<br>不能只查看报警时间点业务日志，要根据监控有转折点的时间看业务日志，实际可能看更早的日志。</p>
+<h1 id="故障分析"><a href="#故障分析" class="headerlink" title="故障分析"></a>故障分析</h1><p>故障后排查，发现以下几个条件：</p>
+<p>1.CPU idle 下降<br>2.占用CPU的线程id没有变过<br>3.jstack多次发现代码一直在get的函数上<br>4.发现数据结构使用的是weakHashMap<br>可以推断是发生了Java HashMap死循环的问题。</p>
+<p>查看占用CPU高的线程堆栈现场，发现是执行在这个业务代码上.<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 获取用户的地区列表</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> appId</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> userAreaParamDto</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span></span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/area/list"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> ResponseEntity&lt;AppUserAreaResponseDto&gt; <span class="hljs-title">userAreaList</span><span class="hljs-params">(@SessionAttribute(ApiConstants.REQUEST_APPID)</span> Long appId,</span></span><br><span class="line"><span class="hljs-function">                                                       @RequestBody UserAreaParamDto userAreaParamDto) </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">if</span> (StringUtils.isEmpty(userAreaParamDto.getUserName())) &#123;</span><br><span class="line">        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ServiceException(ApiExceptionEnums.Area.USERNAME_PARAMS_NOT_EXISTS.getCode(),</span><br><span class="line">                ApiExceptionEnums.Area.USERNAME_PARAMS_NOT_EXISTS.getMsg());</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    Long userId = userManager.getUserIdByName(userAreaParamDto.getUserName());</span><br><span class="line"> </span><br><span class="line">    List&lt;AppUserAreaDto&gt; areas = userManager.getUserAreas(userId, appId);</span><br><span class="line"> </span><br><span class="line">    List&lt;AppUserAreaResponseDto&gt; responseDtos = BeanUtils.mapList(AppUserAreaResponseDto.class, areas); <span class="hljs-comment">// HERE!!!</span></span><br><span class="line"> </span><br><span class="line">    <span class="hljs-keyword">return</span> ResponseEntity.success(responseDtos);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>BeanUtils.mapList 是我们的一个继承自org.apache.commons.beanutils.BeanUtils的对象转换的类。跟踪源码发现使用到了外部包orika-core-1.5.0.jar的类<br>ma.glasnost.orika.metadata.TypeKey .</p>
+<p><img src="/2019/09/03/BeanUtils中HashMap触发死循环/ana.png" width="800" height="600" align="center"></p>
+<p>type是方法输入的类.class,  因为是个通用方法，类似调用还有<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">BeanUtils.mapList(FeatureResponseDto.class, featureDtos)</span><br><span class="line">BeanUtils.mapList(FlagResponseDto.class, flagDtos)</span><br><span class="line">BeanUtils.mapList(RoleResponseDto.class, roleDtos)</span><br><span class="line">BeanUtils.mapList(AreaResponseDto.class, appUserAreaDto)</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>而knowTypes 使用了一个多个线程共用的static WeakHashMap (非线程安全类)。 虽然getTypeIndex 方法使用了synchronized 对type加了锁，但是这个锁的粒度只能锁住同一个type, 对于其他type还是可以进入临界区执行knowTypes的get和put，这样就出现HashMap线程不安全的三要素：</p>
+<ul>
+<li>并发情况存在线程切换</li>
+<li>多个key,两个key hash到同一个槽</li>
+<li>触发扩容</li>
+</ul>
+<p>从而存在一定几率出现HashMap因为多线程情况出现的死循环，CPU Idle下降的情况。</p>
+<p>参考<br><a href="https://coolshell.cn/articles/9606.html" target="_blank" rel="noopener">耗子哥的HashMap死循环分析</a></p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/">BeanUtils中HashMap触发死循环</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/">https://gsmtoday.github.io/2019/09/03/BeanUtils中HashMap触发死循环/</a></li>
+            <li><strong>发布时间：</strong>2019-09-03</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/09/11/慢SQL排查-join太慢/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">慢SQL排查- join太慢</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/06/21/distributed-lock/">
+                <span class="level-item">分布式锁实现浅谈</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#故障现场">
+        <span class="has-mr-6">1</span>
+        <span>故障现场</span>
+        </a></li><li>
+        <a class="is-flex" href="#故障处理">
+        <span class="has-mr-6">2</span>
+        <span>故障处理</span>
+        </a></li><li>
+        <a class="is-flex" href="#故障分析">
+        <span class="has-mr-6">3</span>
+        <span>故障分析</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

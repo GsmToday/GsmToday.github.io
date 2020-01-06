@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>秒杀系统设计 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="秒杀这一业务场景已经发展多年，有套路可循。另外，秒杀属于极端大流量场景，它的应对经验对Web大流量应对方案有很好的借鉴意义。">
+<meta name="keywords" content="架构设计">
+<meta property="og:type" content="article">
+<meta property="og:title" content="秒杀系统设计">
+<meta property="og:url" content="https://gsmtoday.github.io/2019/02/05/secondkill/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="秒杀这一业务场景已经发展多年，有套路可循。另外，秒杀属于极端大流量场景，它的应对经验对Web大流量应对方案有很好的借鉴意义。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/10w.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/100w.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/cdn.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/mq.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/mq.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/stable.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.194Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="秒杀系统设计">
+<meta name="twitter:description" content="秒杀这一业务场景已经发展多年，有套路可循。另外，秒杀属于极端大流量场景，它的应对经验对Web大流量应对方案有很好的借鉴意义。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2019/02/05/secondkill/10w.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/giant.jpeg" alt="秒杀系统设计">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-02-05T02:28:56.000Z">2019-02-05</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    25 分钟 读完 (大约 3789 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                秒杀系统设计
+            
+        </h1>
+        <div class="content">
+            <p>秒杀这一业务场景已经发展多年，有套路可循。另外，秒杀属于极端大流量场景，它的应对经验对Web大流量应对方案有很好的借鉴意义。<br><a id="more"></a></p>
+<h2 id="秒杀系统本质"><a href="#秒杀系统本质" class="headerlink" title="秒杀系统本质"></a>秒杀系统本质</h2><p>秒杀正常的业务流程：查询商品 -&gt; 创建订单 -&gt; 减库存 -&gt; 更新订单 -&gt; 付款 -&gt; 卖家发货。</p>
+<p>而业务特性是：（1）低廉价格；（2）大幅推广；（3）瞬时售空；（4）一般是定时上架；（5）时间短、瞬时并发量高。</p>
+<p>从技术角度看秒杀系统本质上是一个满足<strong>大并发</strong>、<strong>高性能</strong>和<strong>高可用</strong>的分布式系统。秒杀其实主要解决两个问题，一个是<strong>并发读</strong>，一个是<strong>并发写</strong>。并发读的核心优化理念是尽量减少用户到服务端来“读”数据，或者让他们读更少的数据；并发写的处理原则也一样，它要求我们在数据库层面独立出来一个库，做特殊的处理。另外，我们还要针对秒杀系统做一些保护，针对意料之外的情况设计兜底方案，以防止最坏的情况发生。</p>
+<p>总的来说，架构是一种平衡的艺术，而最好的架构一旦脱离了它所适应的场景，一切都将是空谈。具体设计应该参照秒杀预估流量：</p>
+<ol>
+<li>QPS 小于1W：只需要把商品购买页面增加一个定时上架功能，仅在秒杀开始时才让用户看到购买按钮，当商品库存卖完了也就结束了。</li>
+<li>随着请求量加大（QPS 1W/s -&gt; 10W/s），这个简单的架构就很快遇到了瓶颈，因此需要做架构改造来提升系统性能。<br><img src="/2019/02/05/secondkill/10w.png" width="600" height="400" align="center"></li>
+<li>QPS 100W/s 以上<br><img src="/2019/02/05/secondkill/100w.png" width="600" height="400" align="center"></li>
+</ol>
+<h1 id="怎样设计降低服务压力"><a href="#怎样设计降低服务压力" class="headerlink" title="怎样设计降低服务压力"></a>怎样设计降低服务压力</h1><h2 id="一、架构设计原则"><a href="#一、架构设计原则" class="headerlink" title="一、架构设计原则"></a>一、架构设计原则</h2><h3 id="1-数据要尽量少"><a href="#1-数据要尽量少" class="headerlink" title="1.数据要尽量少"></a>1.数据要尽量少</h3><ul>
+<li><p>用户请求的数据能少就少。具体包含上传给系统的数据和系统返回给用户的数据。原因是首先这些数据在网络传输需要时间，其数据传输都需要服务器做压缩和字符编码，都非常消耗CPU，所以减少传输的数据量可以显著减少CPU的使用。</p>
+</li>
+<li><p>系统依赖的数据能少就少。依赖的路径越多会增加CPU处理时间（序列化和反序列化），同样会增加延时。</p>
+</li>
+</ul>
+<p>常见设计手段为：动静分离。</p>
+<h4 id="动静分离"><a href="#动静分离" class="headerlink" title="动静分离"></a>动静分离</h4><p>具体为变刷新整个页面为只点击“秒杀”按钮就够了。动静分离后，客户端大幅度减少了请求的数据量。<br>分离改造核心：分离出动态数据。 如url唯一化，分离浏览者相关因素，分离时间因素，异步化地域因素，去掉cookie等。</p>
+<p><strong>对静态数据缓存</strong>：1. 静态数据缓存到离用户最近的地方。浏览器、CDN、服务端Cache。2.静态化改造直接缓存HTTP连接 3. Web服务器流入Nginx缓存静态数据优于Tomcat。<br><strong>对动态数据缓存</strong>:<br>1.ESI（edge side includes）服务端拼接动静态内容，组装一起返回，服务端性能有影响，但是客户端体验好<br>2.CSI（client side include）客户端发起异步js请求，服务端性能好，客户端可能会有延时，体验稍差.</p>
+<p>部署架构：<br><img src="/2019/02/05/secondkill/cdn.png" width="600" height="400" align="center"><br>需要解决（失效问题，命中率问题，发布更新问题），其他细节：浏览器缓存和cdn缓存差别很大；合并是否用gzip压缩。</p>
+<h3 id="2-请求数要尽量少"><a href="#2-请求数要尽量少" class="headerlink" title="2.请求数要尽量少"></a>2.请求数要尽量少</h3><p>用户请求的页面返回后，浏览器渲染这个页面还包含其他的额外请求。例如页面依赖的CSS/JS， 图片， Ajax请求等都被定义为“额外请求”，这些额外请求应该尽量少。因为上述每个资源请求都能增加连接（需要做三次握手），可能造成资源串行加载，不同域名还有DNS解析。解决办法：合并CSS/JS文件。</p>
+<p>常见设计手段为：流量削峰。</p>
+<h4 id="流量削峰"><a href="#流量削峰" class="headerlink" title="流量削峰"></a>流量削峰</h4><p>本质上：延缓用户请求的发出。让服务处理更加平稳，节省服务器成本。<br>削峰基本思路如下：</p>
+<ul>
+<li>排队：用MQ来缓冲瞬时流量，把同步的直接调用转换成异步的间接推送，中间通过一个队列在一段承接瞬时的流量洪峰，在另一端平滑的将消息推送出去。<br><img src="/2019/02/05/secondkill/mq.png" width="600" height="400" align="center"></li>
+</ul>
+<p>除了利用MQ,还可以使用线程池加锁方式实现排队，FIFO内存排队。这样就会存在异步返回结果问题：解决方案有两种1. 客户端轮询，例如支付页面，每秒轮询一次； 2.服务端push结果。需要C/S保持长连接。</p>
+<ul>
+<li>答题：防作弊，延缓请求。</li>
+<li>分层过滤：对请求进行分层过滤，讲请求尽量拦截在系统上游。传统秒杀系统之所以挂，请求都压到在后端数据库层，数据读写锁冲突严重，并发响应高，几乎所有请求都超时。流量虽大，下单成功的有效流量甚小。分层过滤其实就是采用“漏斗式”设计来处理请求。核心思想为：在不同层次尽量过滤掉无效请求[根据库存判断无法抢到商品的人]，让“漏斗”最末端的才是有效请求。<ul>
+<li>读系统尽量减少一致性校验的瓶颈，但尽量将不影响性能的检查条件提前</li>
+<li>写系统主要对写数据进行一致性检查<br><img src="/2019/02/05/secondkill/mq.png" width="400" height="300" align="center"></li>
+</ul>
+</li>
+</ul>
+<h3 id="3-路径尽量短"><a href="#3-路径尽量短" class="headerlink" title="3.路径尽量短"></a>3.路径尽量短</h3><p>路径：用户发出请求到返回数据这个过程中，需要经过的中间节点数。</p>
+<p>这是因为每增加一个连接都会增加新的不确定性。从概率统计上说，假如一个请求经过5个节点，每个节点可用性是99.9%的话，那么整个请求的可用性是：99.9的5次方，约等于99.5%。缩短路径不仅可以增加可用性，同样可以有效提升性能（减少中间节点可以减少数据的序列化和反序列化），并减少延时。</p>
+<p>有一种缩短访问路径办法: 多个相互强依赖的应用合并部署在一起，把远程调用RPC 变成JVM内部之间的方法调用。</p>
+<h3 id="4-依赖要尽量少，系统分级"><a href="#4-依赖要尽量少，系统分级" class="headerlink" title="4.依赖要尽量少，系统分级"></a>4.依赖要尽量少，系统分级</h3><p>展示秒杀页面，这个页面必须强依赖商品信息、用户信息，还有其他如优惠券、成交列表等这些对秒杀不是非要不可的信息（弱依赖），这些弱依赖在紧急情况下就可以去掉。要减少依赖就必须对系统进行分级。0级系统要尽量减少对1级系统的强依赖，防止重要的系统被不重要的系统拖垮。在极端情况下可以把1级系统例如优惠券系统降级。</p>
+<h3 id="5-不要有单点"><a href="#5-不要有单点" class="headerlink" title="5.不要有单点"></a>5.不要有单点</h3><p>无单点的重点是避免将服务的状态和机器绑定，即把服务无状态化。</p>
+<p>应用无状态化是有效避免单点的一种方式，但是像存储服务本身很难无状态话，因为数据要存储在磁盘上，本身就要和机器绑定，那么这种场景只能通过冗余多个备份来解决单点问题。</p>
+<h2 id="二、热点数据处理"><a href="#二、热点数据处理" class="headerlink" title="二、热点数据处理"></a>二、热点数据处理</h2><p>为什么要处理热点数据？热点请求会大量占用服务器处理资源，虽然这个热点可能只占请求总量的亿分之一，然而却可能抢占90%的服务器资源。</p>
+<p>什么是热点：热点分为热点操作和热点数据。</p>
+<ul>
+<li>热点操作，例如大量的刷新页面、大量的添加购物车、双十一零点大量的下单。对系统来说，这些操作可以抽象为“读请求”和“写请求”。热点操作中的写操作将下面单独一节讲解。</li>
+<li>热点数据：用户的热点请求对应的数据。热点数据分为“静态热点数据”和“动态热点数据”。<ul>
+<li>静态热点数据：可以提前预测的热点数据。业务场景，通过卖家报名来打标。还可以通过数据分析历史成交记录，用户购物车记录分析出热点商品。</li>
+<li>动态热点数据：不能被提前预测的热点数据，系统在运行过程中临时产生的热点。例如上家临时做了广告导致的热点数据。解决方案：构建数据动态发现系统，分析热点Key，数据上报统计。</li>
+</ul>
+</li>
+</ul>
+<p>处理热点数据：<br>一、优化 ： 缓存。热点数据动静分离。<br>二、限制 ： 热点数据限制到一个请求队列里，防止热点数据占用太多服务器资源导致其他请求无法处理。<br>三、隔离</p>
+<ul>
+<li>系统隔离：为避免对现有网站业务的冲击：<strong>分组部署，将热点描述请求分到单独的集群</strong>。秒杀系统只是一个短时的促销活动，具有时间短、访问量高的特点。如果模块与原业务系统部署在一起，将对现有的业务造成冲击。因此，应当把秒杀模块迁移出去，独立部署。</li>
+<li>数据隔离：热点秒杀数据启用单独的Cache/MySQL集群。</li>
+<li>业务隔离：卖家报名秒杀提前感知热点，做数据预热。</li>
+</ul>
+<h2 id="三、-性能优化"><a href="#三、-性能优化" class="headerlink" title="三、 性能优化"></a>三、 性能优化</h2><p>核心：降低CPU消耗。</p>
+<h3 id="衡量指标"><a href="#衡量指标" class="headerlink" title="衡量指标"></a>衡量指标</h3><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">总QPS = （1000ms / RT） * 线程数量</span><br></pre></td></tr></table></figure>
+<p>其中线程数量一般默认配置为 2*CPU核数 + 1。</p>
+<h3 id="优化方法"><a href="#优化方法" class="headerlink" title="优化方法"></a>优化方法</h3><ul>
+<li>减少编码</li>
+<li>减少序列化</li>
+<li>服务优化（如nginx返回静态数据，框架定制优化）</li>
+<li>并发读优化：应用层的LocalCache，在秒杀系统的单机上缓存商品相关的数据.</li>
+<li>静态数据（秒杀前全机推静态cache数据）</li>
+<li>动态数据（类似库存，一般缓存几秒，被动失效，允许一定的脏数据）</li>
+<li>流程：发现数据，减少短板，数据分级，减少中间环节，做好应用基线（性能基线，成本基线，链路基线）不断调整 </li>
+</ul>
+<h2 id="四、并发写-减库存"><a href="#四、并发写-减库存" class="headerlink" title="四、并发写-减库存"></a>四、并发写-减库存</h2><p>秒杀系统设计除了上述的并发读的问题，还有一个难点是如何解决并发写 – 多个用户在同时抢一件商品，也就是并发很高，但集中在同一商品上，造成实质为串行操作。因为在数据库这层本质执行的是对同一件商品扣库存 – 需要合理的减库存。用户的购买过程一般分两步：下单和付款。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BEGIN </span><br><span class="line">UPDATE stock SET count = count - 1 WHERE skuId = ?</span><br><span class="line">COMMIT</span><br></pre></td></tr></table></figure></p>
+<p>减库存一般有三种方式:</p>
+<ol>
+<li><p>下单减库存。下单减库存最简单也是控制最精确的一种，下单时直接通过数据库的事务机制控制商品库存，这样一定不会出现超卖情况。缺点是：恶意下单（有些人下单完不一定会付款，但是库存已经扣了，会影响商家。）</p>
+</li>
+<li><p>付款减库存。等到用户付款完后才真正减库存，否则库存一直保留给其他买家。缺点是出现买家下单后无法付款。缺点：可能超卖。</p>
+</li>
+<li><p>预扣库存。 买家下单后库存为其保留一段时间，超过这个时间，库存会自动释放。释放后其他买家继续购买。在买家付款前，系统会校验该订单的库存是否还有保留，有保留则尝试预扣，如果预扣失败，则不允许付款；如果预扣成功，则完成付款减库存。缺点：也可能恶意下单（只能结合安全和反作弊，标示用户并限制操作） 。</p>
+</li>
+</ol>
+<p>一般情况下秒杀减库存逻辑复杂，存在SKU库存和总库存联动关系，需要使用MySQL事务. 由于同一数据在数据库里肯定是一行存储，因此会有大量线程来竞争InnoDB行锁，而并发度越高等待线程会越多，TPS会下降，响应事件RT会上升，数据库的吞吐量就会严重手影响。这就会发生单个热点商品影响整个数据库性能，导致0.01%商品影响99.99的商品的售卖。</p>
+<p>解决并发锁的问题：</p>
+<h3 id="乐观锁-悲观锁"><a href="#乐观锁-悲观锁" class="headerlink" title="乐观锁/悲观锁"></a>乐观锁/悲观锁</h3><ul>
+<li>悲观锁：可能会造成大量线程抢锁等待，结果可能会瞬间增大响应时间，造成系统连接数耗尽。</li>
+<li>乐观锁：根据版本号的思路，可能会操作操作失败次数增多，需要上层业务重试，或者交给用户重试。<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">select * from tab1 where id = ?</span><br><span class="line">udpate tab1 set col1 = ? where id = ? and version = ?</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>缺点：在高并发下可能更新失败，所以要通过重试来提高更新效率。</p>
+<h3 id="FIFO队列"><a href="#FIFO队列" class="headerlink" title="FIFO队列"></a>FIFO队列</h3><p>排队：并行强制改成串行，单机内存队列，如果生产远高于生产可能造成内存爆掉。即使内存没问题，如果消费过慢用户响应时间也会长。 </p>
+<h3 id="redis-watch"><a href="#redis-watch" class="headerlink" title="redis watch"></a>redis watch</h3><p>如果可以把数据放到内存数据库中，可以考虑redis watch机制，采用乐观锁方式更新。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">WATCH mykey</span><br><span class="line">     val = GET mykey</span><br><span class="line">     val = val + 1</span><br><span class="line">     MULTI</span><br><span class="line">     SET mykey $val</span><br><span class="line">     EXEC</span><br></pre></td></tr></table></figure></p>
+<h2 id="五、高可用建设"><a href="#五、高可用建设" class="headerlink" title="五、高可用建设"></a>五、高可用建设</h2><p><img src="/2019/02/05/secondkill/stable.png" width="600" height="400" align="center"></p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<li><a href="https://time.geekbang.org/column/127" target="_blank" rel="noopener">极客时间-如何设计一个秒杀系统</a></li>
+<li><a href="http://developer.51cto.com/art/201601/503511.htm" target="_blank" rel="noopener">秒杀系统架构分析与实战</a></li>
+<li><a href="https://www.cnblogs.com/tao_/p/9537666.html" target="_blank" rel="noopener">MySQL的并发更新</a></li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/02/05/secondkill/">秒杀系统设计</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/02/05/secondkill/">https://gsmtoday.github.io/2019/02/05/secondkill/</a></li>
+            <li><strong>发布时间：</strong>2019-02-05</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/架构设计/">架构设计</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/02/08/flush/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">为什么MySQL会抖一下 - 关于刷脏页磁盘</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/01/04/go-interface/">
+                <span class="level-item">Go interface源码解析</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#秒杀系统本质">
+        <span class="has-mr-6">1.1</span>
+        <span>秒杀系统本质</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#怎样设计降低服务压力">
+        <span class="has-mr-6">2</span>
+        <span>怎样设计降低服务压力</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#一、架构设计原则">
+        <span class="has-mr-6">2.1</span>
+        <span>一、架构设计原则</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-数据要尽量少">
+        <span class="has-mr-6">2.1.1</span>
+        <span>1.数据要尽量少</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-请求数要尽量少">
+        <span class="has-mr-6">2.1.2</span>
+        <span>2.请求数要尽量少</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-路径尽量短">
+        <span class="has-mr-6">2.1.3</span>
+        <span>3.路径尽量短</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-依赖要尽量少，系统分级">
+        <span class="has-mr-6">2.1.4</span>
+        <span>4.依赖要尽量少，系统分级</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-不要有单点">
+        <span class="has-mr-6">2.1.5</span>
+        <span>5.不要有单点</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、热点数据处理">
+        <span class="has-mr-6">2.2</span>
+        <span>二、热点数据处理</span>
+        </a></li><li>
+        <a class="is-flex" href="#三、-性能优化">
+        <span class="has-mr-6">2.3</span>
+        <span>三、 性能优化</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#衡量指标">
+        <span class="has-mr-6">2.3.1</span>
+        <span>衡量指标</span>
+        </a></li><li>
+        <a class="is-flex" href="#优化方法">
+        <span class="has-mr-6">2.3.2</span>
+        <span>优化方法</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#四、并发写-减库存">
+        <span class="has-mr-6">2.4</span>
+        <span>四、并发写-减库存</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#乐观锁-悲观锁">
+        <span class="has-mr-6">2.4.1</span>
+        <span>乐观锁/悲观锁</span>
+        </a></li><li>
+        <a class="is-flex" href="#FIFO队列">
+        <span class="has-mr-6">2.4.2</span>
+        <span>FIFO队列</span>
+        </a></li><li>
+        <a class="is-flex" href="#redis-watch">
+        <span class="has-mr-6">2.4.3</span>
+        <span>redis watch</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#五、高可用建设">
+        <span class="has-mr-6">2.5</span>
+        <span>五、高可用建设</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#参考">
+        <span class="has-mr-6">3</span>
+        <span>参考</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

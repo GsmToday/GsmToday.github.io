@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Mysql存储机制-数据页管理 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="Mysql中，索引即数据。Index page是数据表中一条条数据和索引的载体，是最重要的一种页面类型。本章讨论和验证了索引页的物理存储结构">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mysql存储机制-数据页管理">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="Mysql中，索引即数据。Index page是数据表中一条条数据和索引的载体，是最重要的一种页面类型。本章讨论和验证了索引页的物理存储结构">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/index%20page.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/Record%20Format-Header.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/Record%20Clustered%20Leaf.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/Record%20Clustered%20Non-Leaf.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/Record%20Secondary%20Leaf.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/Record%20Secondary%20Non-Leaf.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.037Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mysql存储机制-数据页管理">
+<meta name="twitter:description" content="Mysql中，索引即数据。Index page是数据表中一条条数据和索引的载体，是最重要的一种页面类型。本章讨论和验证了索引页的物理存储结构">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/11/13/mysql-index-page/index%20page.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/armour.jpg" alt="Mysql存储机制-数据页管理">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-11-13T08:40:52.000Z">2018-11-13</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    13 分钟 读完 (大约 1912 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Mysql存储机制-数据页管理
+            
+        </h1>
+        <div class="content">
+            <p>Mysql中，索引即数据。Index page是数据表中一条条数据和索引的载体，是最重要的一种页面类型。本章讨论和验证了索引页的物理存储结构</p>
+<a id="more"></a>
+<h2 id="Page-structure"><a href="#Page-structure" class="headerlink" title="Page structure"></a>Page structure</h2><p>Index page的物理视图如下图所示。除去通用的页面头部<code>FIL Header</code>和<code>Tailer</code>，页面体主要包含三个部分：<code>Index Page Header</code>,<code>Records Space</code>,<code>Record Directory</code>。<code>Index Page Header</code>是Index Page特有的页头，<code>Record Space</code>是用户记录空间，包括已使用和空闲空间两部分，<code>Record Directory</code>是一个稀疏索引，主要用于加速rec在页内的查询速度。</p>
+<p><img src="/2018/11/13/mysql-index-page/index page.jpg" width="600" height="400" align="center" title="index page"></p>
+<h3 id="Index-Page-Header"><a href="#Index-Page-Header" class="headerlink" title="Index Page Header"></a>Index Page Header</h3><p>Index Page Header是索引页独有的信息，其中各字段(红色部分)所包含的信息说明如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Macro</th>
+<th style="text-align:center">Bytes</th>
+<th style="text-align:center">Desc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">PAGE_N_DIR_SLOTS</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">Page directory中的slot个数</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_HEAP_TOP</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">当前Page内已使用的空间的末尾位置，即free space的开始位置</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_N_HEAP</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">Page内所有记录个数，包含用户记录，系统记录以及标记删除的记录，同时当第一个bit设置为1时，表示这个page内是以Compact格式存储的</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_FREE</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">指向标记删除的记录链表的第一个记录</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_GARBAGE</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">被删除的记录链表上占用的总的字节数，属于可回收的垃圾碎片空间</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_LAST_INSERT</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">指向最近一次插入的记录偏移量，主要用于优化顺序插入操作</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_DIRECTION</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">用于指示当前记录的插入顺序以及是否正在进行顺序插入，每次插入时，PAGE_LAST_INSERT会和当前记录进行比较，以确认插入方向，据此进行插入优化</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_N_DIRECTION</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">当前以相同方向的顺序插入记录个数</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_N_RECS</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">Page上有效的未被标记删除的用户记录个数</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_MAX_TRX_ID</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">最近一次修改该page记录的事务ID，主要用于辅助判断二级索引记录的可见性。</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_LEVEL</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">该Page所在的btree level，根节点的level最大，叶子节点的level为0</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_INDEX_ID</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">该Page归属的索引ID</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+</tbody>
+</table>
+<p>除去红色部分的索引头之外，索引的根节点root page还记录中间节点段和叶子节点段的信息，称为FSEG Header：</p>
+<table>
+<thead>
+<tr>
+<th>Macro</th>
+<th>Bytes</th>
+<th>Desc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PAGE_BTR_SEG_LEAF</td>
+<td>10</td>
+<td>leaf segment在inode page中的位置</td>
+</tr>
+<tr>
+<td>PAGE_BTR_SEG_TOP</td>
+<td>10</td>
+<td>non-leaf segment在inode page中的位置</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Record-Space"><a href="#Record-Space" class="headerlink" title="Record Space"></a>Record Space</h3><p>用户记录（后简称rec）组织方式采用的是按键值有序的单向链表方式来组织的。Record Space空间中，最前面两条记录永远是：infimum 和 supremum这两条，分别用来标记虚拟的最前面一个记录和最后面一个记录。</p>
+<p>Mysql中rec是可变长的，包含record header和record data两部分。Innodb引擎中，对rec支持不同的编码格式，接下来将会以Compact模式为例介绍聚簇索引和非聚簇索引的叶子节点和中间节点的物理结构。在此之前，先声明一个定义：Innodb引擎中，把record data的起始地址称为‘origin’，使用N表示，record header使用负偏移量，如N-2来表示。</p>
+<h4 id="The-record-header"><a href="#The-record-header" class="headerlink" title="The record header"></a>The record header</h4><p>record header的结构如下图。</p>
+<p><img src="/2018/11/13/mysql-index-page/Record Format-Header.png" width="600" height="400" align="center" title="Record Format - Header"></p>
+<p>自底向前看，各部分的含义为：</p>
+<ul>
+<li>Next Record Offset，2字节，该页面中，当前记录按主键升序排列的下一条记录的页内偏移量</li>
+<li>Record Type，rec的类型，可选值包括：用户数据conventional(0)，索引数据node pointer(1)，infimum(2)以及supermum(3)</li>
+<li>Order/Heap no，用户记录在page中按插入顺序对应的物理编号，infimum始终取0，supremum始终取1，用户记录从2开始计数</li>
+<li>Number of Records Owned，当该值为非0时，表示当前记录占用page directory里一个slot，并和前一个slot之间存在这么多个记录。</li>
+<li>Info Flags，标记位，目前只使用了两个bit，一个用于表示该记录是否被标记删除(<code>REC_INFO_DELETED_FLAG</code>)，另一个bit(REC_INFO_MIN_REC_FLAG)如果被设置，表示这个记录是当前level最左边的page的第一个用户记录，即最小的记录。</li>
+<li>Nullable field bitmap，可选，标示值为NULL的列的bitmap，每个位标示一个列，如果一个列为空，在rec data中不存储任何值，只在这里mark</li>
+<li>Variable field length array，可选，记录可变长列的长度数组。如果列的最大长度为255字节，使用1byte；否则，0xxxxxxx (one byte, length=0..127), or 1exxxxxxxxxxxxxx (two bytes, length=128..16383, extern storage flag)</li>
+</ul>
+<h4 id="Clustered-Indexes"><a href="#Clustered-Indexes" class="headerlink" title="Clustered Indexes"></a>Clustered Indexes</h4><p>聚簇索引下叶子节点中记录的结构如下图</p>
+<p><img src="/2018/11/13/mysql-index-page/Record Clustered Leaf.png" width="600" height="400" align="center" title="Record Clustered Leaf"></p>
+<p>从rec data的起始位置开始，依次包含以下字段：</p>
+<ul>
+<li>Cluster Key Fields，索引字段，以字节流的形式依次拼接索引字段</li>
+<li>Transaction ID，事务id，6字节，上次修改当前记录的事务id</li>
+<li>Roll Pointer，回滚指针，上一次修改当前记录的事务在回滚段中的回滚记录的位置</li>
+<li>Non-Key Fields，非索引字段，以字节流形式依次拼接的所有非索引字段</li>
+</ul>
+<p>聚簇索引下非叶子节点中记录的结构相比于叶子节点要简单很多：首先，由于非叶子节点不支持MVCC，所以记录中不包含事务和回滚指针；其次，由于索引字段不能为空，所以rec header和rec data中都不包含Non-Key Fields。具体结构如下图。</p>
+<p><img src="/2018/11/13/mysql-index-page/Record Clustered Non-Leaf.png" width="600" height="400" align="center" title="Record Clustered Non-Leaf"></p>
+<p>从rec data的起始位置开始，依次包含以下字段：</p>
+<ul>
+<li>当前记录所对应的叶子节点中按主键排序最小的主键值</li>
+<li>叶子节点的页号</li>
+</ul>
+<h4 id="Secondary-Indexes"><a href="#Secondary-Indexes" class="headerlink" title="Secondary Indexes"></a>Secondary Indexes</h4><p>非聚簇索引（后简称二级索引）的叶子节点结构和聚簇索引类似，除去少了事务ID和回滚指针外，大体类似。需要特别指出的是，如果二级索引字段和聚簇索引字段有重叠，那么重叠的部分将被记录在Secondary Key Fields中。比如：一张表包含聚簇索引（a,b,c）和二级索引（a,d），那么，Secondary Key Fields将包含a,d, Cluster Key Fields将只包含（b,c）。结构如下图：</p>
+<p><img src="/2018/11/13/mysql-index-page/Record Secondary Leaf.png" width="600" height="400" align="center" title="Record Secondary Leaf"></p>
+<p>非聚簇索引的非叶子节点结构如下图，与聚簇索引类似，不再赘述。</p>
+<p><img src="/2018/11/13/mysql-index-page/Record Secondary Non-Leaf.png" width="600" height="400" align="center" title="Record Secondary Non-Leaf"></p>
+<h3 id="Directory"><a href="#Directory" class="headerlink" title="Directory"></a>Directory</h3><p>由于rec在page内是按照主键升序的单链表形式组织的，如果不使用任何辅助结构，那么在page内检索一条记录就需要从infimum开始，依次比对，效率不高。为了加快页内的数据查找，会按照记录的顺序，每隔4~8个数量的用户记录，就分配一个slot 。每个slot占用2个字节，存储记录的页内偏移量，可以理解为在页内构建的一个很小的索引(sparse index)来辅助二分查找。</p>
+<p>Page Directory的slot分配是从Page末尾（倒数第八个字节开始）开始逆序分配的。在查询记录时。先根据Page directory 确定记录所在的范围，然后在据此进行线性查询。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/11/13/mysql-index-page/">Mysql存储机制-数据页管理</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/11/13/mysql-index-page/">https://gsmtoday.github.io/2018/11/13/mysql-index-page/</a></li>
+            <li><strong>发布时间：</strong>2018-11-13</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/12/25/pool/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">从数据库连接池想到的</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/11/13/mysql-tablespace/">
+                <span class="level-item">Mysql存储机制—表空间结构</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

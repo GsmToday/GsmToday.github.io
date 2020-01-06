@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>RocketMQ源码分析5--Client之Consumer模块 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本文是RocketMQ源码分析系列之五，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta name="keywords" content="RocketMQ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码分析5--Client之Consumer模块">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/03/31/client-consumer-md/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本文是RocketMQ源码分析系列之五，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/31/client-consumer-md/client.jpeg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/31/client-consumer-md/client-module.svg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/03/31/client-consumer-md/clientboot.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.772Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码分析5--Client之Consumer模块">
+<meta name="twitter:description" content="本文是RocketMQ源码分析系列之五，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/03/31/client-consumer-md/client.jpeg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/cat2.jpeg" alt="RocketMQ源码分析5--Client之Consumer模块">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-03-31T07:38:39.000Z">2018-03-31</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    13 分钟 读完 (大约 1962 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                RocketMQ源码分析5--Client之Consumer模块
+            
+        </h1>
+        <div class="content">
+            <p>本文是<a href="https://gsmtoday.github.io/tags/RocketMQ/">RocketMQ源码分析系列</a>之五，如有疑问或者技术探讨，可以<a href="gsmuestc@163.com">email me</a>,欢迎探讨.</p>
+<a id="more"></a>
+<p>RocketMQ中Consuemer由用户部署，支持Push和Pull两种消费模式，支持集群消费和广播消息，提供实时的消息订阅机制。</p>
+<p>Client模块的Producer和Consumer源码结构引用<a href="https://blog.csdn.net/chunlongyu/article/details/54585232" target="_blank" rel="noopener">此文的图</a>。<br><img src="/2018/03/31/client-consumer-md/client.jpeg" width="800" height="600" align="center"></p>
+<p><img src="/2018/03/31/client-consumer-md/client-module.svg" width="800" height="600" align="center"></p>
+<p>Producer和Consumer的共同逻辑，例如定期更新NameServer地址列表，定期更新TopicRoute，发送网络请求封装在MQClientInstance, MQClientAPIImpl, MQAdminImpl类。</p>
+<h2 id="集群消费，广播消息以及Pub-Sub"><a href="#集群消费，广播消息以及Pub-Sub" class="headerlink" title="集群消费，广播消息以及Pub/Sub"></a>集群消费，广播消息以及Pub/Sub</h2><p><strong>Consumer Group</strong>: Consumer的集合，这类Consumer通常消费一类消息，且消费逻辑一致。</p>
+<p><strong>集群消费</strong>: 一个Consumer Group重点Consumer实例平摊消费消息。例如，某个Topic有9条消息，其中一个Consumer Group有三个实例，那么每个实例只消费其中的三条消息。多个Consumer Group之间是Pub/Sub发布订阅模式。默认，Consumer是集群消费模式.</p>
+<p><strong>广播消费</strong>：一条消息被多个Consumer消费，即使这些Consumer属于同一个 Consumer Group消息也会被Consumer Group中的每个Consumer 都消费一次，广播消费中的 Consumer Group 概念可以认为在消息划分方面无意义。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * Message model</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> MessageModel &#123;</span><br><span class="line">    <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">     * broadcast</span></span><br><span class="line"><span class="hljs-comment">     */</span></span><br><span class="line">    BROADCASTING(<span class="hljs-string">"BROADCASTING"</span>),</span><br><span class="line">    <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">     * clustering</span></span><br><span class="line"><span class="hljs-comment">     */</span></span><br><span class="line">    CLUSTERING(<span class="hljs-string">"CLUSTERING"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">private</span> String modeCN;</span><br><span class="line"></span><br><span class="line">    MessageModel(String modeCN) &#123;</span><br><span class="line">        <span class="hljs-keyword">this</span>.modeCN = modeCN;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getModeCN</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> modeCN;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="消息的推和拉"><a href="#消息的推和拉" class="headerlink" title="消息的推和拉"></a>消息的推和拉</h2><p>RocketMQ是<strong>以拉模式为主，兼有推模式</strong>。</p>
+<p>1.Push, 即Producer主动推送给Consumer: 发出消息到达broker后，broker马上把消息投递给Consumer.</p>
+<p>客户端使用demo如下：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">DefaultMQPushConsumer consumer = <span class="hljs-keyword">new</span> DefaultMQPushConsumer(<span class="hljs-string">"consumeGroup_001"</span>);</span><br><span class="line">        consumer.setNamesrvAddr(<span class="hljs-string">"127.0.0.1:9876"</span>);</span><br><span class="line">        consumer.subscribe(<span class="hljs-string">"Propolinse"</span>, <span class="hljs-string">"*"</span>); <span class="hljs-comment">//subscribe a topic</span></span><br><span class="line">        consumer.registerMessageListener(<span class="hljs-keyword">new</span> MessageListenerConcurrently() &#123;</span><br><span class="line">            <span class="hljs-meta">@Override</span></span><br><span class="line">            <span class="hljs-function"><span class="hljs-keyword">public</span> ConsumeConcurrentlyStatus <span class="hljs-title">consumeMessage</span><span class="hljs-params">(List&lt;MessageExt&gt; msgs,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                ConsumeConcurrentlyContext context)</span> </span>&#123;</span><br><span class="line">                System.out.println(Thread.currentThread().getName() + <span class="hljs-string">" Receive New Messages: "</span> + msgs);</span><br><span class="line">                <span class="hljs-keyword">return</span> ConsumeConcurrentlyStatus.CONSUME_SUCCESS;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br></pre></td></tr></table></figure></p>
+<p>2.Pull，即Broker收到Producer生产的消息后什么也不做，只等着Consumer在需要消费消息时候，主动向Broker<strong>拉取</strong>消息。<br>客户端使用demo如下：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> Map&lt;MessageQueue, Long&gt; offsetTable = <span class="hljs-keyword">new</span> HashMap&lt;MessageQueue, Long&gt;();</span><br><span class="line"></span><br><span class="line">   <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> InterruptedException, MQClientException </span>&#123;</span><br><span class="line">       DefaultMQPullConsumer consumer = <span class="hljs-keyword">new</span> DefaultMQPullConsumer(<span class="hljs-string">"consumeGroup_002"</span>);</span><br><span class="line">       consumer.setNamesrvAddr(<span class="hljs-string">"127.0.0.1:9876"</span>);</span><br><span class="line">       consumer.start();</span><br><span class="line"></span><br><span class="line">       <span class="hljs-comment">// 首先通过打算消费的Topic拿到对应的MessageQueue的集合</span></span><br><span class="line">       Set&lt;MessageQueue&gt; mqs =consumer.fetchSubscribeMessageQueues(<span class="hljs-string">"Propolinse"</span>); </span><br><span class="line">       <span class="hljs-keyword">for</span> (MessageQueue mq : mqs) &#123;<span class="hljs-comment">//遍历MessageQueue集合</span></span><br><span class="line">           SINGLE_MQ:</span><br><span class="line">           <span class="hljs-comment">//针对每个MessageQueue批量取消息，一次取完后，记录该队列下一次要取的开始offset，直到取完了，再换另一个MessageQueue</span></span><br><span class="line">           <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;</span><br><span class="line">               <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">                   PullResult pullResult = consumer.pullBlockIfNotFound(mq, <span class="hljs-keyword">null</span>, getMessageQueueOffset(mq), <span class="hljs-number">32</span>);</span><br><span class="line">                   System.out.println(pullResult);</span><br><span class="line">                   putMessageQueueOffset(mq, pullResult.getNextBeginOffset());</span><br><span class="line"></span><br><span class="line">                   <span class="hljs-keyword">switch</span> (pullResult.getPullStatus()) &#123;</span><br><span class="line">                       <span class="hljs-keyword">case</span> FOUND:</span><br><span class="line">                           List&lt;MessageExt&gt; messageExtList = pullResult.getMsgFoundList();</span><br><span class="line">                           <span class="hljs-keyword">for</span> (MessageExt m : messageExtList) &#123;</span><br><span class="line">                               System.out.println(<span class="hljs-keyword">new</span> String(m.getBody()));</span><br><span class="line">                           &#125;</span><br><span class="line">                           <span class="hljs-keyword">break</span>;</span><br><span class="line">                       <span class="hljs-keyword">case</span> NO_MATCHED_MSG:</span><br><span class="line">                           <span class="hljs-keyword">break</span>;</span><br><span class="line">                       <span class="hljs-keyword">case</span> NO_NEW_MSG:</span><br><span class="line">                           <span class="hljs-keyword">break</span> SINGLE_MQ;</span><br><span class="line">                       <span class="hljs-keyword">case</span> OFFSET_ILLEGAL:</span><br><span class="line">                           <span class="hljs-keyword">break</span>;</span><br><span class="line">                       <span class="hljs-keyword">default</span>:</span><br><span class="line">                           <span class="hljs-keyword">break</span>;</span><br><span class="line">                   &#125;</span><br><span class="line"></span><br><span class="line">               &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                   e.printStackTrace();</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       consumer.shutdown();</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">putMessageQueueOffset</span><span class="hljs-params">(MessageQueue mq, <span class="hljs-keyword">long</span> offset)</span> </span>&#123;</span><br><span class="line">       offsetTable.put(mq, offset);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">long</span> <span class="hljs-title">getMessageQueueOffset</span><span class="hljs-params">(MessageQueue mq)</span> </span>&#123;</span><br><span class="line">       Long offset = offsetTable.get(mq);</span><br><span class="line">       <span class="hljs-keyword">if</span> (offset != <span class="hljs-keyword">null</span>)</span><br><span class="line">           <span class="hljs-keyword">return</span> offset;</span><br><span class="line">       <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
+<p>实际上，在RocketMQ中无论是Push还是Pull, <strong>底层都是通过Consumer从Broker拉消息实现的（PullAPIWrapper.pullKernelImpl）</strong>。为了做到能够实时接收消息，RocketMQ使用长轮询方式，保证消息实时性和Push方式一致。这种长轮询类似Web QQ收发消息机制。</p>
+<p>底层上看Consumer使用RocketMQ的client- pullMessage接口，通过remoting模块实现与Broker通信，调用pullMessageProcessor读取Broker存储的文件消息。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PullResult pullResult = <span class="hljs-keyword">this</span>.mQClientFactory.getMQClientAPIImpl().pullMessage(brokerAddr, requestHeader, timeoutMillis, communicationMode, pullCallback);</span><br></pre></td></tr></table></figure></p>
+<p>pullMessageProcessor 调用DefaultMessageStore读取消息：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">final</span> GetMessageResult getMessageResult =</span><br><span class="line">           <span class="hljs-keyword">this</span>.brokerController.getMessageStore().getMessage(requestHeader.getConsumerGroup(), requestHeader.getTopic(),</span><br><span class="line">               requestHeader.getQueueId(), requestHeader.getQueueOffset(), requestHeader.getMaxMsgNums(), messageFilter);</span><br></pre></td></tr></table></figure></p>
+<p>Push方式里，consumer把轮询过程封装了，并注册MessageListener监听器，取到消息后，唤醒MessageListener的consumeMessage()来消费，对用户而言，感觉消息是被推送过来的。</p>
+<p>Pull方式里，取消息的过程需要用户自己写，首先通过打算消费的Topic拿到MessageQueue的集合，遍历MessageQueue集合，然后针对每个MessageQueue批量取消息，一次取完后，记录该队列下一次要取的开始offset，直到取完了，再换另一个MessageQueue。</p>
+<p>之所以采用Pull模式为主，是因为RocketMQ的主要应用场景是金融交易链路。因此需要将<strong>稳定可靠</strong>放在首位，因此采用了长连接轮询拉的模式。</p>
+<h3 id="Push和Pull的使用场景"><a href="#Push和Pull的使用场景" class="headerlink" title="Push和Pull的使用场景"></a>Push和Pull的使用场景</h3><p><a href="推荐">https://cloud.tencent.com/document/product/406/4791</a></p>
+<ul>
+<li>场景1：Producer 生产速率 VS Consumer消费速率</li>
+</ul>
+<p>如果Producer的生产速率大于Consumer消费速率, Push方式由于无法得知Consumer的状态，所以只要有数据产生，就会不断推送给Consumer一堆Consumer无法处理的消息，这时候Consumer只能不是reject就是error，然后来回踢皮球。</p>
+<p>反观Pull模式，Consumer可以按需消费，不用担心自己处理不了的消息来骚扰自己，而broker堆积消息也会相对简单，无需记录每一个要发送消息的状态，只需要<strong>维护所有消息的队列和偏移量</strong>就可以了。所以对于慢消费，消息量有限且到来的速度不均匀的情况，Pull模式比较合适。 </p>
+<ul>
+<li>场景2：消息的实时性</li>
+</ul>
+<p>采用Push模式，一旦消息到达，服务端就会立刻将消息推送给Consumer,这种方式实时性是非常好的。<br>而Pull模式，如果想要保证实时性，就只能采用长连接轮询的方式去拉消息(RocketMQ就是如此)。</p>
+<ul>
+<li>场景3：消息延迟与忙等</li>
+</ul>
+<p>这是Pull模式最大的短板。由于主动权在消费方，消费方无法准确地决定何时去拉取最新的消息。如果一次Pull取到消息了还可以继续去Pull，如果没有Pull取到则需要等待一段时间重新Pull。但等待多久就很难判定了。你可能会说，我可以有xx动态Pull拉取时间调整算法，但问题的本质在于，有没有消息到来这件事情决定权不在消费方。也许1分钟内连续来了1000条消息，然后半个小时没有新消息产生，可能你的算法算出下次最有可能到来的时间点是31分钟之后，或者60分钟之后，结果下条消息10分钟后到了，是不是很让人沮丧？</p>
+<p>当然也不是说延迟就没有解决方案了，业界较成熟的做法是从短时间开始（不会对broker有太大负担），然后指数级增长等待。比如开始等5ms，然后10ms，然后20ms，然后40ms……直到有消息到来，然后再回到5ms。</p>
+<p>即使这样，依然存在延迟问题：假设40ms到80ms之间的50ms消息到来，消息就延迟了30ms，而且对于半个小时来一次的消息，这些开销就是白白浪费的。</p>
+<p>在RocketMQ里，有一种优化的做法——长轮询 Pull ，来平衡推拉模型各自的缺点。基本思路是：消费者如果尝试拉取失败，不是直接return,而是把连接挂在那里wait,服务端如果有新的消息到来，把连接notify起来，这也是不错的思路。但海量的长连接block对系统的开销还是不容小觑的，还是要合理的评估时间间隔，给wait加一个时间上限比较好。</p>
+<h2 id="启动Consumer"><a href="#启动Consumer" class="headerlink" title="启动Consumer"></a>启动Consumer</h2><p><img src="/2018/03/31/client-consumer-md/clientboot.png" width="800" height="600" align="center"></p>
+<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><ol>
+<li><a href="https://yq.aliyun.com/articles/66128?spm=a2c4e.11154837.601370.2.79df5db0SUbGbK" target="_blank" rel="noopener">RocketMQ客户端最佳实践</a></li>
+<li>OffsetStore</li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/03/31/client-consumer-md/">RocketMQ源码分析5--Client之Consumer模块</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/03/31/client-consumer-md/">https://gsmtoday.github.io/2018/03/31/client-consumer-md/</a></li>
+            <li><strong>发布时间：</strong>2018-03-31</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/RocketMQ/">RocketMQ</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/05/01/rocketmq-questions/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">RocketMQ源码分析6--关于RocketMQ你想知道的Questions</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/03/26/rocketmq-broker/">
+                <span class="level-item">RocketMQ源码分析4--Broker模块</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#集群消费，广播消息以及Pub-Sub">
+        <span class="has-mr-6">1</span>
+        <span>集群消费，广播消息以及Pub/Sub</span>
+        </a></li><li>
+        <a class="is-flex" href="#消息的推和拉">
+        <span class="has-mr-6">2</span>
+        <span>消息的推和拉</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Push和Pull的使用场景">
+        <span class="has-mr-6">2.1</span>
+        <span>Push和Pull的使用场景</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#启动Consumer">
+        <span class="has-mr-6">3</span>
+        <span>启动Consumer</span>
+        </a></li><li>
+        <a class="is-flex" href="#引用">
+        <span class="has-mr-6">4</span>
+        <span>引用</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

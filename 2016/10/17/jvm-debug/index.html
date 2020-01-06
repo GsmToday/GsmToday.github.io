@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>JVM调试工具入门 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="上周末连续两天凌晨都收到了系统的内存使用率过高报警，在分析监控系统记录的内存使用率曲线和内存使用情况后发现，主要是因为在老年代迟迟没有触发full gc导致监控系统连续多次监测到可用内存过低，而触发的报警。在系统触发一次full gc之后，内存使用率会显著下降，报警也没有持续下去。由于无法复现问题，具体原因仍未找到，但是通过此过程，学习到的内存分析工具与方法，却值得记录一番。">
+<meta name="keywords" content="JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM调试工具入门">
+<meta property="og:url" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="上周末连续两天凌晨都收到了系统的内存使用率过高报警，在分析监控系统记录的内存使用率曲线和内存使用情况后发现，主要是因为在老年代迟迟没有触发full gc导致监控系统连续多次监测到可用内存过低，而触发的报警。在系统触发一次full gc之后，内存使用率会显著下降，报警也没有持续下去。由于无法复现问题，具体原因仍未找到，但是通过此过程，学习到的内存分析工具与方法，却值得记录一番。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/jstat%20gcutil.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/jstat%20gc.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/jstat%20gcnew.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/jstat%20gcnewcapacity.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/jstack.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/waitstate.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.933Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM调试工具入门">
+<meta name="twitter:description" content="上周末连续两天凌晨都收到了系统的内存使用率过高报警，在分析监控系统记录的内存使用率曲线和内存使用情况后发现，主要是因为在老年代迟迟没有触发full gc导致监控系统连续多次监测到可用内存过低，而触发的报警。在系统触发一次full gc之后，内存使用率会显著下降，报警也没有持续下去。由于无法复现问题，具体原因仍未找到，但是通过此过程，学习到的内存分析工具与方法，却值得记录一番。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2016/10/17/jvm-debug/jstat%20gcutil.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/jellyfish.jpg" alt="JVM调试工具入门">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2016-10-17T06:07:49.000Z">2016-10-17</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    18 分钟 读完 (大约 2690 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                JVM调试工具入门
+            
+        </h1>
+        <div class="content">
+            <p>上周末连续两天凌晨都收到了系统的内存使用率过高报警，在分析监控系统记录的内存使用率曲线和内存使用情况后发现，主要是因为在老年代迟迟没有触发full gc导致监控系统连续多次监测到可用内存过低，而触发的报警。在系统触发一次full gc之后，内存使用率会显著下降，报警也没有持续下去。由于无法复现问题，具体原因仍未找到，但是通过此过程，学习到的内存分析工具与方法，却值得记录一番。</p>
+<a id="more"></a>
+<h2 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h2><blockquote>
+<p>The jstat tool displays performance statistics for an instrumented HotSpot Java virtual machine (JVM).  </p>
+</blockquote>
+<p>jstat是HotSpot Java虚拟机的性能统计工具。其基本的语法描述如下:</p>
+<pre><code>jstat [generalOption | outputOptions | vmid [interval[s|ms] [count]]]
+</code></pre><h3 id="generalOption"><a href="#generalOption" class="headerlink" title="generalOption"></a>generalOption</h3><p>generalOption是针对jstat功能的描述，包括两个参数 <em>-help</em>  与 <em>-options</em> ，分别用于提示jstat的用法和支持的统计选项。该选项具有排他性，只能单独使用。</p>
+<h3 id="outputOptions"><a href="#outputOptions" class="headerlink" title="outputOptions"></a>outputOptions</h3><p>outputOptions包括两类参数：<em>状态统计</em> 和 <em>格式化输出</em>。状态统计参数用于指定jstat命令希望获取虚拟机哪方面的信息，而格式化参数则用于控制命令输出的展示样式。</p>
+<p>jstat支持的状态统计参数（即jstat -options的输出）及功能描述如下:</p>
+<pre><code>-class              统计类加载行为
+-complier           统计HotSpot即时编译器的行为
+-gc                 统计关于堆内存垃圾回收的行为
+-gccapacity         统计堆内存中各分区的使用情况
+-gccause            垃圾回收行为汇总，比-gcutil多输出最近两次垃圾回收的原因
+-gcnew,-gcold       新生代，老年代行为信息（内存量，阈值，垃圾回收次数等）
+-gcnewcapacity      新生代内存容量和使用量信息
+-gcoldcapacity      老年代内存容量和使用量信息
+-gcpermcapacity     持久区内存容量和使用量信息
+-gcutil             垃圾回收行为汇总
+-printcompilation   HotSpot编译方法统计
+</code></pre><p>格式化参数包括三个：<em>-h n</em> ，<em>-t</em> 和 <em>-JjavaOption</em>. -h参数指定每隔n行重新显示一次列名;-t参数控制在输出第一列添加时间戳信息;-JjavaOption用于传递javaOption到java程序启动参数。比如，-J-Xms48m 设置java启动最小内存为48M。</p>
+<h3 id="vmid"><a href="#vmid" class="headerlink" title="vmid"></a>vmid</h3><blockquote>
+<p>Virtual machine identifier, a string indicating the target Java virtual machine (JVM).  </p>
+</blockquote>
+<p>vmid是待监测的目标java程序标识符，可用 <em>jps</em> 和Linux系统下的 <em>ps</em> 等操作获取。vmid参数也支持以URI形式指定的远程主机上运行的java程序，不常用，不再赘述。</p>
+<h3 id="interval-and-count"><a href="#interval-and-count" class="headerlink" title="interval and count"></a>interval and count</h3><p>这两个参数用于控制jstat命令监测并输出的频率，interval默认参数为毫秒，如果设置了该参数，jstat命令将每隔interval的时间输出一次，count控制jstat命令输出样例的个数，也就是输出的行数。如果不设置，默认为无限，jstat会一直进行输出直到目标程序退出或者jstat命令终止。</p>
+<h3 id="样例"><a href="#样例" class="headerlink" title="样例"></a>样例</h3><p>使用 <em>-gcutil</em> 参数查看进程16058发生的垃圾回收行为，每2秒打印一次结果，一共打印5次。命令输出的每一列都使用简称的形式展示，下图中 <em>S0</em> 表示Survivor 0区的空间使用比例， <em>E</em>, <em>O</em>, <em>P</em> 分别代表Eden, Old和Perm空间使用率，<em>YGC</em> 表示young gc的次数，<em>YGCT</em> 表示young gc消耗的时间。<em>GCT</em> 则用来统计执行gc的总时间。</p>
+<div align="center"><br><br><img src="/2016/10/17/jvm-debug/jstat%20gcutil.jpg" alt=""><br><br></div>
+
+<p>使用 <em>-gc</em> 参数查看更详细的垃圾回收与堆内存信息。 <em>S0</em> 以及 <em>E</em> 等各内存区域标识后缀中 <em><strong>C</strong></em> 表示 Capacity, <em><strong>U</strong></em> 表示Utilization，参数对应的数值显示的是真实容量，而不是百分比。</p>
+<div align="center"><br><br><img src="/2016/10/17/jvm-debug/jstat%20gc.jpg" alt=""><br><br></div>
+
+<p>使用 <em>-gcnew</em> 参数查看新生代的内存和垃圾回收情况，由于命令附带了参数 <em>t</em> ，所以第一列打印了时间戳的信息。 <em>TT</em> 参数表示对象在gc时被放入老年代的年龄期限阈值，<em>MTT</em> 参数表示最大阈值. 这两个参数之间 <em>MTT</em> 设定了 <em>TT</em> 可取的最大值，<em>TT</em> 实际控制着对象进入老年代的年龄限制，会随着垃圾回收过程而发生变化。</p>
+<blockquote>
+<p>当年龄从1开始的对象大小累计超过了Survivor区域的1/2(TargetSurvivorRatio所定义)时，会计算一个Thenuring Threshold，超过这个年龄的新生代对象会进入到老年代，即使这时候新生代还有很多的空间。注意MaxTenuringThreshold只是设置了最大的Thenuring Threshold，不是说只有大于Max Tenuring Threshold才会进入到老年代，而是只要超过了计算出来的Tenuring Threshold就会进入老年代，MaxTenuringThreshold规定了Tenuring Threshold的最大值而已。Tenuring Threshold这个值在每一轮GC后都会动态计算，它与TargetSurvivorRatio以及Survivor区的大小有关系，TargetSurivivor默认是50即Survivor的1/2, 会计算出一个Desired Survivor Size，当年龄从1开始的对象大小累计超过了这个Desired Survivor Size，那么这个age就是Tenuring Threshold的值</p>
+</blockquote>
+<div align="center"><br><br><img src="/2016/10/17/jvm-debug/jstat%20gcnew.jpg" alt=""><br><br></div>
+
+<p>使用 <em>-gcnewcapacity</em> 参数查看新生代的内存占用情况。<em>NGC</em> : new generation capacity, 新生代内存大小。<em>NGCMN</em> 表示新生代分配内存的最小值，<em>NGCMX</em> 新生代分配内存的最大值，<code>NGCMX=S0CMX+S1CMX+ECMX</code>.</p>
+<div align="center"><br><br><img src="/2016/10/17/jvm-debug/jstat%20gcnewcapacity.jpg" alt=""><br><br></div>
+
+
+<h2 id="jstack"><a href="#jstack" class="headerlink" title="jstack"></a>jstack</h2><p>jstack用于打印指定java进程或者核心文件中所有java线程当前时刻正在执行的方法堆栈追踪情况，也就是线程的snapshot。生成线程的快照主要用于定位线程长时间出现停顿的原因：如死锁，等待外部资源等。jstack的命令格式如下：</p>
+<pre><code>jstack [option] pid/executable core/[server-id@]remote-hostname-or-IP
+</code></pre><ul>
+<li>pid<br>待追踪的java进程ID，可使用jps等方式获得</li>
+<li>executable<br>产生core dump的java可执行程序(jar文件)</li>
+<li>core<br>打印栈追踪信息的核心文件</li>
+</ul>
+<h3 id="options"><a href="#options" class="headerlink" title="options"></a>options</h3><pre><code>-F      当正常输出的请求(jstack [-l] pid)不被响应时，强制执行stack dump
+-l      除了堆栈外，打印关于锁的附加信息
+-m      如果调用本地方法，同时打印java和本地C/C++栈帧
+-h      打印帮助
+</code></pre><p>jstack在分析死锁，阻塞等性能问题上非常有用，根据打印的堆栈信息可以定位到出问题的代码段。定位问题的思路根据要解决的问题而发生不同，比如可以首先找到java进程中最耗cpu的线程，再根据线程id在jstack的输出中定位，或者使用指定的线程名称定位。下面看一下jstack的输出格式：</p>
+<div align="center"><br><br><img src="/2016/10/17/jvm-debug/jstack.jpg" alt=""><br><br></div>
+
+<pre><code>main 线程名称
+prio=5 线程优先级为5
+tid=7f8a7c001800 jvm中线程标识符
+nid=0x700000a19000 16进制表示的本地线程标识符
+runnnable 线程状态
+[70000a17000] 线程的起始地址
+从第二行起为函数调用栈
+</code></pre><p>上述信息中最重要的状态莫过于线程的状态，当程序发生问题时往往能够据此帮我们找到问题的所在。在jstack的输出中，线程所处的状态包括：</p>
+<ul>
+<li>Runnable: 正在运行  </li>
+<li>Wait on condition: 该状态出现在线程等待某个条件的发生。具体是什么原因，可以结合 stacktrace来分析。最常见的情况是线程在等待网络的读写。如果网络数据没准备好，线程就等待在那里。另外一种出现 Wait on condition的常见情况是该线程在 sleep，等待 sleep的时间到了时候，将被唤醒。</li>
+<li>Wait for monitor entry: Java通过对象监视器来进行线程的互斥与同步的，每个对象都有一个对象监视器，在对对象加锁的过程中，任何时刻只有一个线程拥有这个对象监视器，其他请求获得此资源的线程将会被分为两种：在线程获取到对象监视器，但等待的资源仍未到达时，线程可能调用Object.wait()，释放锁并进入Object.wait()的状态，重新等待；而那些从未获得过此对象监视器的线程就将被标识为Wait for monitor entry的状态。</li>
+<li>Object.wait: 等待对象监视器（锁）的状态。<br>关于两种等待状态可以参考下面的图（来源于网络）：  </li>
+</ul>
+<div align="center"><br><br><img src="/2016/10/17/jvm-debug/waitstate.jpg" alt=""><br><br></div>
+
+<h2 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h2><p>jmap用于生成java进程的heapdump或者堆内存的详细信息。可以用来分析java程序堆内存被各种实例占据的比例或者GC回收了哪些对象等信息。jmap的命令格式与jstack一致，不再赘述。</p>
+<h3 id="options-1"><a href="#options-1" class="headerlink" title="options"></a>options</h3><pre><code>&lt;no option&gt;                            打印每一个共享对象的起始地址，范围等信息
+-dump:\[live,]format=b,file=&lt;filename&gt;   以二进制形式打印java堆的dump信息到指定文件中，指定live参数，只打印存活的对象
+-heap                                  显示java堆的详细信息：GC算法，堆配置以及分代情况
+-histo\[:live]                         显示堆中每一个java类实例的个数，占据空间的大小，类名全称等。live参数控制输出存活对象。
+-premstat                              以classLoader为统计入口，显示永久代的生存状态。每个加载器的名称，存活状态，地址，父加载器和已经加载类的数量等信息将被打印。
+-F                                     在正常的命令对-dump或者-histo没有响应时，强制执行，生成dump信息
+-J&lt;flag&gt;                                map启动时传递给jvm的参数，比如在64位机器上就要使用jmap -J-d64 -heap pid来执行命令。
+</code></pre><hr>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>1.<a href="http://docs.oracle.com/javase/7/docs/technotes/tools/share/jstat.html" target="_blank" rel="noopener">http://docs.oracle.com/javase/7/docs/technotes/tools/share/jstat.html</a><br>2.<a href="http://docs.oracle.com/javase/7/docs/technotes/tools/share/jstack.html" target="_blank" rel="noopener">http://docs.oracle.com/javase/7/docs/technotes/tools/share/jstack.html</a><br>3.<a href="http://docs.oracle.com/javase/7/docs/technotes/tools/share/jmap.html" target="_blank" rel="noopener">http://docs.oracle.com/javase/7/docs/technotes/tools/share/jmap.html</a><br>4.<a href="https://my.oschina.net/feichexia/blog/196575" target="_blank" rel="noopener">https://my.oschina.net/feichexia/blog/196575</a><br>5.<a href="http://go-on.iteye.com/blog/1673894" target="_blank" rel="noopener">http://go-on.iteye.com/blog/1673894</a><br>6.<a href="http://blog.csdn.net/iter_zc/article/details/41802365" target="_blank" rel="noopener">http://blog.csdn.net/iter_zc/article/details/41802365</a><br>7.《深入理解JVM虚拟机》周志明著</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2016/10/17/jvm-debug/">JVM调试工具入门</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2016/10/17/jvm-debug/">https://gsmtoday.github.io/2016/10/17/jvm-debug/</a></li>
+            <li><strong>发布时间：</strong>2016-10-17</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/JVM/">JVM</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2016/11/06/book-programtic-programer/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">程序员修炼知道--从小工到专家</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2016/07/03/angkorWat/">
+                <span class="level-item">Angkor Wat - 柬埔寨浮光掠影</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

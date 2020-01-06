@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>RocketMQ源码分析1--Remoting - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。推荐Netty入门综述。 本文是RocketMQ源码分析系列之一，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta name="keywords" content="RocketMQ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ源码分析1--Remoting">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/02/19/remoting/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。推荐Netty入门综述。 本文是RocketMQ源码分析系列之一，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/19/remoting/protocol.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/19/remoting/cmd.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/19/remoting/response.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/19/remoting/invokeSync.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.156Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMQ源码分析1--Remoting">
+<meta name="twitter:description" content="本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。推荐Netty入门综述。 本文是RocketMQ源码分析系列之一，如有疑问或者技术探讨，可以email me,欢迎探讨.">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/02/19/remoting/protocol.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/dophin.png" alt="RocketMQ源码分析1--Remoting">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-02-19T03:14:03.000Z">2018-02-19</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    19 分钟 读完 (大约 2802 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                RocketMQ源码分析1--Remoting
+            
+        </h1>
+        <div class="content">
+            <p>本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。<a href="https://gsmtoday.github.io/2018/02/13/netty-summarize/">推荐Netty入门综述</a>。</p>
+<p>本文是<a href="https://gsmtoday.github.io/tags/RocketMQ/">RocketMQ源码分析系列</a>之一，如有疑问或者技术探讨，可以<a href="gsmuestc@163.com">email me</a>,欢迎探讨.</p>
+<a id="more"></a>
+<p>在分布式应用中，不可避免的一个问题就是跨进程的通信，此问题基本都通过RPC调用来解决。RocketMQ的通信模块无疑也是通过RPC实现的Producer、Consumer与Broker之间的通信。在讲解RocketMQ的通信模块之前，先来说关于<a href="[http://www.infoq.com/cn/articles/netty-high-performance]">高性能RPC调用三个重要主题</a>。</p>
+<ul>
+<li>传输<br>因为RPC的本质是进程间通信，采用什么样的IO通信模型在很大程度上决定了通信的性能。</li>
+<li>协议<br>在网络通信传输过程中，因为发送端和接收端通常不能保证两边使用的是相同的编程语言，即使都是相同语言，也有可能CPU位数不一样，也会造成数据出错。另外因为数据包都是连在一起发送的，没法做消息区分。所以通常需要约定一个<strong>通信协议</strong>，协议规定好数据流中每个字节的含义。发送端要保证按照协议组装好数据流，接收端按照协议规定读出里面的数据。网络通信传输的是字节码，需要对消息进行编解码。</li>
+</ul>
+<p>协议指RPC调用在网络传输中约定的数据封装方式，通常包括三部分：<strong>编解码</strong>，<strong>消息头</strong>，<strong>消息体</strong>。常见的消息体编解码方式是<strong>序列化</strong>。消息头负责存储方便编码以及方便扩展的元信息，例如语言版本，响应码等等。</p>
+<ul>
+<li>线程<br>当通信消息传输完毕之后，通过什么样的线程模型处理线程请求也很重要。常见的模型有Reactor单线程模型，Reactor多线程模型以及Reactor主从模型。虽然单路复用的思想是一个线程handle多个连接，尽量减少线程切换的开销。但是如果客户端请求量大，很可能单线程处理不过来请求导致请求积压响应变慢。因此Reactor多线程模型就是IO操作和非IO操作分开。非IO的线程称为工作线程，客户端的请求直接被丢到线程池中，客户端发送请求不会堵塞。</li>
+</ul>
+<p>接着我们来讲讲RocketMQ是怎么解决通信协议的“传输”、“协议”以及“线程”的。</p>
+<h2 id="传输"><a href="#传输" class="headerlink" title="传输"></a>传输</h2><p>简单来说，RocketMQ的remoting模块通过Netty实现了IO单路复用的Reactor通信模型。在RocketMQ启动NameServer的时候，会执行NameServer初始化以及服务端通信对象RemotingServer的启动操作<code>this.remotingServer.start();</code>. start()方法会启动NettyRemotingServer的Netty服务端并初始化一个channel。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">ServerBootstrap childHandler =</span><br><span class="line">         <span class="hljs-keyword">this</span>.serverBootstrap.group(<span class="hljs-keyword">this</span>.eventLoopGroupBoss, <span class="hljs-keyword">this</span>.eventLoopGroupSelector)</span><br><span class="line">             .channel(useEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)</span><br><span class="line">             .option(ChannelOption.SO_BACKLOG, <span class="hljs-number">1024</span>)</span><br><span class="line">             .option(ChannelOption.SO_REUSEADDR, <span class="hljs-keyword">true</span>)</span><br><span class="line">             .option(ChannelOption.SO_KEEPALIVE, <span class="hljs-keyword">false</span>)</span><br><span class="line">             .childOption(ChannelOption.TCP_NODELAY, <span class="hljs-keyword">true</span>)</span><br><span class="line">             .childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())</span><br><span class="line">             .childOption(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())</span><br><span class="line">             .localAddress(<span class="hljs-keyword">new</span> InetSocketAddress(<span class="hljs-keyword">this</span>.nettyServerConfig.getListenPort()))</span><br><span class="line">             .childHandler(<span class="hljs-keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;</span><br><span class="line">                 <span class="hljs-meta">@Override</span></span><br><span class="line">                 <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                     ch.pipeline()</span><br><span class="line">                         .addLast(defaultEventExecutorGroup, HANDSHAKE_HANDLER_NAME,</span><br><span class="line">                             <span class="hljs-keyword">new</span> HandshakeHandler(TlsSystemConfig.tlsMode))</span><br><span class="line">                         .addLast(defaultEventExecutorGroup,</span><br><span class="line">                             <span class="hljs-keyword">new</span> NettyEncoder(), <span class="hljs-comment">// 指定消息编码器</span></span><br><span class="line">                             <span class="hljs-keyword">new</span> NettyDecoder(), <span class="hljs-comment">// 指定消息解码器</span></span><br><span class="line">                             <span class="hljs-keyword">new</span> IdleStateHandler(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),</span><br><span class="line">                             <span class="hljs-keyword">new</span> NettyConnectManageHandler(),</span><br><span class="line">                             <span class="hljs-keyword">new</span> NettyServerHandler()</span><br><span class="line">                         );</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;);</span><br></pre></td></tr></table></figure></p>
+<p>这里启动了Netty的服务端，可以看出是Netty的<a href="https://gsmtoday.github.io/2018/02/13/netty-summarize/">Reactor模型的体现</a>。EventLoopGroupBoss负责IO的连接，EventLoopGroupSelector负责连接的处理操作。在启动服务端的同时，会初始化一个channel, 并赋予channel注册到一个默认的defaultEventExecutorGroup.</p>
+<p>当Producer发送消息（例如“Hello world”）时候，首先rocketmq使用netty进行IO通信，Netty的pipeline在各个handler传递消息进行处理。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pipeline.fireChannelRead(readBuf.get(i));</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title">fireChannelRead</span><span class="hljs-params">(Object msg)</span> </span>&#123;</span><br><span class="line">     AbstractChannelHandlerContext.invokeChannelRead(head, msg);</span><br><span class="line">     <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><p>RocketMQ自定义的私有协议栈都是基于TCP/IP协议，使用Netty的NIO TCP协议栈方便的进行私有协议栈的定制和开发。使用Netty定义私有协议栈的步骤：</p>
+<h3 id="1-自定义协议规则"><a href="#1-自定义协议规则" class="headerlink" title="1. 自定义协议规则"></a>1. 自定义协议规则</h3><p>RocketMQ协议分为以下四个部分:<br><img src="/2018/02/19/remoting/protocol.jpg" width="500" height="300" alt="protocol" align="center"></p>
+<ul>
+<li>header data: 协议的头，数据是序列化【fastjson】后的json。 json的每个key字段都是固定的，不同的通讯请求字段不一样。</li>
+<li>body data： 请求的二进制实际数据。例如发送消息的网络请求中，body中传输实际的消息内容。</li>
+<li>length:     消息总长度。</li>
+<li>header length: 序列化类型&amp;消息头长度。第一个字节表示序列化类型，后面三个自己表示消息头长度。</li>
+</ul>
+<p>在RocketMQ源码中，通信的消息封装在RemotingCommand这个bean中，其属性可以看出RocketMQ通信协议:</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">//RequestCode定义:当表示请求操作代码时候，请求接收方根据代码执行相应操作；</span></span><br><span class="line"><span class="hljs-comment">//当表示应答结果代码时候，0表示成功，非0表示错误代码。</span></span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> code;</span><br><span class="line"><span class="hljs-keyword">private</span> LanguageCode language = LanguageCode.JAVA; <span class="hljs-comment">// 请求和应答方语言</span></span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> version = <span class="hljs-number">0</span>; <span class="hljs-comment">//请求和应答方程序版本</span></span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> opaque = RequestId.getAndIncrement();<span class="hljs-comment">//请求发起方做tcp连接上的线程复用。</span></span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> flag = <span class="hljs-number">0</span>; <span class="hljs-comment">//通信层标志位</span></span><br><span class="line"><span class="hljs-keyword">private</span> String remark;</span><br><span class="line"><span class="hljs-comment">//把下面customHeader中的信息填充到这里，见 makeCustomHeaderToNet</span></span><br><span class="line"><span class="hljs-comment">//"extFields":&#123;"topic":"yyztest2","queueId":"3","consumerGroup":"yyzGroup2","commitOffset":"28"&#125;</span></span><br><span class="line"><span class="hljs-keyword">private</span> HashMap&lt;String, String&gt; extFields;<span class="hljs-comment">//请求自定义字段</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * header data</span></span><br><span class="line"><span class="hljs-comment"> * 例如CONSUMER_SEND_MSG_BACK消息，</span></span><br><span class="line"><span class="hljs-comment"> * customHeader 为ConsumerSendMsgBackRequestHeader  填充见 MQClientAPIImpl.consumerSendMessageBack</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">transient</span> CommandCustomHeader customHeader;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * body部分</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">transient</span> <span class="hljs-keyword">byte</span>[] body;</span><br></pre></td></tr></table></figure>
+<h3 id="2-自己编写encoder和decoder"><a href="#2-自己编写encoder和decoder" class="headerlink" title="2. 自己编写encoder和decoder"></a>2. 自己编写encoder和decoder</h3><p>通过remoting模块可以发现通信过程中，RocketMQ服务器与客户端通过传递 RemotingCommand对象来进行交互。通过NettyDecoder/NettyEncoder对Remoting Command进行协议的编解码。</p>
+<ul>
+<li>消息编解码 使用NettyEncoder.encode进行消息序列化</li>
+<li>通信方式: RocketMQ支持三种方式的通信 同步/异步/单向oneway</li>
+<li>通信流程<br>解码 RemotingCommand类中的decode方法 - 根据自定义的协议进行解析获取消息头部和消息体：<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> RemotingCommand <span class="hljs-title">decode</span><span class="hljs-params">(<span class="hljs-keyword">final</span> ByteBuffer byteBuffer)</span> </span>&#123;</span><br><span class="line">       <span class="hljs-keyword">int</span> length = byteBuffer.limit();</span><br><span class="line">       <span class="hljs-keyword">int</span> oriHeaderLen = byteBuffer.getInt();<span class="hljs-comment">//获取报文头部的长度</span></span><br><span class="line">       <span class="hljs-keyword">int</span> headerLength = getHeaderLength(oriHeaderLen);</span><br><span class="line"></span><br><span class="line">       <span class="hljs-keyword">byte</span>[] headerData = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[headerLength];</span><br><span class="line">       byteBuffer.get(headerData); <span class="hljs-comment">// 获得报文头部数据</span></span><br><span class="line"></span><br><span class="line">       <span class="hljs-comment">//反序列化解析header data和RemotingCommand类</span></span><br><span class="line">       RemotingCommand cmd = headerDecode(headerData, getProtocolType(oriHeaderLen));</span><br><span class="line"></span><br><span class="line">       <span class="hljs-keyword">int</span> bodyLength = length - <span class="hljs-number">4</span> - headerLength; <span class="hljs-comment">// 获取body长度</span></span><br><span class="line">       <span class="hljs-keyword">byte</span>[] bodyData = <span class="hljs-keyword">null</span>;</span><br><span class="line">       <span class="hljs-keyword">if</span> (bodyLength &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">           bodyData = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[bodyLength];</span><br><span class="line">           byteBuffer.get(bodyData); <span class="hljs-comment">// 获取报文提数据</span></span><br><span class="line">       &#125;</span><br><span class="line">       cmd.body = bodyData;</span><br><span class="line">       <span class="hljs-comment">//把body部分还原出来，也就是把消息内容</span></span><br><span class="line">       <span class="hljs-keyword">return</span> cmd;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>为了形象起见，我自己写了一个简单的producer发送消息的demo<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Message msg = <span class="hljs-keyword">new</span> Message(<span class="hljs-string">"Topic2Test"</span>,<span class="hljs-comment">// topic</span></span><br><span class="line">                        <span class="hljs-string">"TagA"</span>,<span class="hljs-comment">// tag</span></span><br><span class="line">                        (<span class="hljs-string">"Hello RocketMQ "</span>).getBytes()<span class="hljs-comment">// body</span></span><br><span class="line">                );</span><br><span class="line"></span><br><span class="line">SendResult sendResult = producer.send(msg);</span><br></pre></td></tr></table></figure></p>
+<p>通过在decode方法中最后获取到的cmd设置断点会发现：<br><img src="/2018/02/19/remoting/cmd.png" width="600" height="400" alt="RocketMQ消息封装" align="center"><br>此时RemotingCommand的code为310，通过查阅RequestCode发现：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> SEND_MESSAGE_V2 = <span class="hljs-number">310</span>;</span><br></pre></td></tr></table></figure></p>
+<p>解码消息得知消息状态码为发送消息。并且发送方语言为JAVA,消息所在群组为gsm_group,消息的topic为Topic2Test。并且消息体Hello RocketMQ的字节码存储在了body里面。</p>
+<h3 id="3-编写自己的应用Client-amp-Server"><a href="#3-编写自己的应用Client-amp-Server" class="headerlink" title="3. 编写自己的应用Client&amp;Server"></a>3. 编写自己的应用Client&amp;Server</h3><p>remoting模块通过定义RemotingClient和RemotingServer实现了基于Netty通信的应用客户端和服务器。无论是客户端还是服务器都支持三种通信方式：</p>
+<ul>
+<li>invokeSync 同步通信</li>
+<li>invokeAsync 异步通信</li>
+<li>invoikeOneway 单向通信（不需要知道响应）<br>通信对象是上文提到的RemotingCommand，服务端对RemotingCommand进行解码，然后处理。</li>
+</ul>
+<p>服务端（实现类NettyRemotingServer）和客户端（实现类NettyRemotingClient）继承了抽象类NettyRemotingAbstract并且实现了RemotingServer/RemotingClient.</p>
+<p>抽象类NettyRemotingAbstract中定义了处理请求的方法processRequestCommand,处理响应调用的方法processResponseCommand.</p>
+<p>当客户端与服务端进行通信时候</p>
+<ul>
+<li>客户端发送请求给服务端，通过Netty的channel进行IO通信给服务端</li>
+<li>服务端处理客户端请求。NettyServerHandler接收消息类型REQUEST_COMMAND，调用 processRequestCommand(ctx, cmd);</li>
+<li>服务端处理完毕后，通过Netty的channel进行IO通信客户端</li>
+<li>客户端处理服务端发送的响应，NettyClientHandler接收消息类型为RESPONSE_COMMAND，调用processResponseCommand(ctx, cmd)<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">processMessageReceived</span><span class="hljs-params">(ChannelHandlerContext ctx, RemotingCommand msg)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">final</span> RemotingCommand cmd = msg;</span><br><span class="line">    <span class="hljs-keyword">if</span> (cmd != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">        <span class="hljs-keyword">switch</span> (cmd.getType()) &#123;</span><br><span class="line">            <span class="hljs-keyword">case</span> REQUEST_COMMAND:</span><br><span class="line">                processRequestCommand(ctx, cmd);</span><br><span class="line">                <span class="hljs-keyword">break</span>;</span><br><span class="line">            <span class="hljs-keyword">case</span> RESPONSE_COMMAND:</span><br><span class="line">                processResponseCommand(ctx, cmd);</span><br><span class="line">                <span class="hljs-keyword">break</span>;</span><br><span class="line">            <span class="hljs-keyword">default</span>:</span><br><span class="line">                <span class="hljs-keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p>服务端会针对每个访问请求查询其请求编码，根据请求编码使用相应的处理器(processor)进行处理。processorTable记录请求编码、处理器、线程池的关系。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * This container holds all processors per request code, aka, for each incoming request, we may look up the</span></span><br><span class="line"><span class="hljs-comment"> * responding processor in this map to handle the request.</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">final</span> HashMap&lt;Integer<span class="hljs-comment">/* request code */</span>, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt; processorTable =</span><br><span class="line">    <span class="hljs-keyword">new</span> HashMap&lt;Integer, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt;(<span class="hljs-number">64</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p>客户端使用responseTable记录所有响应。当客户端发送消息时候，会创建ResponseFuture异步响应结果。将每个响应的opaque与ResponseFuture组成的ConcurrentMap存储到responseTable.</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * This map caches all on-going requests.</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">final</span> ConcurrentMap&lt;Integer <span class="hljs-comment">/* opaque */</span>, ResponseFuture&gt; responseTable = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;Integer, ResponseFuture&gt;(<span class="hljs-number">256</span>);</span><br></pre></td></tr></table></figure>
+<p>默认使用同步通信.因为服务端和客户度逻辑相似，这里以客户端为例，：NettyRemotingClient的同步通信实现如下：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"> <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">  * addr:为服务端地址，RPC调用需要制定服务端地址这样客户端才可以发送请求</span></span><br><span class="line"><span class="hljs-comment">  * request: RemotingCommand封装的消息</span></span><br><span class="line"><span class="hljs-comment">  */</span></span><br><span class="line"> <span class="hljs-function"><span class="hljs-keyword">public</span> RemotingCommand <span class="hljs-title">invokeSync</span><span class="hljs-params">(String addr, <span class="hljs-keyword">final</span> RemotingCommand request, <span class="hljs-keyword">long</span> timeoutMillis)</span></span></span><br><span class="line"><span class="hljs-function">        <span class="hljs-keyword">throws</span> InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">final</span> Channel channel = <span class="hljs-keyword">this</span>.getAndCreateChannel(addr);</span><br><span class="line">        <span class="hljs-keyword">if</span> (channel != <span class="hljs-keyword">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">            <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">                <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.rpcHook != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                    <span class="hljs-keyword">this</span>.rpcHook.doBeforeRequest(addr, request);</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="hljs-string">"invoke sync! request: "</span>+request.toString());</span><br><span class="line">                <span class="hljs-comment">// 同步通信，通信回应存储在reponse里</span></span><br><span class="line">                RemotingCommand response = <span class="hljs-keyword">this</span>.invokeSyncImpl(channel, request, timeoutMillis);</span><br><span class="line">                <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.rpcHook != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                    <span class="hljs-keyword">this</span>.rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(channel), request, response);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="hljs-keyword">return</span> response;</span><br><span class="line">            &#125;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><img src="/2018/02/19/remoting/response.png" width="600" height="400" alt="RocketMQ回应消息封装" align="center"><br>可以看出RemotingCommand当表示应答结果时候如果处理成功则code = 0。</p>
+<p>核心处理为invokeSyncImpl方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> RemotingCommand <span class="hljs-title">invokeSyncImpl</span><span class="hljs-params">(<span class="hljs-keyword">final</span> Channel channel, <span class="hljs-keyword">final</span> RemotingCommand request,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">       <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> timeoutMillis)</span></span></span><br><span class="line"><span class="hljs-function">       <span class="hljs-keyword">throws</span> InterruptedException, RemotingSendRequestException, RemotingTimeoutException </span>&#123;</span><br><span class="line">       <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> opaque = request.getOpaque();</span><br><span class="line"></span><br><span class="line">       <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">           <span class="hljs-keyword">final</span> ResponseFuture responseFuture = <span class="hljs-keyword">new</span> ResponseFuture(opaque, timeoutMillis, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>);</span><br><span class="line">           <span class="hljs-comment">// 客户端使用resonseTable,服务端使用processortable</span></span><br><span class="line">           <span class="hljs-keyword">this</span>.responseTable.put(opaque, responseFuture);</span><br><span class="line">           <span class="hljs-keyword">final</span> SocketAddress addr = channel.remoteAddress();</span><br><span class="line">           channel.writeAndFlush(request).addListener(<span class="hljs-keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">               <span class="hljs-meta">@Override</span></span><br><span class="line">               <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">operationComplete</span><span class="hljs-params">(ChannelFuture f)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                   <span class="hljs-keyword">if</span> (f.isSuccess()) &#123;</span><br><span class="line">                       responseFuture.setSendRequestOK(<span class="hljs-keyword">true</span>);</span><br><span class="line">                       <span class="hljs-keyword">return</span>;</span><br><span class="line">                   &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">                       responseFuture.setSendRequestOK(<span class="hljs-keyword">false</span>);</span><br><span class="line">                   &#125;</span><br><span class="line"></span><br><span class="line">                   responseTable.remove(opaque);</span><br><span class="line">                   responseFuture.setCause(f.cause());</span><br><span class="line">                   responseFuture.putResponse(<span class="hljs-keyword">null</span>);</span><br><span class="line">                   log.warn(<span class="hljs-string">"send a request command to channel &lt;"</span> + addr + <span class="hljs-string">"&gt; failed."</span>);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;);</span><br><span class="line"></span><br><span class="line">           RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);</span><br><span class="line">           <span class="hljs-keyword">if</span> (<span class="hljs-keyword">null</span> == responseCommand) &#123;</span><br><span class="line">               <span class="hljs-keyword">if</span> (responseFuture.isSendRequestOK()) &#123;</span><br><span class="line">                   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RemotingTimeoutException(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,</span><br><span class="line">                       responseFuture.getCause());</span><br><span class="line">               &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">                   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RemotingSendRequestException(RemotingHelper.parseSocketAddressAddr(addr), responseFuture.getCause());</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="hljs-keyword">return</span> responseCommand;</span><br><span class="line">       &#125; <span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">           <span class="hljs-keyword">this</span>.responseTable.remove(opaque);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
+<p>首先构造一个ResonseFuture对象，Netty发送请求(writeAndFlush)并设置监听回调响应.<br>代码流程图参照<a href="http://blog.csdn.net/quhongwei_zhanqiu/article/details/39153681" target="_blank" rel="noopener">下图</a><br><img src="/2018/02/19/remoting/invokeSync.png" width="600" height="400" align="center"></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><a href="http://zqhxuyuan.github.io/2017/10/18/Midd-RocketMQ/#" target="_blank" rel="noopener">http://zqhxuyuan.github.io/2017/10/18/Midd-RocketMQ/#</a></li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/02/19/remoting/">RocketMQ源码分析1--Remoting</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/02/19/remoting/">https://gsmtoday.github.io/2018/02/19/remoting/</a></li>
+            <li><strong>发布时间：</strong>2018-02-19</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/RocketMQ/">RocketMQ</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/02/23/nameserver/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">RocketMQ源码分析2--NameServer</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/02/13/netty-summarize/">
+                <span class="level-item">Netty入门综述</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

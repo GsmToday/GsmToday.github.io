@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Java8函数式接口 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="Java8引入了“行为参数化”的理念。为了实现行为参数化，java8提出函数式接口和Lambda表达式。本文首先会讲讲什么是函数式接口，然后会讲到java8预定义的四种核心函数式接口，以及使用这四种接口处理问题的demo。同时，本文还会使用大量的用Stream处理集合数据的例子。">
+<meta name="keywords" content="Java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java8函数式接口">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/10/17/functional-interface/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="Java8引入了“行为参数化”的理念。为了实现行为参数化，java8提出函数式接口和Lambda表达式。本文首先会讲讲什么是函数式接口，然后会讲到java8预定义的四种核心函数式接口，以及使用这四种接口处理问题的demo。同时，本文还会使用大量的用Stream处理集合数据的例子。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.807Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java8函数式接口">
+<meta name="twitter:description" content="Java8引入了“行为参数化”的理念。为了实现行为参数化，java8提出函数式接口和Lambda表达式。本文首先会讲讲什么是函数式接口，然后会讲到java8预定义的四种核心函数式接口，以及使用这四种接口处理问题的demo。同时，本文还会使用大量的用Stream处理集合数据的例子。">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/catfeet.jpg" alt="Java8函数式接口">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-10-17T13:36:38.000Z">2017-10-17</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1472 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Java8函数式接口
+            
+        </h1>
+        <div class="content">
+            <p>Java8引入了“行为参数化”的理念。为了实现行为参数化，java8提出<strong>函数式接口</strong>和<strong>Lambda表达式</strong>。本文首先会讲讲什么是函数式接口，然后会讲到java8预定义的四种核心函数式接口，以及使用这四种接口处理问题的demo。同时，本文还会使用大量的用Stream处理集合数据的例子。</p>
+<a id="more"></a>
+<h1 id="函数式接口-functional-interfaces"><a href="#函数式接口-functional-interfaces" class="headerlink" title="函数式接口 functional interfaces"></a>函数式接口 functional interfaces</h1><p>函数式接口：</p>
+<ul>
+<li>函数式接口是一种特殊的SAM类型(Single Abstract Method), 即只定义一个抽象方法的接口。</li>
+<li>使用<code>@FunctionalInterface</code>标注一个接口即表示该接口是一个函数式接口，如果你用<code>@FunctionalInterface</code>定义了一个接口，而它却不是函数式接口的话，编译器将返回一个提示原因的错误。</li>
+<li>Lambda表达式是函数式接口的实例。以函数式接口为参数的方法，可以在调用时使用Lambda表达式作为参数。</li>
+</ul>
+<p>之所以java8设计函数式接口，主要目的是因为：函数式接口的抽象方法可以使用Lambda表达式作为输入参数。本质上讲，函数式接口和Lambda表达式将<code>行为参数化</code>成为了可能。</p>
+<h1 id="四种核心接口"><a href="#四种核心接口" class="headerlink" title="四种核心接口"></a>四种核心接口</h1><p>Java8预定义了大量的函数式接口，这样客户端可以直接使用。这些预定义的函数式接口定义在<code>java.util.function</code>下，通常分为以下四种。</p>
+<table>
+<thead>
+<tr>
+<th>函数式接口</th>
+<th style="text-align:center">参数及返回类型</th>
+<th style="text-align:right">用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Consumer<t></t></td>
+<td style="text-align:center">void accept(T t)</td>
+<td style="text-align:right">消费型接口，接受一个参数，没有返回值</td>
+</tr>
+<tr>
+<td>Supplier<t></t></td>
+<td style="text-align:center">T get()</td>
+<td style="text-align:right">供给型接口，不接受参数，有一个返回值</td>
+</tr>
+<tr>
+<td>Function<t,r></t,r></td>
+<td style="text-align:center">R apply(T t)</td>
+<td style="text-align:right">功能型接口，接受一个参数，处理后返回一个值</td>
+</tr>
+<tr>
+<td>Predicate<t></t></td>
+<td style="text-align:center">Boolean test(T t)</td>
+<td style="text-align:right">断言性接口，接受一个参数，返回判断结果boolean</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Consumer"><a href="#Consumer" class="headerlink" title="Consumer"></a>Consumer</h2><p>顾名思义，<code>Consumer</code>接口使用场景为当一个对象需要被“消费”掉的时候。即这个对象作为方法的输入参数被执行某些操作，而且方法不做任何返回。打印操作就是一个典型的消费操作。</p>
+<p><code>Consumer</code> 源码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@FunctionalInterface</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Consumer</span>&lt;<span class="hljs-title">T</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(T t)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>使用<code>consumer</code>执行打印的demo<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConsumerExample</span></span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String args[])</span></span>&#123;</span><br><span class="line">        Consumer&lt;Integer&gt; consumer= i-&gt; System.out.print(<span class="hljs-string">" "</span>+i);</span><br><span class="line"></span><br><span class="line">        List&lt;Integer&gt; integerList=Arrays.asList(<span class="hljs-keyword">new</span> Integer(<span class="hljs-number">1</span>), <span class="hljs-keyword">new</span> Integer(<span class="hljs-number">2</span>), <span class="hljs-keyword">new</span> Integer(<span class="hljs-number">3</span>),</span><br><span class="line">        <span class="hljs-keyword">new</span> Integer(<span class="hljs-number">4</span>), <span class="hljs-keyword">new</span> Integer(<span class="hljs-number">5</span>), <span class="hljs-keyword">new</span> Integer(<span class="hljs-number">6</span>));</span><br><span class="line"></span><br><span class="line">        printList(integerList, consumer);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">printList</span><span class="hljs-params">(List&lt;Integer&gt; listOfIntegers, Consumer&lt;Integer&gt; consumer)</span></span>&#123;</span><br><span class="line">        <span class="hljs-keyword">for</span>(Integer integer:listOfIntegers)&#123;</span><br><span class="line">            consumer.accept(integer);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>另外，<code>Consumer</code>的doc提到一句，</p>
+<blockquote>
+<p>Consumer is expected to operate via side-effects.</p>
+</blockquote>
+<p><code>Consumer</code>接口可以执行带有副作用的操作，即<code>Consumer</code>的操作可能会更改输入参数的内部状态。实践中，我们可以使用Consumer来更改对象内部状态。</p>
+<p>例如Stream中使用率很高的<code>forEach</code>方法。<code>forEach</code>方法是java8新引入的内部遍历(有关内部遍历和外部遍历的区别，可以参见<a href="https://gsmtoday.github.io/2017/09/10/Lambda/">link</a>).</p>
+<p>举个例子：根据获取到的系统所有模块列表，创建一个map，map的key是模块id, value是模块对象。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">default</span> Map&lt;Integer, Module&gt; <span class="hljs-title">getModules</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">       Map&lt;Integer, Module&gt; moduleMap = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">       List&lt;? extends Module&gt; moduleMapList =  getAllModulePrototype(); <span class="hljs-comment">// 获取系统所有模块列表</span></span><br><span class="line"></span><br><span class="line">       <span class="hljs-keyword">if</span> (CollectionUtils.isNotEmpty(moduleMapList)) &#123;</span><br><span class="line">           moduleMapList.forEach(<span class="hljs-keyword">module</span> -&gt; moduleMap.put(<span class="hljs-keyword">module</span>.getId(), <span class="hljs-keyword">module</span>));</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="hljs-keyword">return</span>  moduleMap;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Supplier"><a href="#Supplier" class="headerlink" title="Supplier"></a>Supplier</h2><p>当某个场景不需要输入但是需要输出的时候，就可以用到<code>Supplier</code>。</p>
+<p><code>Consumer</code> 源码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@FunctionalInterface</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Supplier</span>&lt;<span class="hljs-title">T</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">     * Gets a result.</span></span><br><span class="line"><span class="hljs-comment">     * <span class="hljs-doctag">@return</span> a result</span></span><br><span class="line"><span class="hljs-comment">     */</span></span><br><span class="line">    <span class="hljs-function">T <span class="hljs-title">get</span><span class="hljs-params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>对于<code>Supplier</code>，可以理解为利用它生产一个新的对象。例如通过实现<code>Supplier</code>接口，可以自己来控制流的生成(generater方法)。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">//生成num个整数,并存入集合</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Integer&gt; <span class="hljs-title">getNumList</span><span class="hljs-params">(<span class="hljs-keyword">int</span> num, Supplier&lt;Integer&gt; sup)</span> </span>&#123;</span><br><span class="line">    List&lt;Integer&gt; list = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; num; i++) &#123;</span><br><span class="line">            Integer n = sup.get();</span><br><span class="line">            list.add(n);</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> list;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">//10个100以内的随机数</span></span><br><span class="line">    List&lt;Integer&gt; numList = getNumList(<span class="hljs-number">10</span>, () -&gt; (<span class="hljs-keyword">int</span>) (Math.random() * <span class="hljs-number">100</span>));</span><br><span class="line">    <span class="hljs-keyword">for</span> (Integer num : numList) &#123;</span><br><span class="line">        System.out.println(num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Function"><a href="#Function" class="headerlink" title="Function"></a>Function</h2><p><code>Function</code>接口主要用于<strong>映射</strong>场景. A类型的对象作为输入参数被执行Lambda表达式操作，最后转换为B类型的对象返回。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@FunctionalInterface</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Function</span>&lt;<span class="hljs-title">T</span>, <span class="hljs-title">R</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-function">R <span class="hljs-title">apply</span><span class="hljs-params">(T t)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Function</code>接口被用在Stream的map方法的输入参数，map方法把input Stream的每一个元素，映射成output Stream的另外一个元素。</p>
+<p>Stream的<code>map</code>方法:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;R&gt; <span class="hljs-function">Stream&lt;R&gt; <span class="hljs-title">map</span><span class="hljs-params">(Function&lt;? <span class="hljs-keyword">super</span> T, ? extends R&gt; mapper)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>举例，将列表的数字转换成平方数<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Integer&gt; nums = Arrays.asList(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>,<span class="hljs-number">4</span>);</span><br><span class="line">List&lt;Integer&gt; squareNums = nums.stream().map(n -&gt;n*n).collect(Collectors.toList);</span><br></pre></td></tr></table></figure></p>
+<p>再比如：<br>获取Person对象的姓名<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Person&gt; persons = Arrays.asList(</span><br><span class="line">                <span class="hljs-keyword">new</span> Person(<span class="hljs-string">"gsm"</span>, <span class="hljs-number">26</span>),</span><br><span class="line">                <span class="hljs-keyword">new</span> Person(<span class="hljs-string">"nx"</span>, <span class="hljs-number">24</span>),</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        String name = persons.stream()</span><br><span class="line">                .filter(x -&gt; <span class="hljs-string">"gsm"</span>.equals(x.getName()))</span><br><span class="line">                .map(Person::getName)  <span class="hljs-comment">//convert stream to String</span></span><br><span class="line">                .findAny()</span><br><span class="line">                .orElse(<span class="hljs-string">""</span>);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="hljs-string">"name : "</span> + name);</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">输出：name : gsm</span><br></pre></td></tr></table></figure>
+<h2 id="Predicate"><a href="#Predicate" class="headerlink" title="Predicate"></a>Predicate</h2><p><code>Predicate</code>的使用场景为：一个对象需要被评估是否满足某条件，并且返回一个boolean型作为评估结果。</p>
+<p><code>Predicate</code>源码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> java.util.function;</span><br><span class="line"><span class="hljs-keyword">import</span> java.util.Objects;</span><br><span class="line"><span class="hljs-meta">@FunctionalInterface</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Predicate</span>&lt;<span class="hljs-title">T</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">test</span><span class="hljs-params">(T t)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>使用demo：自己定义一个以<code>Predicate</code>为参数的的方法。<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">sumAll</span><span class="hljs-params">(List&lt;Integer&gt; numbers, Predicate&lt;Integer&gt; p)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">int</span> total = <span class="hljs-number">0</span>;</span><br><span class="line">    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> number : numbers) &#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (p.test(number)) &#123;</span><br><span class="line">            total += number;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> total;</span><br><span class="line">&#125;</span><br><span class="line">sumAll(numbers, n -&gt; <span class="hljs-keyword">true</span>); <span class="hljs-comment">// 求数字列表的总和</span></span><br><span class="line">sumAll(numbers, n -&gt; n % <span class="hljs-number">2</span> == <span class="hljs-number">0</span>); <span class="hljs-comment">//求数字列表的偶数总和</span></span><br><span class="line">sumAll(numbers, n -&gt; n &gt; <span class="hljs-number">3</span>);<span class="hljs-comment">//求数字列表大于3的数字总和</span></span><br></pre></td></tr></table></figure></p>
+<p>再比如Stream中使用率很高的<code>filter</code>方法。<code>filter</code>方法返回一个由满足predicate条件的元素组成的列表。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function">Stream&lt;T&gt; <span class="hljs-title">filter</span><span class="hljs-params">(Predicate&lt;? <span class="hljs-keyword">super</span> T&gt; predicate)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>使用filter示例,找出名称为自定义模块2的模块。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Module&gt; moduleList = &#123;<span class="hljs-keyword">new</span> Module(<span class="hljs-string">"自定义模块1"</span>), <span class="hljs-keyword">new</span> Module(<span class="hljs-string">"自定义模块2"</span>,<span class="hljs-keyword">new</span> Module(<span class="hljs-string">"自定义模块3"</span>)&#125;;</span><br><span class="line"></span><br><span class="line">List&lt;Module&gt; result = richModuleList.stream().filter(</span><br><span class="line">        richModule -&gt; richModule.getName().equals(<span class="hljs-string">"自定义模块2"</span>)).collect(Collectors.toList());</span><br></pre></td></tr></table></figure>
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/10/17/functional-interface/">Java8函数式接口</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/10/17/functional-interface/">https://gsmtoday.github.io/2017/10/17/functional-interface/</a></li>
+            <li><strong>发布时间：</strong>2017-10-17</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/10/22/filter-chain-pattern/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">责任链模式实践</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/09/10/lambda/">
+                <span class="level-item">Lambda表达式详解</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

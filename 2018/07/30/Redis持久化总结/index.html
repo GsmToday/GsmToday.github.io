@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Redis持久化总结 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本篇主要关于Redis持久化的总结。">
+<meta name="keywords" content="Redis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis持久化总结">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/07/30/Redis持久化总结/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本篇主要关于Redis持久化的总结。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.637Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis持久化总结">
+<meta name="twitter:description" content="本篇主要关于Redis持久化的总结。">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/egret.jpg" alt="Redis持久化总结">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-07-30T09:49:50.000Z">2018-07-30</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    8 分钟 读完 (大约 1143 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Redis持久化总结
+            
+        </h1>
+        <div class="content">
+            <p>本篇主要关于Redis持久化的总结。</p>
+<a id="more"></a>
+<h3 id="Why-we-need-persistence"><a href="#Why-we-need-persistence" class="headerlink" title="Why we need persistence"></a>Why we need persistence</h3><p>持久化的作用是为了在Redis关闭或者意外宕机的情况下，能恢复内存中的数据。Redis在日常的使用场景中，有常见的两种用途：</p>
+<p>1.当数据库使用（不推荐），此时持久化的作用显而易见；</p>
+<p>2.做缓存使用，虽然Redis挂掉不会影响我们的数据本身，但如果Redis挂了再重启，开启了固化功能后，内存里能够快速恢复热数据，不会瞬时将压力压到数据库上，没有一个cache预热的过程。</p>
+<h3 id="Pros-and-cons-for-rdb-and-aof"><a href="#Pros-and-cons-for-rdb-and-aof" class="headerlink" title="Pros and cons for rdb and aof"></a>Pros and cons for rdb and aof</h3><h4 id="RDB优点"><a href="#RDB优点" class="headerlink" title="RDB优点"></a>RDB优点</h4><ol>
+<li>RDB文件很紧凑（compact），它保存了 Redis 在某个时间点上的数据集。 这种文件非常适合用于进行备份。</li>
+<li>RDB的恢复时间快，原因有两个，一是RDB文件中每一条数据只有一条记录，不会像AOF日志那样可能有一条数据的多次操作记录。所以每条数据只需要写一次就行了。另一个原因是RDB文件的存储格式和Redis数据在内存中的编码格式是一致的，不需要再进行数据编码工作。在CPU消耗上要远小于AOF日志的加载。</li>
+</ol>
+<h4 id="RDB缺点"><a href="#RDB缺点" class="headerlink" title="RDB缺点"></a>RDB缺点</h4><ol>
+<li>安全性差，虽然 Redis 允许你设置不同的保存点（save point）来控制保存 RDB 文件的频率， 但是， 因为RDB 文件需要保存整个数据集的状态， 所以它并不是一个轻松的操作。 因此你可能会至少 5 分钟才保存一次 RDB 文件。 在这种情况下， 一旦发生故障停机， 你就可能会丢失好几分钟的数据。</li>
+<li>执行开销大，每次保存 RDB 的时候，Redis 都要 fork() 出一个子进程，并由子进程来进行实际的持久化工作。 在数据集比较庞大时， fork()可能会非常耗时，造成服务器在某某毫秒内停止处理客户端； 如果数据集非常巨大，并且 CPU 时间非常紧张的话，那么这种停止时间甚至可能会长达整整一秒。</li>
+</ol>
+<h4 id="AOF优点"><a href="#AOF优点" class="headerlink" title="AOF优点"></a>AOF优点</h4><ol>
+<li>安全性高，可通过fsync策略来控制，默认每一秒执行一次，此时最多丢失2秒内的数据。</li>
+<li>持久化协议可读性强，操作灵活度高。比如：如果你不小心执行了 <em>FLUSHALL</em> 命令， 但只要 AOF 文件未被重写， 那么只要停止服务器， 移除 AOF 文件末尾的 <em>FLUSHALL</em> 命令， 并重启 Redis ， 就可以将数据集恢复到 <em>FLUSHALL</em> 执行之前的状态。</li>
+</ol>
+<h4 id="AOF缺点"><a href="#AOF缺点" class="headerlink" title="AOF缺点"></a>AOF缺点</h4><ol>
+<li>对于相同的数据集来说，AOF 文件的体积通常要大于 RDB 文件的体积。数据恢复的比较慢。</li>
+<li>根据所使用的 fsync 策略，AOF 的速度可能会慢于 RDB 。 在一般情况下， 每秒 fsync 的性能依然非常高。对于RDB来说出去fork()本身可能造成的问题外，子进程就会处理接下来的所有保存工作，父进程无须执行任何磁盘操作，性能更好。</li>
+</ol>
+<h3 id="Online-configuration"><a href="#Online-configuration" class="headerlink" title="Online configuration"></a>Online configuration</h3><table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Value</th>
+<th style="text-align:center">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>auto-aof-rewrite-percentage</td>
+<td>200</td>
+<td style="text-align:center">AOF文件大小翻倍出发rewrite</td>
+</tr>
+<tr>
+<td>auto-aof-rewrite-min-size</td>
+<td>2147483648</td>
+<td style="text-align:center">AOF文件触发重写的最小size</td>
+</tr>
+<tr>
+<td>no-appendfsync-on-rewrite</td>
+<td>yes</td>
+<td style="text-align:center">在日志重写时，AOF追加只写缓存</td>
+</tr>
+<tr>
+<td>appendonly</td>
+<td>yes</td>
+<td style="text-align:center">开启AOF</td>
+</tr>
+<tr>
+<td>appendfsync</td>
+<td>everysec</td>
+<td style="text-align:center">每秒刷盘</td>
+</tr>
+<tr>
+<td>rdbcompression</td>
+<td>yes</td>
+<td style="text-align:center">开启RDB压缩</td>
+</tr>
+<tr>
+<td>rdbchecksum</td>
+<td>yes</td>
+<td style="text-align:center">开启RDB校验和</td>
+</tr>
+<tr>
+<td>save</td>
+<td>null</td>
+<td style="text-align:center">RDB自动触发未配置</td>
+</tr>
+</tbody>
+</table>
+<p>特殊说明：在同时执行bgrewriteaof操作和主进程写aof文件的操作，两者都会操作磁盘，而bgrewriteaof往往会涉及大量磁盘操作，这样就会造成主进程在写aof文件的时候出现阻塞的情形。no-appendfsync-on-rewrite被设置为yes后，在日志重写时，主进程不进行命令追加的刷盘操作，而只是将其放在缓冲区里，避免与重写造成DISK IO上的冲突。如果rewrite的过程中，Redis down掉的话 丢失的数据 就不是之前appendfsync 定下的策略，而是整个 rewrite 过程中的所有数据。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/07/30/Redis持久化总结/">Redis持久化总结</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/07/30/Redis持久化总结/">https://gsmtoday.github.io/2018/07/30/Redis持久化总结/</a></li>
+            <li><strong>发布时间：</strong>2018-07-30</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Redis/">Redis</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/07/30/redis-01/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Redis AOF 持久化- Redis源码分析</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/07/30/redis-rdb/">
+                <span class="level-item">Redis RDB持久化 - Redis源码分析</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#Why-we-need-persistence">
+        <span class="has-mr-6">1</span>
+        <span>Why we need persistence</span>
+        </a></li><li>
+        <a class="is-flex" href="#Pros-and-cons-for-rdb-and-aof">
+        <span class="has-mr-6">2</span>
+        <span>Pros and cons for rdb and aof</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#RDB优点">
+        <span class="has-mr-6">2.1</span>
+        <span>RDB优点</span>
+        </a></li><li>
+        <a class="is-flex" href="#RDB缺点">
+        <span class="has-mr-6">2.2</span>
+        <span>RDB缺点</span>
+        </a></li><li>
+        <a class="is-flex" href="#AOF优点">
+        <span class="has-mr-6">2.3</span>
+        <span>AOF优点</span>
+        </a></li><li>
+        <a class="is-flex" href="#AOF缺点">
+        <span class="has-mr-6">2.4</span>
+        <span>AOF缺点</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#Online-configuration">
+        <span class="has-mr-6">3</span>
+        <span>Online configuration</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

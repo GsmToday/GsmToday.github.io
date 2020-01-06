@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Lambda表达式详解 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="编写简洁而灵活的代码，能够轻松地适应不断变化的需求  导读： 通过本文，你可以了解为什么Jdk1.8引入lambda表达式，一些设计思想；还有你怎么使用lambda表达式让你的代码更加优雅一些。另外，你还可以接触一点流(Stream)和并行开发的知识.">
+<meta name="keywords" content="Java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Lambda表达式详解">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/09/10/lambda/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="编写简洁而灵活的代码，能够轻松地适应不断变化的需求  导读： 通过本文，你可以了解为什么Jdk1.8引入lambda表达式，一些设计思想；还有你怎么使用lambda表达式让你的代码更加优雅一些。另外，你还可以接触一点流(Stream)和并行开发的知识.">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2017/09/10/lambda/iteration.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.969Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Lambda表达式详解">
+<meta name="twitter:description" content="编写简洁而灵活的代码，能够轻松地适应不断变化的需求  导读： 通过本文，你可以了解为什么Jdk1.8引入lambda表达式，一些设计思想；还有你怎么使用lambda表达式让你的代码更加优雅一些。另外，你还可以接触一点流(Stream)和并行开发的知识.">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2017/09/10/lambda/iteration.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/shuta.jpg" alt="Lambda表达式详解">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-09-10T13:26:28.000Z">2017-09-10</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    14 分钟 读完 (大约 2147 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Lambda表达式详解
+            
+        </h1>
+        <div class="content">
+            <blockquote>
+<p>编写简洁而灵活的代码，能够轻松地适应不断变化的需求</p>
+</blockquote>
+<p>导读： 通过本文，你可以了解为什么Jdk1.8引入lambda表达式，一些设计思想；还有你怎么使用lambda表达式让你的代码更加优雅一些。另外，你还可以接触一点流(Stream)和并行开发的知识.</p>
+<a id="more"></a>
+<p>jdk1.8于2014年3月18日发布，是目前(2017年8月)jdk最新以及最重要的版本。相对于之前的jdk版本，1.8对于语言，编译器，库，工具和JVM等多个方面的进行了提升。本文主要聊聊Jdk1.8新提出的lambda表达式。</p>
+<h2 id="为什么要引入lambda表达式"><a href="#为什么要引入lambda表达式" class="headerlink" title="为什么要引入lambda表达式"></a>为什么要引入lambda表达式</h2><p>在了解lambda表达式的用法之前，不如先弄清<strong>为什么要引入lambda表达式。</strong>关于此问题，现在有几类主流解释：</p>
+<h4 id="1-将函数式编程优点添加到面向对象的Java中"><a href="#1-将函数式编程优点添加到面向对象的Java中" class="headerlink" title="1. 将函数式编程优点添加到面向对象的Java中"></a>1. 将函数式编程优点添加到面向对象的Java中</h4><p>众所周知，Java是面向对象语言（遥记得在上大学时候，Java女老师那句经典的“万事万物皆对象”）。的确，Java语言发展这么多年来一直是“重对象，轻函数”的设计理念。函数对于Java这种依赖于对象存在的语言似乎不那么重要，Java语言设计者们在设计时也不那么考虑函数，因此造成Java语言无法将<strong>函数作为函数的输入参数传递</strong>(只能借助 <em>匿名内部类</em> 这种别扭的方式)。例如线程池处理代码：</p>
+<p>示例1：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ThreadPoolTaskExecutor threadPooltaskExecutor = getTaskExcutor(<span class="hljs-number">5</span>,<span class="hljs-number">10</span>,<span class="hljs-number">30</span>,<span class="hljs-string">"sendMsgExecutor-"</span>);</span><br><span class="line">threadPooltaskExecutor.initialize();</span><br><span class="line">threadPooltaskExecutor.execute(<span class="hljs-keyword">new</span> Runnable() &#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="hljs-string">"this is gsm!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>纵观其他倍受欢迎的开发语言，例如JavaScript这种函数式编程语言就可以轻易实现传递函数的功能。函数式编程语言提供了一个非常强大的功能，就是<strong>闭包</strong>。闭包是一个定义在一个函数内部的函数，它可以获取超越其作用域的外部变量。在本质上讲，闭包就是将函数内部和函数外部连接起来的一个桥梁（是不是很像内部类？）。<a href="http://viralpatel.net/blogs/Lambda-expressions-Java-tutorial/" target="_blank" rel="noopener">Viral Patel</a>认为Java为了弥补缺失函数式编程的不足而引入了lambda表达式，lambda表达式不是闭包，却在功能上无限接近闭包。</p>
+<p>例如线程池处理代码就可以用如下的lambda表达式写出，你会发现代码终于不需要写的那么繁琐了：</p>
+<p>示例2：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> ThreadPoolTaskExecutor threadPooltaskExecutor = getTaskExcutor(<span class="hljs-number">5</span>,<span class="hljs-number">10</span>,<span class="hljs-number">30</span>,<span class="hljs-string">"sendMsgExecutor-"</span>);</span><br><span class="line"> threadPooltaskExecutor.initialize();</span><br><span class="line"> threadPooltaskExecutor.execute(() -&gt;</span><br><span class="line">  &#123;</span><br><span class="line">      System.out.println(<span class="hljs-string">"this is gsm!"</span>);</span><br><span class="line">      &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h4 id="2-行为参数化"><a href="#2-行为参数化" class="headerlink" title="2. 行为参数化"></a>2. 行为参数化</h4><p>《Java 8实战》的作者，Java 8的布道者<a href="https://dzone.com/articles/why-we-need-lambda-expressions" target="_blank" rel="noopener">Mario Fusco</a>认为，相比于Java世界里普遍的传递数值到方法中，传递一个lambda表达式到函数的意义在于程序员们可以传递<strong>一种行为</strong>到方法，从而提高了API的复用性以及面向对象编程的抽象能力。</p>
+<p>传递一种行为可以理解为通过API传递代码，我们可以回看示例2, 我们通过给<code>execute</code>传递了一段代码，能够让<code>execute</code>按照我们想要的方式执行某种行为。</p>
+<p>再举个栗子，根据不同规则统计某一类数的和：</p>
+<p>示例3：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">sumAll</span><span class="hljs-params">(List&lt;Integer&gt; numbers, Predicate&lt;Integer&gt; p)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">int</span> total = <span class="hljs-number">0</span>;</span><br><span class="line">    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> number : numbers) &#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (p.test(number)) &#123;</span><br><span class="line">            total += number;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> total;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sumAll(numbers, n -&gt; <span class="hljs-keyword">true</span>);</span><br><span class="line">sumAll(numbers, n -&gt; n % <span class="hljs-number">2</span> == <span class="hljs-number">0</span>);</span><br><span class="line">sumAll(numbers, n -&gt; n &gt; <span class="hljs-number">3</span>);</span><br></pre></td></tr></table></figure></p>
+<p>示例里，我们不仅仅传递数值<code>(List&lt;Integer&gt; numbers)</code>到方法<code>sumAll</code>中，还传递判断的行为<code>Predicate</code>，借此实现高扩展的统计不同类别的列表的方法。</p>
+<h4 id="3-为了支持更优雅及高效的遍历操作，以及支持一种优于集合的操作-流"><a href="#3-为了支持更优雅及高效的遍历操作，以及支持一种优于集合的操作-流" class="headerlink" title="3. 为了支持更优雅及高效的遍历操作，以及支持一种优于集合的操作-流"></a>3. 为了支持更优雅及高效的遍历操作，以及支持一种优于集合的操作-流</h4><p>集合是Java中使用最多的API，我们每天都要对集合进行各种各样的操作。遍历操作可以分为两种</p>
+<ul>
+<li>外部遍历</li>
+<li>内部遍历</li>
+</ul>
+<p>外部遍历是用户自己使用Java collection的接口手写遍历：</p>
+<p>示例4：获取商品列表中商品的名称，形成一个名称列表</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Goods goods1 = <span class="hljs-keyword">new</span> Goods();</span><br><span class="line">goods1.setName(<span class="hljs-string">"P&amp;G"</span>);</span><br><span class="line">Goods goods2 = <span class="hljs-keyword">new</span> Goods();</span><br><span class="line">goods2.setName(<span class="hljs-string">"DELL"</span>);</span><br><span class="line">Goods goods3 = <span class="hljs-keyword">new</span> Goods();</span><br><span class="line">goods3.setName(<span class="hljs-string">"APPLE"</span>);</span><br><span class="line">Goods goods4 = <span class="hljs-keyword">new</span> Goods();</span><br><span class="line">goods4.setName(<span class="hljs-string">"LENOVO"</span>);</span><br><span class="line">List&lt;Goods&gt; skuList = Arrays.asList(goods1,goods2,goods3,goods4); <span class="hljs-comment">// 初始化一个商品列表</span></span><br><span class="line"></span><br><span class="line">List&lt;String&gt; goodsNameList = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">Iterator&lt;String&gt; iterator = skulist.iterator();</span><br><span class="line"><span class="hljs-keyword">while</span>(iterator.hasNext()) &#123;</span><br><span class="line">    Goods goods = iterator.next();</span><br><span class="line">    goodsNameList.add(goods.getName());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>内部遍历方式则是将遍历责任从客户端转移到了服务端（<code>Streams库</code>）。服务端<code>Streams</code>使用内部遍历，可以选择自己适合的遍历方式帮用户把遍历做了。</p>
+<p>示例5：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; goodsNameList = skuList.stream()</span><br><span class="line">                                    .map(goods -&gt; goods.getName()) <span class="hljs-comment">//getName()方法参数化map，提取商品名称</span></span><br><span class="line">                                    .collect(Collectors.toList());</span><br></pre></td></tr></table></figure></p>
+<p><code>Streams</code> 库提供一些预先定义好的操作，用户只需要用声明的方法指定想要使用什么操作(像<code>map</code>,<code>filter</code>,<code>collect</code>…)即可。大多数这类操作都接收Lambda表达式作为参数，让用户定制自己需要传递的行为, 而用户并不需要自己去实现。内部遍历最优雅的点在于，流操作可以优化处理顺序，原来collection遍历多次的操作，通过流只需要遍历一次即可。</p>
+<p><code>Streams</code>甚至还可以选择一种适合你硬件的数据表示和并行实现，利用多核CPU并行处理集合。要知道，jdk8主推parallel programming遍历, 从而达到更加高效率的遍历。</p>
+<p>引用《java8实战》中的比较内部遍历和外部遍历的图，可以让我们更加清晰的明白二者的差异</p>
+<!-- <div align = center> -->
+<!-- ![lambda迭代](lambda/iteration.jpg) -->
+<p><img src="/2017/09/10/lambda/iteration.jpg" width="500" height="300" alt="内部遍历vs外部遍历" align="center"></p>
+<!-- </div> -->
+<h2 id="正菜来了：究竟什么是lambda-表达式"><a href="#正菜来了：究竟什么是lambda-表达式" class="headerlink" title="正菜来了：究竟什么是lambda 表达式"></a>正菜来了：究竟什么是lambda 表达式</h2><p>lambda表达式最初来源于学术界开发出来的一套用来描述<br>计算的λ演算法。lambda表达式由三部分组成：</p>
+<ul>
+<li>参数列表</li>
+<li>箭头 -&gt;</li>
+<li>lambda主体（实际操作行为）<ul>
+<li>lambda表达式没有return语句，return已经隐含在lambda主体之中了。</li>
+</ul>
+</li>
+</ul>
+<p><strong>语法SynTax:</strong><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(parameters) -&gt; expression</span><br></pre></td></tr></table></figure></p>
+<p>或者<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(parameters) -&gt; &#123;statements&#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong>栗子Example:</strong><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">1</span>. (<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y) -&gt; x + y                          </span><br><span class="line"><span class="hljs-comment">// -&gt;左边： lambda参数， -&gt;右边：lambda主体.</span></span><br><span class="line"><span class="hljs-comment">//  此lambda表达式具有两个int型的输入参数，并返回int型的和。</span></span><br><span class="line"><span class="hljs-number">2</span>. (Goods good) -&gt; good.getName.isEqual(<span class="hljs-string">"P&amp;G"</span>)     <span class="hljs-comment">//此lambda表达式有Goods good类型的参数，并返回boolean的返回值。</span></span><br><span class="line"><span class="hljs-number">3</span>. () -&gt; <span class="hljs-number">42</span>                                         <span class="hljs-comment">// 无参，返回int</span></span><br><span class="line"><span class="hljs-number">4</span>. (String s) -&gt; System.out.println(s)              <span class="hljs-comment">// 输入string, 无返回</span></span><br><span class="line"><span class="hljs-number">5</span>. x -&gt; <span class="hljs-number">2</span> * x                                       <span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-number">6</span>.(Apple a1, Apple a2) -&gt; a1.getWeight().compareTo(a2.getWeight()) <span class="hljs-comment">//具有两个Apple类型的参数，返回一个int：比较两个Apple的重量</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="函数式接口-functional-interface"><a href="#函数式接口-functional-interface" class="headerlink" title="函数式接口 functional interface"></a>函数式接口 functional interface</h3><p>Jdk库中已经定义了大量函数式接口，例如<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Runnable</span> </span>&#123; <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span></span>; &#125;</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Callable</span>&lt;<span class="hljs-title">V</span>&gt; </span>&#123; <span class="hljs-function">V <span class="hljs-title">call</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception</span>; &#125;</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">ActionListener</span> </span>&#123; <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">actionPerformed</span><span class="hljs-params">(ActionEvent e)</span></span>; &#125;</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Comparator</span>&lt;<span class="hljs-title">T</span>&gt; </span>&#123; <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">compare</span><span class="hljs-params">(T o1, T o2)</span></span>; <span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">equals</span><span class="hljs-params">(Object obj)</span></span>; &#125;</span><br></pre></td></tr></table></figure></p>
+<p>函数式接口是一种特殊的<code>SAM类型（Single Abstract Method）--只定义一个抽象方法</code>的接口。<code>@FunctionalInterface</code>标注一个接口即表示该接口是一个函数式接口，如果你用@FunctionalInterface定义了一个接口，而它却不是函数式接<br>口的话，编译器将返回一个提示原因的错误。</p>
+<p>Lambda表达式是函数式接口的实例。以函数式接口为参数的方法，可以在调用时使用lambda表达式作为参数。</p>
+<p>例如jdk1.8中<code>java.lang.Runnable</code>的源码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@FunctionalInterface</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>TaskPoolTaskExecutor</code>源码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">execute</span><span class="hljs-params">(Runnable task)</span> </span>&#123;</span><br><span class="line">    ThreadPoolExecutor executor = <span class="hljs-keyword">this</span>.getThreadPoolExecutor();</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">        executor.execute(task);</span><br><span class="line">    &#125; <span class="hljs-keyword">catch</span> (RejectedExecutionException var4) &#123;</span><br><span class="line">        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> TaskRejectedException(<span class="hljs-string">"Executor ["</span> + executor + <span class="hljs-string">"] did not accept task: "</span> + task, var4);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们在调用线程池执行方法<code>execute</code><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">threadPooltaskExecutor.execute(() -&gt;</span><br><span class="line">         &#123;</span><br><span class="line">            <span class="hljs-comment">// 你的代码逻辑;</span></span><br><span class="line">          &#125;</span><br><span class="line">       );</span><br></pre></td></tr></table></figure></p>
+<h3 id="lambda表达式与匿名类"><a href="#lambda表达式与匿名类" class="headerlink" title="lambda表达式与匿名类"></a>lambda表达式与匿名类</h3><p><a href="https://gsmtoday.github.io/2017/09/07/inner-class/">匿名类</a>可以看做是lambda表达式的前世今生。因此，我们给lambda表达式传递参数的时候，若该形参在内部类中需要被使用，那么该形参必须要为final.</p>
+<h2 id="参考："><a href="#参考：" class="headerlink" title="参考："></a>参考：</h2><p>[1] Maurice Naftalin : <a href="http://www.lambdafaq.org/are-lambda-expressions-objects/" target="_blank" rel="noopener">http://www.lambdafaq.org/are-lambda-expressions-objects/</a></p>
+<p>[2] Viral Patel: <a href="http://viralpatel.net/blogs/Lambda-expressions-Java-tutorial/" target="_blank" rel="noopener">http://viralpatel.net/blogs/Lambda-expressions-Java-tutorial/</a></p>
+<p>[3] Mario Fusco: <a href="https://dzone.com/articles/why-we-need-lambda-expression" target="_blank" rel="noopener">https://dzone.com/articles/why-we-need-lambda-expression</a></p>
+<p>[4] Raoul-Gabriel Urma, Mario Fusco, Alan Mycroft, 人民邮电出版社, 《Java8实战》</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/09/10/lambda/">Lambda表达式详解</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/09/10/lambda/">https://gsmtoday.github.io/2017/09/10/lambda/</a></li>
+            <li><strong>发布时间：</strong>2017-09-10</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/10/17/functional-interface/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Java8函数式接口</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/09/07/inner-class/">
+                <span class="level-item">Java内部类详解</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>工程中遇到的排序算法-基础篇 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="总结下经典的排序算法和工程中遇到的排序。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="工程中遇到的排序算法-基础篇">
+<meta property="og:url" content="https://gsmtoday.github.io/2020/01/05/sort-base/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="总结下经典的排序算法和工程中遇到的排序。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2020-01-06T11:07:38.320Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="工程中遇到的排序算法-基础篇">
+<meta name="twitter:description" content="总结下经典的排序算法和工程中遇到的排序。">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/2.jpeg" alt="工程中遇到的排序算法-基础篇">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-01-05T04:12:19.000Z">2020-01-05</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    5 分钟 读完 (大约 736 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                工程中遇到的排序算法-基础篇
+            
+        </h1>
+        <div class="content">
+            <p>总结下经典的排序算法和工程中遇到的排序。<br><a id="more"></a><br>工程中用到的排序算法大概有这么几类：</p>
+<ul>
+<li>基于比较</li>
+</ul>
+<p>排序算法</p>
+<h1 id="1-基于比较的排序算法"><a href="#1-基于比较的排序算法" class="headerlink" title="1. 基于比较的排序算法"></a>1. 基于比较的排序算法</h1><h2 id="时间复杂度-O-n-2-的-排序算法"><a href="#时间复杂度-O-n-2-的-排序算法" class="headerlink" title="时间复杂度$O(n^2)$ 的 排序算法"></a>时间复杂度$O(n^2)$ 的 排序算法</h2><p><strong>冒泡排序</strong>: 时间复杂度$O(n^2)$，空间复杂度：原地排序，稳定的排序算法。</p>
+<p><strong>快速排序</strong>: 时间复杂度$O(n^2)$，空间复杂度：原地排序，稳定的排序算法。</p>
+<p><strong>选择排序</strong>: 时间复杂度$O(n^2)$，空间复杂度：原地排序，不稳定的排序算法。</p>
+<p>上述三种排序算法因为时间复杂度比较高，$O(n^2)$。因此只适合小规模数据的排序。</p>
+<h2 id="时间复杂度-O-nlogn-的排序算法"><a href="#时间复杂度-O-nlogn-的排序算法" class="headerlink" title="时间复杂度$O(nlogn)$的排序算法"></a>时间复杂度$O(nlogn)$的排序算法</h2><p>对于大规模数据进行排序，应该选择时间复杂度$O(nlogn)$的排序算法。例如<strong>快速排序</strong>。</p>
+<p><strong>归并排序</strong>: 时间复杂度$O(nlogn)$，空间复杂度On, 稳定的排序算法。算法思想用到了分治思想。</p>
+<p>缺点：实战中使用归并并不多，这是因为归并不是原地排序算法。粗略举例来说，100MB数据，除了数据本身占用的内存之外，排序算法那还需要额外占用100MB的内存，空间耗费翻倍。</p>
+<p><strong>快速排序</strong>: 时间复杂度 $O(nlogn)$，原地排序，不稳定的排序算法。</p>
+<p>谈谈快排的优化，快排可能导致性能差的几点：</p>
+<p>快排性能脆弱点1：分区哨兵点选择，哨兵点选择不对可能时间复杂度退化为$O(n^2)$。 快速排序性能关键点在于 <font color="#FF6100">pivot分区哨兵点选择</font>。如果数据原来就是有序，每次pivot分区哨兵点都选择最后一个数据，那么快排时间复杂度退化为$O(n^2)$。 最理想的分区点是：被分区点分开的两个分区中，数据的数量差不多。常用的分区点选择算法：</p>
+<ol>
+<li>三数取中法。从区间的首、尾、中间分别取一个数，然后对比大小，取这三个数的中间值作为分区点。</li>
+<li>随机法。随机选择一个元素作为分区点，从概率的角度来看这种要好一些。</li>
+</ol>
+<p>快排性能脆弱点2：快排依赖了递归，警惕堆栈溢出。解决办法：</p>
+<ul>
+<li>限制递归深度，一旦超过设定的阈值，就停止递归；</li>
+<li>在堆上模拟实现一个函数调用栈，手动模拟递归压栈、出栈的过程，这样就没有了系统栈大小的现在。</li>
+</ul>
+<h1 id="2"><a href="#2" class="headerlink" title="2."></a>2.</h1><p><strong>桶排序</strong><br><strong>计数排序</strong><br><strong>基数排序</strong></p>
+<p># </p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2020/01/05/sort-base/">工程中遇到的排序算法-基础篇</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2020/01/05/sort-base/">https://gsmtoday.github.io/2020/01/05/sort-base/</a></li>
+            <li><strong>发布时间：</strong>2020-01-05</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/12/04/access-control-policies/">
+                <span class="level-item">权限控制发展综述</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#1-基于比较的排序算法">
+        <span class="has-mr-6">1</span>
+        <span>1. 基于比较的排序算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#时间复杂度-O-n-2-的-排序算法">
+        <span class="has-mr-6">1.1</span>
+        <span>时间复杂度$O(n^2)$ 的 排序算法</span>
+        </a></li><li>
+        <a class="is-flex" href="#时间复杂度-O-nlogn-的排序算法">
+        <span class="has-mr-6">1.2</span>
+        <span>时间复杂度$O(nlogn)$的排序算法</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#2">
+        <span class="has-mr-6">2</span>
+        <span>2.</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 工程中遇到的排序算法-基础篇&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

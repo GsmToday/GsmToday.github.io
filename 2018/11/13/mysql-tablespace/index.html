@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Mysql存储机制—表空间结构 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本文基于InnDB存储引擎源码，试图解释Mysql数据表在InnoDB引擎下的组织管理方式。本文重点对用户表空间的物理和逻辑结构进行阐述，属于Mysql存储机制系列之一。 InnoDB引擎对Mysql数据的管理，在物理层表示上（即磁盘实际存储的文件），包括日志文件、主系统表空间文件ibdata、undo tablespace文件、临时表空间文件以及用户表空间。这些文件具有统一的结构，本文以用户表空">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Mysql存储机制—表空间结构">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本文基于InnDB存储引擎源码，试图解释Mysql数据表在InnoDB引擎下的组织管理方式。本文重点对用户表空间的物理和逻辑结构进行阐述，属于Mysql存储机制系列之一。 InnoDB引擎对Mysql数据的管理，在物理层表示上（即磁盘实际存储的文件），包括日志文件、主系统表空间文件ibdata、undo tablespace文件、临时表空间文件以及用户表空间。这些文件具有统一的结构，本文以用户表空">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/LogicOverview.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/Phsical%20Overview.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/space%20file%20organized.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.086Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mysql存储机制—表空间结构">
+<meta name="twitter:description" content="本文基于InnDB存储引擎源码，试图解释Mysql数据表在InnoDB引擎下的组织管理方式。本文重点对用户表空间的物理和逻辑结构进行阐述，属于Mysql存储机制系列之一。 InnoDB引擎对Mysql数据的管理，在物理层表示上（即磁盘实际存储的文件），包括日志文件、主系统表空间文件ibdata、undo tablespace文件、临时表空间文件以及用户表空间。这些文件具有统一的结构，本文以用户表空">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/LogicOverview.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/kafka1025.jpeg" alt="Mysql存储机制—表空间结构">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-11-13T08:20:53.000Z">2018-11-13</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    21 分钟 读完 (大约 3218 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Mysql存储机制—表空间结构
+            
+        </h1>
+        <div class="content">
+            <p>本文基于InnDB存储引擎源码，试图解释Mysql数据表在InnoDB引擎下的组织管理方式。本文重点对用户表空间的物理和逻辑结构进行阐述，属于Mysql存储机制系列之一。</p>
+<p>InnoDB引擎对Mysql数据的管理，在物理层表示上（即磁盘实际存储的文件），包括日志文件、主系统表空间文件ibdata、undo tablespace文件、临时表空间文件以及用户表空间。这些文件具有统一的结构，本文以用户表空间为例，进行展开。</p>
+<a id="more"></a>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>InnoDB 的每个数据文件都归属于一个表空间，不同的表空间使用一个唯一标识的space id来标记。例如ibdata1, ibdata2… 归属系统表空间，拥有相同的space id。用户创建表产生的ibd文件，则认为是一个独立的tablespace，只包含一个文件。</p>
+<p>InnoDB引擎对表空间在内部的逻辑视图如下：</p>
+<p><img src="/2018/11/13/mysql-tablespace/LogicOverview.png" width="600" height="400" align="center" title="LogicOverview"></p>
+<p>1、表空间</p>
+<ul>
+<li>默认情况下，只有一个表空间ibdata1，所有数据存放在这个空间内</li>
+</ul>
+<ul>
+<li>如果启用了innodb_file_per_table，则每张表内的数据可以单独放到一个表空间内</li>
+<li>每个表空间只存放数据、索引和InsertBuffer Bitmap页，其他数据还在ibdata1中</li>
+</ul>
+<p>2、Segment段（InnoDB引擎自己控制）</p>
+<ul>
+<li>数据段：B+ tree的叶子节点</li>
+<li>索引段：B+ tree的非叶子节点</li>
+<li>回滚段</li>
+</ul>
+<p>3、extent区</p>
+<ul>
+<li>每个区的大小为1M，页大小为16KB，即一个区一共有64个连续的页（区的大小不可调节，页可以）</li>
+</ul>
+<p>4、Page页</p>
+<ul>
+<li>InnoDB磁盘管理的最小单位</li>
+<li>默认每个页大小为16KB，可以通过innodb_page_size来设置（4/8/16K）</li>
+<li>每个页最多存放7992行数据</li>
+<li>页有不同的类型，如果表空间管理页，INODE节点页，插入缓存页以及存放数据的索引页等</li>
+</ul>
+<p>5、Row行</p>
+<ul>
+<li>对应数据表里一条条记录，后续单独对页内数据组织方式进行说明</li>
+</ul>
+<p>InnoDB引擎对表空间组织的物理视图如下：</p>
+<p><img src="/2018/11/13/mysql-tablespace/Phsical Overview.jpg" width="600" height="400" align="center" title="Phsical Overview"></p>
+<p>接下来将对上图中的Page内容和组织管理方式进行逐一说明。</p>
+<h2 id="File-Header"><a href="#File-Header" class="headerlink" title="File Header"></a>File Header</h2><p>InnoDB磁盘管理的最小单位是页，所有页都有两个统一的结构：页头（FIL Header），占据页面的前38个字节；页尾（FIL Trailer），占据页面末尾8字节。</p>
+<h3 id="FIL-Header"><a href="#FIL-Header" class="headerlink" title="FIL Header"></a>FIL Header</h3><p>页头包含的数据项如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Macro</th>
+<th>Offset</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FIL_PAGE_SPACE_OR_CHKSUM</td>
+<td>0</td>
+<td>4.0.14版本前，表示space id; 之后表示校验和</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_OFFSET</td>
+<td>4</td>
+<td>当前页的偏移量（Page no）</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_PREV</td>
+<td>8</td>
+<td>前驱节点的偏移量</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_NEXT</td>
+<td>12</td>
+<td>后继节点的偏移量</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_LSN</td>
+<td>16</td>
+<td>最近一次修改该page的LSN</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE</td>
+<td>24</td>
+<td>页面类型</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_FILE_FLUSH_LSN</td>
+<td>26</td>
+<td>Checkpoint for system tablespace</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_SPACE_ID</td>
+<td>34</td>
+<td>space id</td>
+</tr>
+</tbody>
+</table>
+<p><code>FIL_PAGE_OFFSET</code>表示当前页在其表空间中的相对偏移量，也就是页号。<code>FIL_PAGE_TYPE</code>表示当前页的类型，常用的页面类型如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">MACRO</th>
+<th style="text-align:center">VALUE</th>
+<th style="text-align:center">DESCRIPTION</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FIL_PAGE_INDEX</td>
+<td style="text-align:center">17855</td>
+<td style="text-align:center">B-tree索引页</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE_ALLOCATED</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">磁盘新分配未使用的页</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_UNDO_LOG</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">Undo log页</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_INODE</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">INODE页</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE_SYS</td>
+<td style="text-align:center">6</td>
+<td style="text-align:center">系统页</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE_FSP_HDR</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">file space header page</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE_XDES</td>
+<td style="text-align:center">9</td>
+<td style="text-align:center">extent desc page</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE_BLOB</td>
+<td style="text-align:center">10</td>
+<td style="text-align:center">未压缩的BLOB页</td>
+</tr>
+</tbody>
+</table>
+<p>InnoDB引擎中，索引B-tree上，在同一Level的索引页会按照双向链表的方式组织起来，<code>FIL_PAGE_PREV</code>，<code>FIL_PAGE_NEXT</code>则提供了一个索引页的前驱和后继节点的页号。需要指出的是，BLOB类型的页面是按照单链表的方式组织，不存在<code>FIL_PAGE_PREV</code>结构。<code>FIL_PAGE_INODE</code>页记录Segment的组织信息，一个Segment对应页内一条Inode Entry。</p>
+<h3 id="FIL-Trailer"><a href="#FIL-Trailer" class="headerlink" title="FIL Trailer"></a>FIL Trailer</h3><p> page trailer是在文件末尾的最后8个字节， 低位4个字节是用来表示page页中数据的checksum,高位4位是用来存储FIL_PAGE_LSN的部分信息。</p>
+<h2 id="File-Space-Header-Page"><a href="#File-Space-Header-Page" class="headerlink" title="File Space Header Page"></a>File Space Header Page</h2><p>参考上文的物理视图，表空间第一页的类型总是为<code>FIL_PAGE_TYPE_FSP_HDR</code>，负责记录整个表空间的使用情况和标志位的状态信息。页面中，紧跟着通用页头FIL Header的是<strong>File Space Header</strong>结构，共112字节。</p>
+<p>接着，每个XDES entry结构40个字节，描述一个extent的使用情况。一个File Space Header Page内最多包含256个XDES entry，即该page同时用于跟踪随后的256个extent(约256MB文件大小)的空间管理，所以每隔256MB就要创建一个类似的数据页，类型为<code>FIL_PAGE_TYPE_XDES</code>，XDES Page除了<strong>File Space Header</strong>结构全填0之外，其他都和<code>FIL_PAGE_TYPE_FSP_HDR</code>页具有相同的数据结构，可以称之为extent描述页。</p>
+<h3 id="File-Space-Header"><a href="#File-Space-Header" class="headerlink" title="File Space Header"></a>File Space Header</h3><p><strong>File Space Header</strong> 的结构如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Macro</th>
+<th>OFFSet</th>
+<th>DESCRIPTIon</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FSP_SPACE_ID</td>
+<td>0</td>
+<td>space id</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_NOT_USED</td>
+<td>4</td>
+<td>保留字段</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_SIZE</td>
+<td>8</td>
+<td>当前表空间的页面总数</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_FREE_LIMIT</td>
+<td>12</td>
+<td>当前未初始化的最小Page no</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_SPACE_FLAGS</td>
+<td>16</td>
+<td>标志位信息</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_FRAG_N_USED</td>
+<td>20</td>
+<td>FSP_FREE_FRAG链表上已被使用的Page数，用于快速计算该链表上可用空闲Page数</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_FREE</td>
+<td>24</td>
+<td>所有page都没有被使用的extent链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_FREE_FRAG</td>
+<td>40</td>
+<td>有可分配的page的extent链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_FULL_FRAG</td>
+<td>56</td>
+<td>所有page均已被分配的extent链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_SEG_ID</td>
+<td>72</td>
+<td>新生成段的id（current max seg id +1）</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_SEG_INODES_FULL</td>
+<td>80</td>
+<td>已被完全用满的Inode Page链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSP_SEG_INODES_FREE</td>
+<td>96</td>
+<td>至少存在一个空闲Inode Entry的Inode Page被放到该链表上</td>
+</tr>
+</tbody>
+</table>
+<p><code>FSP_FREE_LIMIT</code>记录当前未初始化的最小Page no，随着数据表的持续写入，表空间也在不断增长，InnoDB引擎需要对当前的存储文件进行扩展（涉及磁盘IO操作），为了减少扩展的次数，每次回多预留一些空间，这些未被纳入管理的剩余页面，就是通过FSP_FREE_LIMIT来标识。<code>FSP_FREE</code>，<code>FSP_FREE_FRAG</code>，<code>FSP_FULL_FRAG</code>三个字段根据<strong>整个表空间</strong>中extent（包括当前File Space Header Page所能管理的256个extent之外的所有extent）的使用情况，划分为三个链表进行维护。<code>FSP_SEG_INODES_FULL</code>，<code>FSP_SEG_INODES_FREE</code>两个字段根据Inode page页的使用情况，划分为已填满和可分配两个链表进行管理</p>
+<h3 id="List-Node"><a href="#List-Node" class="headerlink" title="List Node"></a>List Node</h3><p>为了管理Page，Extent这些数据块，在文件中记录了许多的节点以维持具有某些特征的链表，例如在在文件头维护的inode page链表，空闲、用满以及碎片化的Extent链表等等。</p>
+<p>由于这些链表节点信息都是写在实际磁盘上的，所以与常用的基于结构体和内存指针组成的内存链表不同，文件链表存储的地址信息则是通过4bytes的页号和2byte的页内偏移量组成的。</p>
+<p>在InnoDB里链表头称为<code>FLST_BASE_NODE</code>，其结构如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Macro</th>
+<th style="text-align:center">bytes</th>
+<th style="text-align:center">desc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FLST_LEN</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">列表长度</td>
+</tr>
+<tr>
+<td style="text-align:center">FLST_FIRST</td>
+<td style="text-align:center">6</td>
+<td style="text-align:center">列表首节点地址</td>
+</tr>
+<tr>
+<td style="text-align:center">FLST_LAST</td>
+<td style="text-align:center">6</td>
+<td style="text-align:center">列表尾节点地址</td>
+</tr>
+</tbody>
+</table>
+<p>BASE NODE维护了链表的头指针和末尾指针，每个节点称为<code>FLST_NODE</code>，结构如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Macro</th>
+<th style="text-align:center">bytes</th>
+<th style="text-align:center">desc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FLST_PREV</td>
+<td style="text-align:center">6</td>
+<td style="text-align:center">前驱节点地址</td>
+</tr>
+<tr>
+<td style="text-align:center">FLST_NEXT</td>
+<td style="text-align:center">6</td>
+<td style="text-align:center">后继节点地址</td>
+</tr>
+</tbody>
+</table>
+<p>类似的，InnoDB引擎内部（内存中）对各种内存链表的结构也做了统一的封装，其基本结构与文件链表相同，具体代码实现如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> TYPE&gt;</span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">ut_list_base</span> &#123;</span></span><br><span class="line">	<span class="hljs-keyword">typedef</span> TYPE elem_type;</span><br><span class="line"></span><br><span class="line">	ulint	count;<span class="hljs-comment">/*!&lt; count of nodes in list */</span></span><br><span class="line">	TYPE*	start;<span class="hljs-comment">/*!&lt; pointer to list start, NULL if empty */</span></span><br><span class="line">	TYPE*	end;<span class="hljs-comment">/*!&lt; pointer to list end, NULL if empty */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">template</span> &lt;<span class="hljs-keyword">typename</span> TYPE&gt;</span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">ut_list_node</span> &#123;</span></span><br><span class="line">	TYPE* 	prev;	<span class="hljs-comment">/*!&lt; pointer to the previous node,</span></span><br><span class="line"><span class="hljs-comment">			NULL if start of list */</span></span><br><span class="line">	TYPE* 	next;	<span class="hljs-comment">/*!&lt; pointer to next node, NULL if end of list */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>基础节点(base node)包含了链表的长度和首位指针信息。普通的元素节点则只包含前驱后继节点的信息。</p>
+<h3 id="XDES-Entry"><a href="#XDES-Entry" class="headerlink" title="XDES Entry"></a>XDES Entry</h3><p><strong>XDES Entry</strong> 结构描述了一个extent内部所有page的使用情况(默认64page)。其结构如下表：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">macro</th>
+<th style="text-align:center">offset</th>
+<th style="text-align:center">DESC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">XDES_ID</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">extent所属的segment id</td>
+</tr>
+<tr>
+<td style="text-align:center">XDES_FLST_NODE</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">维持Extent链表的双向指针节点</td>
+</tr>
+<tr>
+<td style="text-align:center">XDES_STATE</td>
+<td style="text-align:center">20</td>
+<td style="text-align:center">extent的使用状态</td>
+</tr>
+<tr>
+<td style="text-align:center">XDES_BITMAP</td>
+<td style="text-align:center">32</td>
+<td style="text-align:center">维护page使用情况的位图</td>
+</tr>
+</tbody>
+</table>
+<p><code>XDES_STATE</code>可能取值的状态为：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">MAcro</th>
+<th style="text-align:center">VALUE</th>
+<th style="text-align:center">desc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">XDES_FREE</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">分区在file space的free list上</td>
+</tr>
+<tr>
+<td style="text-align:center">XDES_FREE_FRAG</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">在file space的free fragment list上</td>
+</tr>
+<tr>
+<td style="text-align:center">XDES_FULL_FRAG</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">在file space的full fragmentlist上</td>
+</tr>
+<tr>
+<td style="text-align:center">XDES_FSEG</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">该extent在XDES_ID的SEGMENT上</td>
+</tr>
+</tbody>
+</table>
+<p>通过<code>XDES_STATE</code>信息，我们只需要一个<code>FLIST_NODE</code>节点就可以维护每个extent的信息，是处于全局表空间的链表上，还是某个btree segment的链表上。</p>
+<p><code>XDES_BITMAP</code>中每一个page占两位，共64*2=128bit，其中一位<code>XDES_FREE_BIT</code>表示当前page的使用情况，另外一位<code>XDES_CLEAN_BIT</code>暂未使用。</p>
+<h2 id="Insert-Buffer-Page"><a href="#Insert-Buffer-Page" class="headerlink" title="Insert Buffer Page"></a>Insert Buffer Page</h2><p>插入缓存页，暂不深入讨论。</p>
+<h2 id="Inode-Page"><a href="#Inode-Page" class="headerlink" title="Inode Page"></a>Inode Page</h2><p>InnoDB使用Inode Page来维护段（<strong>Segment</strong>）的使用信息，一般idb文件系统空间的第三页就是Inode Page。数据即索引，在创建一个b-tree索引时，默认生成2个segment，分别用于管理b-tree的中间节点和叶子节点。</p>
+<p>Inode Page的内部组织方式如上述物理视图，出去页面通用页头和页尾之外，主要包含两个部分：Inode entry list和Inode page list。</p>
+<h3 id="Inode-Entry"><a href="#Inode-Entry" class="headerlink" title="Inode Entry"></a>Inode Entry</h3><p>每个Inode Entry描述了一个段内的extent以及page的使用情况，具体的结构如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Macro</th>
+<th style="text-align:center">offset</th>
+<th style="text-align:center">desc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FSEG_ID</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">Segment id(0表示未使用)</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_NOT_FULL_N_USED</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">FSEG_NOT_FULL链表上已被使用的Page数量</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_FREE</td>
+<td style="text-align:center">12</td>
+<td style="text-align:center">分配给该Segment完全且未使用的extent链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_NOT_FULL</td>
+<td style="text-align:center">28</td>
+<td style="text-align:center">部分可用的extent链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_FULL</td>
+<td style="text-align:center">44</td>
+<td style="text-align:center">已使用完的extent链表</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_MAGIC_N</td>
+<td style="text-align:center">60</td>
+<td style="text-align:center">魔数</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_FRAG_ARR[0]</td>
+<td style="text-align:center">64</td>
+<td style="text-align:center">碎页数组首页地址</td>
+</tr>
+<tr>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+<td style="text-align:center">…</td>
+</tr>
+<tr>
+<td style="text-align:center">FSEG_FRAG_ARR[31]</td>
+<td style="text-align:center">64+32*4</td>
+<td style="text-align:center">碎页数组尾页地址</td>
+</tr>
+</tbody>
+</table>
+<p>除了维持当前segment下的extent链表外，为了节省内存，减少碎页，每个Entry还占有32个独立的page用于分配，每次分配时总是先分配独立的Page，当填满32个数组项时，再在每次分配时都分配一个完整的Extent，并在XDES PAGE中将其Segment ID设置为当前的段id。</p>
+<h3 id="Page-List"><a href="#Page-List" class="headerlink" title="Page List"></a>Page List</h3><p>一个Innode page里最多存放85个entry，对于idb文件来说，除去回滚段之外，只有索引段，除非为一张表申请42个索引，否则一个Innode page足够使用。而如果未开启<code>innodb_file_per_table</code>选项的数据库来说，所有的信息都存储在ibdata文件，可能需要多个Inode page来维护段信息。Innodb将这些Inode page通过链表的方式组织起来，在页头之后存储了链表的base节点，具体可以参考<strong>List Node</strong>一节对通用链表结构的描述，此处不再详述。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文以idb文件为切入点，介绍了Innodb引擎对底层文件的组织方式。在idb文件中，除去实际存储数据和索引节点信息的Index Page之外（后续介绍页内组织方式的时候详细阐述），其他类型的page都做了简要的介绍，各页面之间相互索引和定位的组织方式如下图：</p>
+<p><img src="/2018/11/13/mysql-tablespace/space file organized.jpg" width="600" height="400" align="center" title="space file organized"></p>
+<p>自底向上来看，第一页Page0对应File space header页，其内部的256个entry数组，记录了前256个extent的使用情况。第二页Page1是插入缓存页。第三页Page2是Inode Page，其内部的每一个entry，记录了当前段内个分区的使用情况，以链表的方式组织起来，此外还各自单独占据了一部分独立的Page用于分配。第四页是在我们创建索引后，为根节点独立分配的一个root page，其中记录了中间节点段和叶子节点段的地址信息。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ol>
+<li><a href="https://blog.csdn.net/mysql_lover/article/details/54612876" target="_blank" rel="noopener">MySQL · 引擎特性 · InnoDB 文件系统之文件物理结构</a></li>
+<li><a href="https://blog.csdn.net/yuanrxdu/article/details/41925279" target="_blank" rel="noopener">MySQL系列：innodb源码分析之表空间管理</a></li>
+<li><a href="https://blog.jcole.us/2013/01/07/the-physical-structure-of-innodb-index-pages/" target="_blank" rel="noopener">The physical structure of InnoDB index pages</a></li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/">Mysql存储机制—表空间结构</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/11/13/mysql-tablespace/">https://gsmtoday.github.io/2018/11/13/mysql-tablespace/</a></li>
+            <li><strong>发布时间：</strong>2018-11-13</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/11/13/mysql-index-page/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Mysql存储机制-数据页管理</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/10/15/接口超时引起系统雪崩原因反思/">
+                <span class="level-item">接口超时引起系统雪崩原因反思</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

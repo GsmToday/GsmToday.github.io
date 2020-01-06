@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Netty入门综述 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 netty基本组件 netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
+<meta name="keywords" content="Netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty入门综述">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 netty基本组件 netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/serverClient.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/selector.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/reactor.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/netty-thread-model.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/channel-state.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/channel-event.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/pipeline.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/design-pattern.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/Eventloop.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/netty-server-thread1.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/netty-server-thread2.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/netty-client-thread.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.109Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty入门综述">
+<meta name="twitter:description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 netty基本组件 netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/02/13/netty-summarize/serverClient.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/dog.jpg" alt="Netty入门综述">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-02-13T06:31:51.000Z">2018-02-13</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    31 分钟 读完 (大约 4670 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Netty入门综述
+            
+        </h1>
+        <div class="content">
+            <p>本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:</p>
+<ul>
+<li>IO模型发展历程</li>
+<li>netty基本组件</li>
+<li>netty线程模型</li>
+</ul>
+<p>希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。<br><a id="more"></a></p>
+<h1 id="I-O模型发展"><a href="#I-O模型发展" class="headerlink" title="I/O模型发展"></a>I/O模型发展</h1><h2 id="早期的Socket-API实现网络编程"><a href="#早期的Socket-API实现网络编程" class="headerlink" title="早期的Socket API实现网络编程"></a>早期的Socket API实现网络编程</h2><p><a href="https://www.zhihu.com/question/24322387" target="_blank" rel="noopener">Ref</a></p>
+<ol>
+<li>Server端创建一个ServerSocket, 绑定一个端口，监听<code>listen()</code>此端口上的连接请求</li>
+<li>服务器使用<code>accept（）</code>并阻塞直到一个连接请求建立。随后返回一个新的socket用于客户端和服务端之间的通信</li>
+<li>一系列客户端请求这个端口</li>
+<li>启动一个新线程处理连接<ol>
+<li>读socket，得到字节流</li>
+<li>解码协议，得到HTTP请求对象</li>
+<li>处理HTTP请求，得到一个结果，封装成一个HttpResponse对象</li>
+<li>编码协议，将结果序列化字节流</li>
+<li>写Socket，将字节流发给客户端</li>
+</ol>
+</li>
+<li>继续循环步骤3<br><img src="/2018/02/13/netty-summarize/serverClient.jpg" width="500" height="300" alt="server&client" align="center"></li>
+</ol>
+<p>早期的网络编程是一种阻塞的IO模型，如果存在多个客户端的连接socket就需要创建多个线程。这种无疑会造成大量线程空闲，管理和切换上资源的浪费。</p>
+<h2 id="NIO-Selector单路复用模型"><a href="#NIO-Selector单路复用模型" class="headerlink" title="NIO - Selector单路复用模型"></a>NIO - Selector单路复用模型</h2><p>(<a href="https://gsmtoday.github.io/2017/10/29/nginx-principle/">关于单路复用，使用国际象棋的大师车轮战这个例子更容易理解</a>)<br>NIO包提供了一种Selector-非阻塞IO模型。它使用了<strong>事件通知</strong>API以确定在一组非阻塞socket中有哪些已经就绪能够进行I/O相关操作。因为可以在任意事件检查任意的读操作or写操作的状态，所以一个单一的线程便可以处理多个并发连接。</p>
+<p>例如如图，selector负责检查socketA-C哪些需要的数据已经准备好了，并告知thread. 假如此时socketA，socketB数据准备好了，selector把这两个socket准备已准备好的“事件”通知给thread. Thread依次去处理socketA和socketB. 这套处理机制对应着Linux操作系统的epoll和Mac的Kqueue.</p>
+<p>这种模型的好处是使用较少的线程可以处理大量连接，减少线程切换和管理的代价。但是一旦系统的并发量特别大，使用单一的线程处理是难以满足客户端要求的。另外Java原生的NIO使用并不是很方便, 因此Netty应运而生。<br><img src="/2018/02/13/netty-summarize/selector.jpg" alt="selector"></p>
+<h1 id="Netty-简介"><a href="#Netty-简介" class="headerlink" title="Netty 简介"></a>Netty 简介</h1><p>我们先来看看Netty之前的<strong>服务器网络通信框架模型</strong>都有哪些:<br>1.最基本的是使用阻塞I/O服务器单线程逐个处理连接请求。<br>2.接着发展为使用多线程处理请求。一旦一个连接建立成功后，创建一个单独的线程处理其I/O操作。显然这种通信框架在高并发下线程数激增，服务器难以支撑。<br>3.接着网络通信框架发展为使用线程池处理请求，将请求放入线程池的任务队列，避免大量的线程造成的切换代价。<br>4.Reactor模式 - Reactor单线程模型-多线程模型-主从模型(<a href="http://www.infoq.com/cn/articles/netty-threading-model" target="_blank" rel="noopener">更多关于Reactor模式Ref</a>)<br><img src="/2018/02/13/netty-summarize/reactor.jpg" width="500" height="300" alt="reactor多线程模式" align="reactor多线程模式"></p>
+<p>现在来讲讲Netty, Netty使用了三种Reactor线程模型。Netty提供了一个<font color="red">异步的事件驱动的网络通信框架，支持快速地开发可维护的高性能面向协议的服务器和客户端</font>。</p>
+<p>Netty是建立在NIO基础之上，在NIO之上又提供了更高层次的抽象。在Netty里面，Accept连接可以使用单独的线程池去处理，读写操作又是另外的线程池来处理。当然，Accept连接和读写操作也可以使用同一个线程池来进行处理。而请求处理逻辑既可以使用单独的线程池进行处理，也可以跟放在读写线程一块处理。线程池中的每一个线程都是NIO线程。用户可以根据实际情况进行组装，构造出满足系统需求的并发模型。</p>
+<p>从高层次的角度来看，Netty解决了两个关注领域：<strong>技术</strong>和<strong>体系结构</strong>。首先，它的基于Java NIO的异步和事件驱动的实现，保证了高负载下应用程序性能的最大化和可伸缩性。其次，Netty也包含了一组设计模式，将应用程序逻辑从网络层解耦，简化了开发过程，同事也最大限度提高了可测试性，模块化以及代码的可重用性。</p>
+<p>Netty提供了内置的<strong>常用编解码器</strong>，包括行编解码器［一行一个请求］，前缀长度编解码器［前N个字节定义请求的字节长度］，可重放解码器［记录半包消息的状态］，HTTP编解码器，WebSocket消息编解码器等等。Netty提供了一些列生命周期回调接口，当一个完整的请求到达时，当一个连接关闭时，当一个连接建立时，用户都会收到回调事件，然后进行逻辑处理。</p>
+<p>Netty可以同时管理多个端口，可以使用NIO客户端模型，这些对于RPC服务是很有必要的。Netty除了可以处理TCP Socket之外，还可以处理UDP Socket。</p>
+<h1 id="Netty-核心组件"><a href="#Netty-核心组件" class="headerlink" title="Netty 核心组件"></a>Netty 核心组件</h1><h2 id="Netty网络抽象代表：Channel-socket-EventLoop-ChannelFuture"><a href="#Netty网络抽象代表：Channel-socket-EventLoop-ChannelFuture" class="headerlink" title="Netty网络抽象代表：Channel(socket) + EventLoop + ChannelFuture"></a><font color="blue">Netty网络抽象代表：Channel(socket) + EventLoop + ChannelFuture<font></font></font></h2><p><code>Channel</code>是Java NIO的一个基本构造。简单的说，可以把Channel看做是传入或者传出数据的载体socket。因此Channel可以被打开，关闭，连接或者断开连接。Channel提供的API大大的降低了直接使用socket类的复杂性。<br><!-- <img src="" width = "500" height = "500" /> --></p>
+<p><img src="/2018/02/13/netty-summarize/netty-thread-model.png" alt=""></p>
+<p>Channel有四种状态：<br><img src="/2018/02/13/netty-summarize/channel-state.jpg" width="500" height="300"><br>当Channel的状态发生变化后，就会触发对应的事件。这些事件会被转发给ChannelPipeline中的ChannelHandler，其可以随后对它们做出响应。<br><img src="/2018/02/13/netty-summarize/channel-event.jpg" width="300" height="300"></p>
+<p><code>EventLoop</code>代表netty控制流，多线程处理，并发。EventLoop定义了Netty核心抽象，一旦Channel注册到了EventLoop, EventLoop就处理连接的生命周期中Channel的所有IO操作。 一个<code>EventLoopGroup</code>包含一个或者多个EventLoop，一个EventLoop在它的生命周期内只和一个Thread绑定。所有由Eventloop处理的IO事件都将在它专有的<code>Thread</code>上被处理。一个Channel在它的生命周期内只注册一个EventLoop，一个EventLoop可能会被分配给多个Channel. </p>
+<p>Netty内部使用回调处理事件。Future: 因为Netty所有的IO操作都是异步的，因此当一个异步过程调用发出后，调用方不会立刻获得结果。但是调用方还是想获得这个结果怎么办？ Netty提供了<code>ChannelFuture</code>接口，其<code>addListener()</code>方法注册一个<code>ChannelFutureListener</code>,以便在某个操作完成时（无论是否成功）得到通知.</p>
+<h2 id="应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler"><a href="#应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler" class="headerlink" title="应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler"></a><font color="blue">应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler<font></font></font></h2><p>Netty使用不同的事件<code>Event</code>通知我们状态的改变或者操作的状态，这使得我们可以基于已经发生的事件来触发适当的动作。例如IO连接的数据已经准备好，Netty会将这个时间通知工作线程。因为Netty是一个网络编程框架，因此Event是按照它们与IO数据流相关进行分类的。</p>
+<p>事件可能包括Inbound event:</p>
+<ul>
+<li>连接已经被激活/连接失活</li>
+<li>数据读取</li>
+<li>用户事件</li>
+<li>错误事件</li>
+</ul>
+<p>Outbound event:</p>
+<ul>
+<li>打开或者关闭远程节点的连接</li>
+<li>将数据写到或者flush到socket</li>
+</ul>
+<p><img src="/2018/02/13/netty-summarize/pipeline.jpg" width="400" height="700" alt="ChannelPipeline的一个著名的inbound和outbound事件流模型"></p>
+<p>Netty使用了<strong>IO事件驱动模型</strong>，与NIO相比Netty允许使用者在不破坏现有处理逻辑的情况下定义自己的事件处理逻辑。这一优势要归功于Netty使用了<a href="https://gsmtoday.github.io/2017/10/22/filter-chain-pattern/">责任链模式</a>。总的来说：Netty定义了一个管道[<code>ChannelPipeline</code>]，在管道中组织了多个拦截器[<code>ChannelHandler</code>]处理各个事件[<code>ChannelEvent</code>]. 如果用户想要定义自己的事件处理逻辑，他可以自己实现一个<code>ChannelHandler</code>。<br><img src="/2018/02/13/netty-summarize/design-pattern.jpg" width="400" height="700" alt="Netty的责任链模式"></p>
+<p>类的职责：</p>
+<ul>
+<li><code>ChannelPipeline</code>: 责任链模式核心组件，ChannelHandler容器，按顺序组织各个handler,并在它们之间转发事件。</li>
+<li><code>ChannelHandlerContext</code> : 当ChannelHandler被添加到ChannelPipeline时，它将会被分配一个ChannelHandlerContext，ChannelHandlerContext代表了Pipeline和handler之间的绑定。封装一个具体的ChannelHandler,并为ChannelHanndler的执行提供一个线程环境(ChannelHanlderInvoker),可以理解为ChannelPipeline链路上的一个节点，节点里面包含有指向向前后节点的指针，事件在各个ChannelHandler之间传递，靠的就是ChannelHandlerContext</li>
+<li><code>ChannelHandler</code>: 真正对IO事件作出响应和处理的地方，也是Netty暴露给业务代码的一个扩展点。一般来说，主要业务逻辑就是自定义ChannelHandler的方式实现的。</li>
+<li><code>ChannelHandlerInvoker</code>: 为ChannelHandler提供一个运行的线程环境，默认的实现DefaultChannelHandlerInvoker有一个EventExecutor类型的成员，就是Netty的EventLoop线程，所以默认ChannelHandler的处理逻辑在EventLoop线程内。当然也可以提供不同的实现，替换默认的线程模型</li>
+</ul>
+<p>关于<code>ChannelPipeline</code>，只需要了解DefaultChannelPipeline这个默认的实现类，这个类其实就是一个链表管理类，管理者每一个ChannelHandlerContext类型的节点，从它的addFirst、addLast、remove等成员方法就可以看出来.</p>
+<p><code>ChannelHandler</code>是一个顶级接口，有两个子接口ChannelInboundHandler和ChannelOutboundHandler分别处理read和write相关的IO事件，为了便于业务方实现，两个子接口分别有一个简单的Adapter实现类，所有方法的默认实现都是代理给ChannelHandlerContext类（其实是不关心事件，直接转发给pipeline中下一个节点的handler来处理）。业务方实现自己的ChannelHandler时，推荐继承相应的Adapter类，只实现自己关心的事件的处理方法</p>
+<h3 id="编码器和解码器"><a href="#编码器和解码器" class="headerlink" title="编码器和解码器"></a>编码器和解码器</h3><p>网络数据是一系列的字节，当通过Netty发送或者接收一个消息的时候，就会发生一次数据转换。inbound msg会被解码，即从字节码转换为另一种格式，通常是Java对象。如果是outbound msg，则会发生相反方向的转换：从当前格式被编码为字节。使用Netty可以定制编解码协议，实现自己的特定协议的服务器。如果你实现的编解码协议是HTTP协议，那么你实现的就是HTTP服务器；如果你实现的协议是redis协议，那么你实现的就是Redis服务器。</p>
+<h3 id="引导类"><a href="#引导类" class="headerlink" title="引导类"></a>引导类</h3><p>Netty的引导类为应用程序的网络层配置提供了容器，这涉及到两种类型的引导：服务端引导ServerBootstrap 服务端引导就是个引导类，封装了服务端启动过程，包括端口绑定和监听等过程. 客户端引导BootStrap：客户端引导类就是封装了客户端启动的过程，只要是创建socket，并发起connect调用，建立一个到服务端的链接的过程。</p>
+<p><code>BootStrap</code>和<code>ServerBootstrap</code>的区别除了网络编程中的作用之外，还有一个区别也很明显：BootStrap只需要一个<code>EventLoopGroup</code>，引导服务端的ServerBootstrap则需要两个EventLoopGroup。这是因为服务器需要两组不同的Channel,第一组将只包含一个ServerChannel，代表服务器自身的已绑定到某个本地端口的正在监听的套接字。而第二组将包含所有已创建的用来传递客户端的连接的channel.</p>
+<h1 id="Netty线程模型"><a href="#Netty线程模型" class="headerlink" title="Netty线程模型"></a>Netty线程模型</h1><p><a href="http://www.infoq.com/cn/articles/netty-threading-model" target="_blank" rel="noopener">Ref</a><br>线程模型指定了操作系统，编程语言，框架或者应用程序的上下文中的线程管理的关键方面，它确定了代码的执行方式。</p>
+<p>Java5引入了线程池Executor API,线程池通过利用缓存和重用线程极大地提高了性能。基本的线程池模式可以描述为：</p>
+<ol>
+<li>从线程池空闲列表选择一个Thread,并且指派它去运行一个已提交的任务（一个Runnable的实现）</li>
+<li>当任务完成时，将Thread返回给列表，使其可重用。<br>虽然线程池化和重用相对于简单地为每个任务创建和销毁线程是一种进步，但是它并不能消除由上下文切换所带来的开销，这种开销将随着线程数量的增加很快变得明显，并且在高负载下愈演愈烈。另外，线程安全性也是开发者必须要解决的问题。</li>
+</ol>
+<p>Netty线程模型：通过<code>NioEventLoop</code>类的设计可以看出Netty线程模型设计原理。我们知道Netty使用EventLoop来运行任务，处理所有IO连接。一个EventLoop将由一个永远都不会改变的Thread驱动，同时任务(Runnable/Callable)提交给EventLoop实现。为了优化线程池多线程切换的开销和线程安全问题，Netty采用了串行化设计理念。从消息的读取，编码以及后续handler的执行，始终都由IO线程NioEventLoop负责，这就意味着整个流程不会进行线程上下文的切换，数据也不会面临被并发修改的风险。对用户而言，甚至不需要了解Netty的线程细节，这确实是个非常好的设计理念。<br><img src="/2018/02/13/netty-summarize/Eventloop.jpg" width="400" height="700" alt="Netty的并行单线程模型"><br>一个NioEventLoop聚合了一个多路复用Selector，因此可以处理成百上千的客户端连接，Netty的处理策略是每当有一个新的客户端接入，则从NioEventLoop线程组中顺序获取一个可用的NioEventLoop,当到达顺组上限之后，重新返回到0，通过这种方式，可以基本保证NioEventLoop的负载均衡。一个客户端连接只注册到一个NioEventLoop上，这样就避免多个IO线程去并发操作它。</p>
+<p>Netty通过串行化设计理念降低了用户的开发难度，提升了处理性能。这种无锁化设计，避免了多线程成竞争导致的性能下降问题，利用线程组实现了多个串行化线程水平并行执行，线程之间并没有交集，这样既可以充分利用多核提升并行处理能力，同时避免了线程上下文的切换和并发保护带来的额外性能损耗。</p>
+<h2 id="Netty线程模型分类"><a href="#Netty线程模型分类" class="headerlink" title="Netty线程模型分类"></a>Netty线程模型分类</h2><p>Netty的线程模型并不是一成不变的，它实际取决于用户的启动配置参数，通过设置不同的启动参数，Netty可以同时支持Reactor单线程模型，多线程模型和主从Reactor多线程模型。</p>
+<h3 id="服务端线程模型-Reactor多线程模型的实现"><a href="#服务端线程模型-Reactor多线程模型的实现" class="headerlink" title="服务端线程模型 - Reactor多线程模型的实现"></a>服务端线程模型 - Reactor多线程模型的实现</h3><p>服务端启动的时候，创建两个NioEventloopGroup，它们实际上是两个独立的Reactor线程池：</p>
+<ul>
+<li>用于接收客户端的TCP连接，该线程池职责如下：</li>
+</ul>
+<ol>
+<li>接收客户端TCP连接，初始化Channel参数</li>
+<li>将链路状态变更时间通知给ChannelPipeline.</li>
+</ol>
+<ul>
+<li>另一个用于处理I/O相关的读写操作，或者执行系统Task,定时任务等。</li>
+</ul>
+<ol>
+<li>异步读取通信对端的数据报，发送读事件到ChannelPipeline</li>
+<li>异步发送消息到通信对端，调用ChannelPipeline的消息发送接口</li>
+<li>执行系统调用Task</li>
+<li>执行定时任务Task,例如链路空闲状态监测任务<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">EventloopGroup bossGroup = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">1</span>);</span><br><span class="line">EventloopGroup workerGroup = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">2</span>);</span><br><span class="line">EventloopGroup group = <span class="hljs-keyword">new</span> NioEventLoopGroup();</span><br><span class="line"><span class="hljs-keyword">try</span>&#123;</span><br><span class="line">ServerBootStrap b = <span class="hljs-keyword">new</span> ServerBootStrap();</span><br><span class="line">b.group(bossGroup, workerGroup)</span><br><span class="line">.channel(NioServerSocketChannel.class)</span><br><span class="line">...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p><img src="/2018/02/13/netty-summarize/netty-server-thread1.jpg" width="500" height="500"><br><img src="/2018/02/13/netty-summarize/netty-server-thread2.jpg" width="500" height="500"></p>
+<h3 id="客户端线程模型"><a href="#客户端线程模型" class="headerlink" title="客户端线程模型"></a>客户端线程模型</h3><p><img src="/2018/02/13/netty-summarize/netty-client-thread.jpg" width="500" height="500"></p>
+<h3 id="EventLoop接口"><a href="#EventLoop接口" class="headerlink" title="EventLoop接口"></a>EventLoop接口</h3><p>EventLoop接口通过运行任务去处理连接生命周期发生的事件。在这个模型中，一个EventLoop将由一个永远都不会改变的Thread驱动，同时任务（Runnable或者Callable）可以直接提交给EventLoop实现，以立刻执行或者调度执行。NioEventLoop是Netty的Reactor线程，它的职责如下：</p>
+<ol>
+<li>作为服务端Acceptor线程，负责处理客户端的请求接入;</li>
+<li>作为客户端connector线程，负责注册监听连接请求，判断异步连接结果；</li>
+<li>作为IO线程，监听网络读操作，负责从socketchannel读取报文；</li>
+<li>作为IO线程，负责向SocketChannel写入报文发送给对方</li>
+<li>作为定时任务线程，可以执行定时任务，例如链路空闲监测和发送心跳消息等；</li>
+<li>作为线程执行器可以执行普通的任务线程</li>
+</ol>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<li><a href="http://www.infoq.com/cn/articles/netty-threading-model" target="_blank" rel="noopener">Netty线程模型,李林峰</a></li>
+<li><a href="http://docs.jboss.org/netty/3.1/guide/html/architecture.html#d0e1996" target="_blank" rel="noopener">http://docs.jboss.org/netty/3.1/guide/html/architecture.html#d0e1996</a></li>
+<li><a href="https://gsmtoday.github.io/2017/10/22/filter-chain-pattern/">责任链模式</a></li>
+<li><a href="http://www.infoq.com/cn/articles/netty-high-performance" target="_blank" rel="noopener">Netty系列之Netty高性能之道,李林峰</a></li>
+<li>[通俗的讲，Netty能做什么？,知乎](<a href="https://www.zhihu.com/question/24322387" target="_blank" rel="noopener">https://www.zhihu.com/question/24322387</a></li>
+<li>[Netty4 学习笔记, zxh0](<a href="http://blog.csdn.net/zxhoo/article/details/17264263）" target="_blank" rel="noopener">http://blog.csdn.net/zxhoo/article/details/17264263）</a></li>
+<li>建议阅读：<a href="https://mp.weixin.qq.com/s/B7_QUNoWTix4lsw3ytGl4Q" target="_blank" rel="noopener">为什么建议Netty的I/O线程与业务线程分离</a></li>
+<li><a href="http://www.infoq.com/cn/minibooks/netty-in-depth" target="_blank" rel="noopener">Netty InfoQ 迷你书,李林峰</a></li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/02/13/netty-summarize/">Netty入门综述</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/02/13/netty-summarize/">https://gsmtoday.github.io/2018/02/13/netty-summarize/</a></li>
+            <li><strong>发布时间：</strong>2018-02-13</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Netty/">Netty</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/02/19/remoting/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">RocketMQ源码分析1--Remoting</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/01/19/auditlog-md/">
+                <span class="level-item">一种使用自定义注解+切面统一收集审计日志的方式</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#I-O模型发展">
+        <span class="has-mr-6">1</span>
+        <span>I/O模型发展</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#早期的Socket-API实现网络编程">
+        <span class="has-mr-6">1.1</span>
+        <span>早期的Socket API实现网络编程</span>
+        </a></li><li>
+        <a class="is-flex" href="#NIO-Selector单路复用模型">
+        <span class="has-mr-6">1.2</span>
+        <span>NIO - Selector单路复用模型</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#Netty-简介">
+        <span class="has-mr-6">2</span>
+        <span>Netty 简介</span>
+        </a></li><li>
+        <a class="is-flex" href="#Netty-核心组件">
+        <span class="has-mr-6">3</span>
+        <span>Netty 核心组件</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Netty网络抽象代表：Channel-socket-EventLoop-ChannelFuture">
+        <span class="has-mr-6">3.1</span>
+        <span>Netty网络抽象代表：Channel(socket) + EventLoop + ChannelFuture</span>
+        </a></li><li>
+        <a class="is-flex" href="#应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler">
+        <span class="has-mr-6">3.2</span>
+        <span>应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#编码器和解码器">
+        <span class="has-mr-6">3.2.1</span>
+        <span>编码器和解码器</span>
+        </a></li><li>
+        <a class="is-flex" href="#引导类">
+        <span class="has-mr-6">3.2.2</span>
+        <span>引导类</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#Netty线程模型">
+        <span class="has-mr-6">4</span>
+        <span>Netty线程模型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Netty线程模型分类">
+        <span class="has-mr-6">4.1</span>
+        <span>Netty线程模型分类</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#服务端线程模型-Reactor多线程模型的实现">
+        <span class="has-mr-6">4.1.1</span>
+        <span>服务端线程模型 - Reactor多线程模型的实现</span>
+        </a></li><li>
+        <a class="is-flex" href="#客户端线程模型">
+        <span class="has-mr-6">4.1.2</span>
+        <span>客户端线程模型</span>
+        </a></li><li>
+        <a class="is-flex" href="#EventLoop接口">
+        <span class="has-mr-6">4.1.3</span>
+        <span>EventLoop接口</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#参考">
+        <span class="has-mr-6">5</span>
+        <span>参考</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>接口超时引起系统雪崩原因反思 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="笔者亲身经历的一次线上服务雪崩，可谓刻骨铭心…经过此次故障，不断反思，不断复盘，成长颇多。">
+<meta name="keywords" content="JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="接口超时引起系统雪崩原因反思">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="笔者亲身经历的一次线上服务雪崩，可谓刻骨铭心…经过此次故障，不断反思，不断复盘，成长颇多。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem1.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem2.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem3.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem4.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem5.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem6.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/prove.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/prove2.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/jstack.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/jmap.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/jmap2.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/pmap.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:38.226Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="接口超时引起系统雪崩原因反思">
+<meta name="twitter:description" content="笔者亲身经历的一次线上服务雪崩，可谓刻骨铭心…经过此次故障，不断反思，不断复盘，成长颇多。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/problem1.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/italy_road.jpeg" alt="接口超时引起系统雪崩原因反思">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-10-15T06:00:25.000Z">2018-10-15</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    14 分钟 读完 (大约 2115 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                接口超时引起系统雪崩原因反思
+            
+        </h1>
+        <div class="content">
+            <p>笔者亲身经历的一次线上服务雪崩，可谓刻骨铭心…经过此次故障，不断反思，不断复盘，成长颇多。<br><a id="more"></a></p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>10.15 下午16：55开始，UPM - API 服务接口延时&amp;报错数报警猛增（错误数多为500，502，499，504），一度UPM-API无法对外提供服务。通过排查定位到接口/user/get/permissions调用量增加了十倍（20QPS），因此给/user/get/permissions接口加了限流策略，18:17 UPM-API故障解除。</p>
+<p><strong>故障点错误数监控：</strong><br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/problem1.png" width="500" height="400" align="center"><br>可以看出故障点499错误数（还有500，502）猛增。499错误码一般发生在客户端主动断开连接，当服务端处理慢了，超过了客户端的超时时间，就会抛出499。</p>
+<p><strong>故障点99分位接口延时监控:</strong><br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/problem2.png" width="500" height="400" align="center"><br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/problem3.png" width="500" height="400" align="center"><br>可以发现故障点接口服务几乎整体都受到了影响，接口延迟最差的时候到了5s左右。</p>
+<p><strong>故障点CPU Idle:</strong><br>17:00左右出故障的时候进一步下跌。因此排查思路是“什么导致了CPU IDLE异常下跌。”<br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/problem4.png" width="500" height="400" align="center"><br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/problem5.png" width="500" height="400" align="center"><br>通过看20天的CPU波动图，可以看出故障点附近CPU IDLE异常下跌（机器3*48core 物理机）。看故障点CPU IDLE，可以看出16：30 CPU IDLE 83.736%, </p>
+<p><strong>/user/get/permissions QPS情况:</strong><br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/problem6.png" width="500" height="400" align="center"><br>再看/user/get/permissions流量在17点左右流量较上周/前一天均增加了百倍。QPS达到23（1412/60s）左右系统难以支持，引发UPM API所有服务雪崩。</p>
+<h1 id="user-get-permissions-问题复现"><a href="#user-get-permissions-问题复现" class="headerlink" title="/user/get/permissions 问题复现"></a>/user/get/permissions 问题复现</h1><p>问题复现的最好办法是就是找没有正式流量的机器进行压测，由于我们YS机房刚好没有正式线上流量，并且已经部署完毕（4 core / 8Gi /10台docker soa-serivce服务）。于是选择对YS机房进行压测。</p>
+<p>不过为了使压测准确，需要先看下引发故障的这个接口的代码逻辑，模拟出尽量真实的压测接口参数</p>
+<p>代码逻辑:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/get/permissions"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> ResponseEntity&lt;PermisssionResponseDto&gt; <span class="hljs-title">getPermissions</span><span class="hljs-params">(@SessionAttribute(ApiConstants.REQUEST_APPID)</span> Long appId,</span></span><br><span class="line"><span class="hljs-function">                                                             UserParamDto userParamDto) </span>&#123;</span><br><span class="line">    --- 隐去不重要代码 ---</span><br><span class="line">    UserDto userDto = getUserByName(userParamDto); </span><br><span class="line">    PermisssionResponseDto response = <span class="hljs-keyword">new</span> PermisssionResponseDto();</span><br><span class="line">    response.setUser(BeanUtils.map(UserResponseDto.class, userDto));</span><br><span class="line">     </span><br><span class="line">    <span class="hljs-comment">// 获取用户的所有角色 - 有缓存</span></span><br><span class="line">    List&lt;RoleDto&gt; roleDtoList = userService.selectRoleByUserId(appId, userDto.getId());   </span><br><span class="line">    response.setRoles(BeanUtils.mapList(RoleResponseDto.class, roleDtoList));</span><br><span class="line">    List&lt;Long&gt; roleIds = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="hljs-keyword">if</span> (roleDtoList != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">        roleIds = roleDtoList.stream().map(RoleDto::getId).collect(Collectors.toList());</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="hljs-comment">// 获取用户的flag - 查DB,无缓存，但是有索引</span></span><br><span class="line">    List&lt;FlagDto&gt; flagList = userService.selectFlagByUserId(appId, userDto.getId(), roleIds);</span><br><span class="line">    response.setFlags(BeanUtils.mapList(FlagResponseDto.class, flagList));</span><br><span class="line"> </span><br><span class="line">    <span class="hljs-comment">// 获取用户地区 - 猜测是他引起的故障</span></span><br><span class="line">    List&lt;AreaDto&gt; appUserAreaDto = appUserAreaService.selectUserAreaBusinessList(userDto.getId(), appId,</span><br><span class="line"> <span class="hljs-keyword">null</span>, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>);</span><br><span class="line"> </span><br><span class="line">    response.setAreas(BeanUtils.mapList(AreaResponseDto.class, appUserAreaDto));</span><br><span class="line"> </span><br><span class="line">    <span class="hljs-keyword">return</span> ResponseEntity.success(response);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;AreaDto&gt; <span class="hljs-title">selectUserAreaBusinessList</span><span class="hljs-params">(Long userId, Long appId, List&lt;Long&gt; businessIds, <span class="hljs-keyword">boolean</span> needChild,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                                                <span class="hljs-keyword">boolean</span> childTypeIsParent)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">// 获取用户绑定的地区</span></span><br><span class="line">    List&lt;AppUserArea&gt; appUserAreaList = appUserAreaMapper.selectUserAreaBusinessList(userId, appId, businessIds, <span class="hljs-keyword">null</span>);</span><br><span class="line">     </span><br><span class="line">    <span class="hljs-comment">// 获取businessIds绑定的地区 - businessId =null导致返回了全表数据</span></span><br><span class="line">    Map&lt;Long, AppUserArea&gt; appUserAreaMap = appUserAreaList.stream()</span><br><span class="line">            .collect(Collectors.toMap(o -&gt; o.getAreaId(), v -&gt; v, (o1, o2) -&gt; o2));</span><br><span class="line">    appUserAreaList.addAll(getRoleArea(appId, userId, appUserAreaMap, businessIds));</span><br><span class="line">    </span><br><span class="line">    Wrapper&lt;Area&gt; areaWrapper = <span class="hljs-keyword">new</span> EntityWrapper&lt;&gt;();</span><br><span class="line">    <span class="hljs-comment">// 致命所在！businessIds传递的是null, mybatis-plus in的输入参数为null时候默认为全部</span></span><br><span class="line">    areaWrapper.in(<span class="hljs-string">"business_id"</span>, businessIds);</span><br><span class="line">    areaWrapper.eq(<span class="hljs-string">"is_delete"</span>, IsDeleteEnums.NODELETE.getValue());</span><br><span class="line">    List&lt;Area&gt; areaList = areaMapper.selectList(areaWrapper);</span><br><span class="line">     </span><br><span class="line">    List&lt;Area&gt; res;</span><br><span class="line">    <span class="hljs-keyword">if</span> (childTypeIsParent) &#123;</span><br><span class="line">        res = mergeChildWithParentId(appUserAreaList, areaList, needChild);</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        res = mergeChildWithLeftRight(appUserAreaList, areaList, needChild);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> BeanUtils.mapList(AreaDto.class, res);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> List&lt;Area&gt; <span class="hljs-title">mergeChildWithLeftRight</span><span class="hljs-params">(List&lt;AppUserArea&gt; appUserAreaList, List&lt;Area&gt; areaList,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                                           <span class="hljs-keyword">boolean</span> needChild)</span> </span>&#123;</span><br><span class="line">    Map&lt;Long, Area&gt; areaMap = areaList.stream().collect(Collectors.toMap(Area::getId, s -&gt; s, (e, n) -&gt; e));</span><br><span class="line">    List&lt;Area&gt; response = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="hljs-comment">// 二重循环计算量巨大</span></span><br><span class="line">    <span class="hljs-keyword">for</span> (AppUserArea au : appUserAreaList) &#123;</span><br><span class="line">        Area area = areaMap.get(au.getAreaId());</span><br><span class="line">        response.add(area);</span><br><span class="line">        <span class="hljs-keyword">if</span> (needChild) &#123;</span><br><span class="line">            <span class="hljs-keyword">for</span> (Area a : areaList) &#123;</span><br><span class="line">                <span class="hljs-keyword">if</span> (a.getLft() &gt; area.getLft() &amp;&amp; a.getRght() &lt; area.getRght() &amp;&amp; a.getBusinessId()</span><br><span class="line">                        .equals(area.getBusinessId())) &#123;</span><br><span class="line">                    response.add(a);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"> </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>通过看selectUserAreaBusinessList代码可以猜出问题所在：MyBatis-Plus是 Mybatis 的增强工具, 可以方便做数据层的开发操作。但是 areaWrapper.in(“business_id”, businessIds); 一旦businessIds为null的时候，操作为搜索全表所有数据。因此其算法复杂度为最差O（n*m）,平均O(n)，最好O(n),其中n为upm_area表的未被删除的记录数（目前38000+，并且还会持续增大)，m为用户绑定的地区数。返回全表地区数据创建的这个List<area> areaList对象消耗性能实在是太大了，会占用大量的连接以及JVM内存。<br>《深入理解Java虚拟机》中曾指出，占据大量连续内存空间的大对象（典型的大对象就是那种很长的字符串以及数组），对虚拟机的内存分配来说，是一件坏消息，特别是一群“朝生夕灭”的“短命大对象”，容易引发Full GC。所以猜测，流量高起来的时候，List<area>的频繁分配容易触发高频的FGC，进而导致服务雪崩。</p>
+<h1 id="单接口压测验证"><a href="#单接口压测验证" class="headerlink" title="单接口压测验证"></a>单接口压测验证</h1><p>通过单接口压测，发现当QPS=60的时候，CPU掉底为0。<br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/prove.png" width="500" height="400" align="center"><br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/prove2.png" width="500" height="400" align="center"></p>
+<p>通过top查看消耗CPU的进程pid为1557, 使用JVM 的jstack工具打印 1557进程的所有线程当前时刻正在执行的方法堆栈追踪情况，即线程快照。通过快照可以定位出线程长时间出现停顿的原因。</p>
+<blockquote>
+<p>jstack 1557 &gt; 1557.log<br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/jstack.png" width="500" height="400" align="center"></p>
+</blockquote>
+<p>VM Thread”就是CPU消耗较高的线程。VM Thread是JVM层面的一个线程，主要工作是对其他线程的创建，分配和对象的清理等工作的。通过Jstack 出来的日志可以看出JVM正在进行大量的GC工作。</p>
+<p>进一步通过jstat查看什么导致的大量GC.<br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/jmap.png" width="500" height="400" align="center"><br>可怕的事情发现了：60s内FGC竟然触发了3次 – 即20s一次FGC的频率。要知道FGC号称stop-the-world, 10s一次FGC是对于线上服务来说是十分可怕的。频繁的出现FGC肯定是出现大对象占用了内存，YGC无法销毁堆积到了老年代，老年代不断被占满才导致FGC。</p>
+<p>进一步通过jmap看看JVM内存中创建的对象情况：<br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/jmap2.png" width="500" height="400" align="center"></p>
+<p>可以发现Area这个实例创建的非常多，有2883677个;总共占用内存184555326bytes, 即176M; 而单接口瓶颈值60QPS，即可导致每秒后端60个请求，也就是每秒从DB获取38000个area * 60qps = 2280000个Area对象，而不断的产生的Area对象最终导致了老年代被占满。com.mysql.jdbc.ByteArrayRow的实例也非常多3661658，无论是实例个数还是占用内存最多的是字节数组[B, 实例42727219个，占用内存1G多，这都是不正常的。再回看涉及到Area 从DB获取的代码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Wrapper&lt;Area&gt; areaWrapper = <span class="hljs-keyword">new</span> EntityWrapper&lt;&gt;();</span><br><span class="line"><span class="hljs-comment">// 致命所在！businessIds传递的是null, mybatis-plus in的输入参数为null时候默认为全部</span></span><br><span class="line">areaWrapper.in(<span class="hljs-string">"business_id"</span>, businessIds);</span><br><span class="line">areaWrapper.eq(<span class="hljs-string">"is_delete"</span>, IsDeleteEnums.NODELETE.getValue());</span><br><span class="line">List&lt;Area&gt; areaList = areaMapper.selectList(areaWrapper);</span><br><span class="line">select 语句返回了全表<span class="hljs-number">38000</span>+条数据生成了大对象List&lt;Area&gt;areaList，导致com.mysql.jdbc.ByteArrayRow猛增，ByteArrayRow是缓存数据库结果的类，会产生大量的<span class="hljs-keyword">byte</span>数组，这也解释了字节数组[B大量生成的原因。由此证明：从DB获取大量数据的操作占用了大量内存，触发了频繁的FGC.</span><br></pre></td></tr></table></figure></p>
+<p>再看此服务的内存消耗：</p>
+<blockquote>
+<p>pmap -d 1557<br><img src="/2018/10/15/接口超时引起系统雪崩原因反思/pmap.png" width="500" height="400" align="center"></p>
+</blockquote>
+<p>实际内存占用近5G 超过了我们设置的JVM内存大小 4G （jvm_args=-Xmx4g -Xms4g）<br>总结<br>此次故障原因为：/user/get/permissions（由于历史原因是一个一直性能不高但是没有调用量的接口，一直未受到重视）此次接口QPS陡增了10倍，即增加到20qps左右，服务内部执行了大量的返回全Area表数据操作，触发了频繁的FGC会致使对内计算延迟，对外请求积压，导致服务整体雪崩。</p>
+<h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><ol>
+<li>慎用mybatis-plus的in(null)，一定要校验入参是否是null, 返回全表数据是十分消耗性能的操作。</li>
+<li>CPU idle 迅速掉很有可能是某个接口当调用量大的时候性能变差，触发了频繁的FGC. </li>
+<li>限流一定要加到所有接口上，木桶原理。</li>
+<li>服务一定要加FGC频繁的报警，当触发频繁FGC，一定是服务性能达到瓶颈了。</li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/">接口超时引起系统雪崩原因反思</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/">https://gsmtoday.github.io/2018/10/15/接口超时引起系统雪崩原因反思/</a></li>
+            <li><strong>发布时间：</strong>2018-10-15</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/JVM/">JVM</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/11/13/mysql-tablespace/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Mysql存储机制—表空间结构</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/10/09/spain/">
+                <span class="level-item">西班牙 - 上</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#背景">
+        <span class="has-mr-6">1</span>
+        <span>背景</span>
+        </a></li><li>
+        <a class="is-flex" href="#user-get-permissions-问题复现">
+        <span class="has-mr-6">2</span>
+        <span>/user/get/permissions 问题复现</span>
+        </a></li><li>
+        <a class="is-flex" href="#单接口压测验证">
+        <span class="has-mr-6">3</span>
+        <span>单接口压测验证</span>
+        </a></li><li>
+        <a class="is-flex" href="#反思">
+        <span class="has-mr-6">4</span>
+        <span>反思</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

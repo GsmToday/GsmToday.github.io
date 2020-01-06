@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Nginx高性能和高扩展性背后的设计原理[译] - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="原文 : [https://www.nginx.com/blog/inside-Nginx-how-we-designed-for-performance-scale/] Nginx 以其作为高性能高并发web服务器著称，而其高性能的表现皆依赖于其软件的架构设计。尽管有众多web服务器和应用服务器使用了单一进程/线程模型，Nginx 以其成熟的事件驱动模型脱颖而出。依赖其事件驱动模型，在现在的硬件">
+<meta name="keywords" content="Nginx">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Nginx高性能和高扩展性背后的设计原理[译]">
+<meta property="og:url" content="https://gsmtoday.github.io/2017/10/29/nginx-principle/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="原文 : [https://www.nginx.com/blog/inside-Nginx-how-we-designed-for-performance-scale/] Nginx 以其作为高性能高并发web服务器著称，而其高性能的表现皆依赖于其软件的架构设计。尽管有众多web服务器和应用服务器使用了单一进程/线程模型，Nginx 以其成熟的事件驱动模型脱颖而出。依赖其事件驱动模型，在现在的硬件">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_worker-process.png">
+<meta property="og:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_request-flow.png">
+<meta property="og:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_blocking.png">
+<meta property="og:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_nonblocking.png">
+<meta property="og:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_load-config-1.png">
+<meta property="og:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_load-binary.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.120Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Nginx高性能和高扩展性背后的设计原理[译]">
+<meta name="twitter:description" content="原文 : [https://www.nginx.com/blog/inside-Nginx-how-we-designed-for-performance-scale/] Nginx 以其作为高性能高并发web服务器著称，而其高性能的表现皆依赖于其软件的架构设计。尽管有众多web服务器和应用服务器使用了单一进程/线程模型，Nginx 以其成熟的事件驱动模型脱颖而出。依赖其事件驱动模型，在现在的硬件">
+<meta name="twitter:image" content="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_worker-process.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/monkey.jpg" alt="Nginx高性能和高扩展性背后的设计原理[译]">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-10-28T16:08:41.000Z">2017-10-29</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    19 分钟 读完 (大约 2821 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Nginx高性能和高扩展性背后的设计原理[译]
+            
+        </h1>
+        <div class="content">
+            <p>原文 : [<a href="https://www.nginx.com/blog/inside-Nginx-how-we-designed-for-performance-scale/" target="_blank" rel="noopener">https://www.nginx.com/blog/inside-Nginx-how-we-designed-for-performance-scale/</a>]</p>
+<p>Nginx 以其作为高性能高并发web服务器著称，而其高性能的表现皆依赖于其软件的架构设计。尽管有众多web服务器和应用服务器使用了单一进程/线程模型，Nginx 以其成熟的事件驱动模型脱颖而出。依赖其事件驱动模型，在现在的硬件条件下Nginx 能够支持大量的并发连接。</p>
+<p>这篇文章将详细讲解Nginx 是如何工作的。</p>
+<a id="more"></a>
+<h2 id="Nginx-进程模型"><a href="#Nginx-进程模型" class="headerlink" title="Nginx 进程模型"></a>Nginx 进程模型</h2><p>为了理解Nginx 的架构设计，你应该了解Nginx 谁如何运行的。Nginx 有一个主进程（master process）和 若干工作进程（working processes）. 主进程拥有其他进程没有的权限，例如读取配置文件，绑定端口等。<br><figure class="highlight nginx hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&gt;# service Nginx restart</span><br><span class="line">* Restarting Nginx</span><br><span class="line"><span class="hljs-comment"># ps -ef --forest | grep Nginx</span></span><br><span class="line"><span class="hljs-attribute">root</span> <span class="hljs-number">32475</span> <span class="hljs-number">1</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> Nginx: master process /usr/sbin/Nginx \</span><br><span class="line">-c /etc/Nginx/Nginx.conf</span><br><span class="line">Nginx <span class="hljs-number">32476</span> <span class="hljs-number">32475</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> \_</span><br><span class="line">Nginx: worker processNginx <span class="hljs-number">32477</span> <span class="hljs-number">32475</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> \_</span><br><span class="line">Nginx: worker processNginx <span class="hljs-number">32479</span> <span class="hljs-number">32475</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> \_</span><br><span class="line">Nginx: worker processNginx <span class="hljs-number">32480</span> <span class="hljs-number">32475</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> \_</span><br><span class="line">Nginx: worker processNginx <span class="hljs-number">32481</span> <span class="hljs-number">32475</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> \_</span><br><span class="line">Nginx: cache manager processNginx <span class="hljs-number">32482</span> <span class="hljs-number">32475</span> <span class="hljs-number">0</span> <span class="hljs-number">13</span>:<span class="hljs-number">36</span> ? <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> \_</span><br><span class="line">Nginx: cache loader process</span><br></pre></td></tr></table></figure></p>
+<p>在四核机器上，Nginx 主进程创建四个工作进程和两个用来管理硬盘内容缓存的辅助进程。</p>
+<h2 id="为什么Nginx架构如此重要？"><a href="#为什么Nginx架构如此重要？" class="headerlink" title="为什么Nginx架构如此重要？"></a>为什么Nginx架构如此重要？</h2><p>Unix 应用的基础是进程／线程(从linux OS的角度，进程和线程没有什么区别，他们的区别最大程度就说多大程度上他们共享存储空间)。一个进程或者线程是运行在cpu内核上的指令容器实例。大多数复杂的应用出于以下两个原因的考虑，会以多线程或者多进程的方式运行：</p>
+<ul>
+<li>应用可以同时使用更多计算机内核计算。</li>
+<li>可以很简单地实现并行操作（例如，同时处理大量连接）</li>
+</ul>
+<p>然而，进程和线程使用并且消耗大量内存和操作系统其它资源。虽然现代操作系统可以同时处理大量体量小的进程/线程, 但是随之而来的是一旦内存不够带来的性能急剧下降，以及进程频繁切换导致的cpu资源浪费。</p>
+<p>在设计网络应用时候，最普遍的方法是为每个连接分配一个线程/进程。 这种结构简单且容易实现，但是难以支持高并发连接。</p>
+<h2 id="Nginx是如何工作的？"><a href="#Nginx是如何工作的？" class="headerlink" title="Nginx是如何工作的？"></a>Nginx是如何工作的？</h2><p>Nginx使用可以根据硬件资源来调节的进程模型。</p>
+<ul>
+<li><p>master process</p>
+<p>  一个master 进程，只有它能够读配置，绑定端口等。master进程能够创建其他子进程为他干活。</p>
+</li>
+<li><p>cache loader process</p>
+<p>  在启动时候把硬盘缓存读进内存，它的资源消耗很低。</p>
+</li>
+<li><p>cache manager process</p>
+<p>  阶段性运行，管理缓存。</p>
+</li>
+<li><p>worker processes</p>
+<p>  实际干活的进程. 工作进程处理网络连接，从硬盘读写内容，和上游服务器通信。</p>
+</li>
+</ul>
+<p>推荐Nginx 配置:</p>
+<p>worker processes的数量应该和计算机CPU数量相同，以此来最大程度利用计算机硬件。你可以如下配置实现：</p>
+<figure class="highlight nginx hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-attribute">worker_process</span> auto;</span><br></pre></td></tr></table></figure>
+<p>当一个Nginx 服务器是活跃状态时候，只有工作进程们是忙碌的。每个工作进程以非阻塞形式处理大量的连接，以此减少多进程造成的上下文切换资源浪费。每个工作进程都是独立运行的单线程进程，可以处理大量新的网络连接。工作进程之间通过共享内存通信共享缓存数据，会话持续数据，以及其它共享资源。</p>
+<p><img src="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_worker-process.png" alt="ngx-process"></p>
+<p>master进程会根据Nginx配置创建工作进程，并且分配给工作进程大量的监听套接字(listen sockets).</p>
+<p>Nginx工作进程当等到监听套接字上的事件(accept_mutex和kernel socketsharding)时候会开始工作。新的连接到来时候会创建一个事件。这些连接被会分配给状态机（stat emachine）——HTTP状态机是最常用的，但Nginx还为流（原生TCP）和大量的邮件协议（SMTP，IMAP和POP3）实现了状态机。</p>
+<p>状态机本质上是一组告知Nginx如何处理请求的指令，大多数和Nginx具有相同的web服务器也使用类似的状态机，只是实现不同罢了。</p>
+<p><img src="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_request-flow.png" alt=""></p>
+<h2 id="调度状态机"><a href="#调度状态机" class="headerlink" title="调度状态机"></a>调度状态机</h2><p>我们可以将状态机想象成国际象棋的规则。每个HTTP事务都是一局象棋比赛：棋盘的一端是web服务器（一个可以迅速做出决定的象棋大师），另一端是通过浏览器和较慢的网络进行操作的客户端（普通象棋选手）。然而游戏的规则是非常复杂的。例如，web服务器可能需要与各方沟通(代理一个上游的应用程序)，或者和认证服务器交流。web服务器的第三方模块甚至可以拓展比赛规则。</p>
+<h3 id="阻塞状态机"><a href="#阻塞状态机" class="headerlink" title="阻塞状态机"></a>阻塞状态机</h3><p>回忆一下我们之前对进程/线程的描述：是一组操作系统可调度的、运行在CPU内核上的指令集容器实例。大多数web服务器和web应用都使用进程(线程)连接一对一的模型去参与象棋比赛。每个进程或线程都包含一个将比赛玩到最后的指令。<strong>在这个过程中，进程是由服务器来运行的，它的大部分时间都花在“阻塞（blocked）”上</strong>，等待客户端完成其下一个动作：</p>
+<p><img src="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_blocking.png" alt=""></p>
+<ol>
+<li>web服务器进程在监听套接字上监听新的连接（新的连接可以理解为客户端发起的新比赛）。</li>
+<li>一局新的比赛发起后，服务器进程就开始工作，每一步棋下完后都进入阻塞状态，等待客户端回复（客户端走下一步棋）。</li>
+<li>一旦比赛结束，web服务器进程会看看客户是否想开始新的比赛（这相当于一个存活的连接）。如果连接被关闭（客户端离开或者超时），web服务器进程会回到监听状态，等待下一句的比赛。</li>
+</ol>
+<p>最重要的一点是每个http连接都需要一个专门的进程。这样的架构虽然简单且容易实现，<strong>但是这会造成一个巨大的失衡：一个以文件描述符和少量内存为代表的轻量级HTTP连接，被映射到一个单独的进程或线程——它们是非常重量级的操作系统对象</strong>。这在编程上是方便的，但它造成了巨大的浪费。</p>
+<h3 id="Nginx是真正的大师"><a href="#Nginx是真正的大师" class="headerlink" title="Nginx是真正的大师"></a>Nginx是真正的大师</h3><p>也许你听说过车轮表演赛，在比赛中一个大师级选手同时和多个对手比赛 — 这也是Nginx 工作进程如何“下棋”。每个工作进程都是一个象棋大师，可以同时处理大量的连接。</p>
+<p><img src="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_nonblocking.png" alt=""></p>
+<ol>
+<li>工作进程等待监听套接字和连接套接字上的事件；</li>
+<li>套接字上发生事件，工作进程会去处理这些事件。<pre><code>- 监听socket上的事件意味着棋手发起了一轮新的象棋比赛，工作进程会创建一个新的连接套接字
+- 连接socket上的事件意味着棋手下了一步棋。工作进程会立刻回复。
+</code></pre></li>
+</ol>
+<p>在网络中工作进程永远不会因为去等待对手下棋而阻塞。车轮战中，象棋大师跟一个对手下了一步棋后马上会继续和其他对手下棋。</p>
+<h3 id="为什么nginx这种单路复用的架构优于多进程阻塞架构？"><a href="#为什么nginx这种单路复用的架构优于多进程阻塞架构？" class="headerlink" title="为什么nginx这种单路复用的架构优于多进程阻塞架构？"></a>为什么nginx这种单路复用的架构优于多进程阻塞架构？</h3><p>Nginx的架构可以让每个工作进程支持几十万的连接。每个连接创建一个文件描述符，消耗少量的工作进程的内存。可以说每个进程上新增加一个连接额外的代价是非常小的。Nginx的工作进程可以保持固定的CPU占用率，并不浪费CPU资源。进程上下文切换也并不频繁。</p>
+<p>在连接和进程一对一的阻塞架构上，每个连接需要大量的附加资源和开销，上下文切换是十分频繁的。</p>
+<p>通过适当的系统调优，NGINX能大规模地处理每个工作进程数十万并发的HTTP连接，并且能在流量高峰期间不丢失任何信息。</p>
+<h2 id="配置更新和升级nginx"><a href="#配置更新和升级nginx" class="headerlink" title="配置更新和升级nginx"></a>配置更新和升级nginx</h2><p>通过使用少量的工作进程，Nginx的进程模型使得配置、甚至是二进制文件本身的更新都非常高效。</p>
+<p><img src="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_load-config-1.png" alt=""></p>
+<p>更新Nginx配置是很简单，轻量级并且可靠的操作。可以通过<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nginx -s reload</span><br></pre></td></tr></table></figure></p>
+<p>更新加载Nginx的配置，该命令会检查磁盘上的配置，并给主进程发送一个SIGHUP信号。</p>
+<p>当主进程接收到一个SIGHUP信号，主进程会做：</p>
+<ol>
+<li>重启配置，fork一套新的工作进程。这些新的工作进程会立即开始接受连接和处理流量（使用新的配置）。<br>2.给旧的那套工作进程发信号。工作进程停止接收新的网络连接。只要它们处理的HTTP请求结束了，它们就会干净地关闭连接。一旦所有的连接都被关闭，工作进程也就退出了。</li>
+</ol>
+<p>这个过程会导致CPU占用率和内存使用的一个小高峰，但相比于从活动的连接中加载资源，这个小高峰可忽略不计。你可以在一秒内重新加载配置多次。极少情况下，一代又一代工作进程等待连接关闭时会出现问题，但即便出现问题，它们也会被立即解决掉。<br><img src="https://cdn-1.wp.nginx.com/wp-content/uploads/2015/06/infographic-Inside-NGINX_load-binary.png" alt=""></p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p><a href="https://www.nginx.com/resources/library/infographic-inside-nginx/" target="_blank" rel="noopener">Inside NGINX infographic</a>总结了Nginx是如何运转的，看似简单，背后是针对Nginx数<br>十年的创新和优化，这才造就了Nginx在多种硬件上表现出良好的性能，同时还具备现代web应用所需要的安全性和可靠性。</p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2017/10/29/nginx-principle/">Nginx高性能和高扩展性背后的设计原理[译]</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2017/10/29/nginx-principle/">https://gsmtoday.github.io/2017/10/29/nginx-principle/</a></li>
+            <li><strong>发布时间：</strong>2017-10-29</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Nginx/">Nginx</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2017/11/01/mybatis/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">MyBatis generator自动生成代码详细配置</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2017/10/22/filter-chain-pattern/">
+                <span class="level-item">责任链模式实践</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

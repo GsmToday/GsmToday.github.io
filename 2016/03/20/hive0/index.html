@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Hive 源码解析之 Hive 基本框架和执行入口 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="Hive简介在介绍Hive的框架和执行流程之前，这里首先对Hive进行简要的介绍。 Hive 是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据抽取，转化，加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。Hive 定义了简单的类 SQL 查询语言，称为Hive QL，它允许熟悉 SQL 的用户查询数据。同时，这个语言也允许熟">
+<meta name="keywords" content="Hive">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hive 源码解析之 Hive 基本框架和执行入口">
+<meta property="og:url" content="https://gsmtoday.github.io/2016/03/20/hive0/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="Hive简介在介绍Hive的框架和执行流程之前，这里首先对Hive进行简要的介绍。 Hive 是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据抽取，转化，加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。Hive 定义了简单的类 SQL 查询语言，称为Hive QL，它允许熟悉 SQL 的用户查询数据。同时，这个语言也允许熟">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/03/20/hive0/1.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/03/20/hive0/2.jpg">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.818Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Hive 源码解析之 Hive 基本框架和执行入口">
+<meta name="twitter:description" content="Hive简介在介绍Hive的框架和执行流程之前，这里首先对Hive进行简要的介绍。 Hive 是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据抽取，转化，加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。Hive 定义了简单的类 SQL 查询语言，称为Hive QL，它允许熟悉 SQL 的用户查询数据。同时，这个语言也允许熟">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2016/03/20/hive0/1.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/bee.jpg" alt="Hive 源码解析之 Hive 基本框架和执行入口">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2016-03-20T14:47:39.000Z">2016-03-20</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    17 分钟 读完 (大约 2556 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Hive 源码解析之 Hive 基本框架和执行入口
+            
+        </h1>
+        <div class="content">
+            <h2 id="Hive简介"><a href="#Hive简介" class="headerlink" title="Hive简介"></a>Hive简介</h2><p>在介绍Hive的框架和执行流程之前，这里首先对Hive进行简要的介绍。</p>
+<p>Hive 是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据抽取，转化，加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。Hive 定义了简单的类 SQL 查询语言，称为Hive QL，它允许熟悉 SQL 的用户查询数据。同时，这个语言也允许熟悉 MapReduce 开发者的开发自定义的 mapper 和 reducer 来处理内建的 mapper 和 reducer 无法完成的复杂的分析工作。</p>
+<a id="more"></a>
+<p>这里假设已经对Hive的各个组成部分、作用以及Hive QL语言有了基本的认识，不再做详细的解释，更加关注的是Hive源码级别的解析。下面是从网络上摘取的两个关于Hive框架的解析图：</p>
+<p><img src="/2016/03/20/hive0/1.jpg" alt="简要框架"></p>
+<p><img src="/2016/03/20/hive0/2.jpg" alt="官方框架"></p>
+<p>从框架图中我们可以看见从用户提交一个查询（假设通过CLI入口）直到获取最终结果，Hive内部的执行流程主要包括：</p>
+<ol>
+<li>CLI 获取用户查询，解析用户输入的命令，提交给Driver；</li>
+<li>Driver 结合编译器（COMPILER）和元数据库（METASTORE），对用户查询进行编译解析；</li>
+<li>根据解析结果（查询计划）生成MR任务提交给Hadoop执行；</li>
+<li>获取最终结果；</li>
+</ol>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>我们试图根据Hive的源码对上述过程的每一步进行解析, 使用的源码版本1.1.0。话不多说，首先看看CLI如何解析用户的输入，并提交给Driver类执行的。这个过程主要涉及的类是<code>org\apache\hadoop\hive\cli\CliDriver.java</code>。</p>
+<h3 id="main入口"><a href="#main入口" class="headerlink" title="main入口"></a>main入口</h3><p>执行入口，main函数，创建CliDriver实例，接受用户输入参数，开始运行。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String[] args) throws Exception &#123;</span><br><span class="line">   int ret = new CliDriver().run(args);</span><br><span class="line">   System.exit(ret);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里用到了创建CliDriver实例，看看CliDriver的构造函数内部都做了什么操作：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">public CliDriver() &#123;</span><br><span class="line">    SessionState ss = SessionState.get();</span><br><span class="line">    conf = (ss != null) ? ss.getConf() : new Configuration();</span><br><span class="line">    Log LOG = LogFactory.getLog(&quot;CliDriver&quot;);</span><br><span class="line">    console = new LogHelper(LOG);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>首先获取一个<code>SessionState</code>， <code>SessionState</code>封装了一个会话的关联的数据，包括配置信息HiveConf，输入输出流，指令类型，用户名称、IP地址等等。<code>SessionState</code> 是一个与线程关联的静态本地变量ThreadLocal，任何一个线程都对应一个<code>SessionState</code>，能够在Hive代码的任何地方获取到（大量被使用到），以返回用户相关或者配置信息等。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">private static ThreadLocal&lt;SessionState&gt; tss = new ThreadLocal&lt;SessionState&gt;();</span><br><span class="line"></span><br><span class="line">public static SessionState get() &#123;</span><br><span class="line">    return tss.get();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">public static SessionState start(HiveConf conf) &#123;</span><br><span class="line">    //创建一个SessionState</span><br><span class="line">    SessionState ss = new SessionState(conf);</span><br><span class="line">    return start(ss);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">public static SessionState start(SessionState startSs) &#123;</span><br><span class="line">    setCurrentSessionState(startSs);</span><br><span class="line">     .....</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public static void setCurrentSessionState(SessionState startSs) &#123;</span><br><span class="line">    //将SessionState与线程本地变量tss关联</span><br><span class="line">    tss.set(startSs);</span><br><span class="line">    Thread.currentThread().setContextClassLoader(startSs.getConf().getClassLoader());</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着CliDriver的构造函数来说，获取到<code>SessionState</code>之后，就初始化配置信息org.apache.hadoop.conf.Configuration conf.</p>
+<h3 id="run"><a href="#run" class="headerlink" title="run"></a>run</h3><p>CliDriver实例创建完毕，调用run（args）, 开始处理用户输入。run方法的函数体比较长，为了方便阅读，下面按照代码的出现顺序，依次解析。</p>
+<p>step 1. 对输入的指令进行初步解析，提取<code>-e -h hiveconf hivevar</code>等参数信息，设置用户提供的系统和Hive环境变量。详细实现，参考<code>OptionsProcessor</code>类，不再详细描述。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">OptionsProcessor oproc = new OptionsProcessor();</span><br><span class="line"></span><br><span class="line">if (!oproc.process_stage1(args)) &#123;</span><br><span class="line">        return 1;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>step 2. 初始化Log4j日志组件</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">boolean logInitFailed = false;</span><br><span class="line">String logInitDetailMessage;</span><br><span class="line">try &#123;</span><br><span class="line">    logInitDetailMessage = LogUtils.initHiveLog4j();</span><br><span class="line">&#125; catch (LogInitializationException e) &#123;</span><br><span class="line">    logInitFailed = true;</span><br><span class="line">    logInitDetailMessage = e.getMessage();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>step 3. 初始化HiveConf，并根据HiveConf实例化CliSessionState，设置输入输出流为标准控制台。</p>
+<p>CliSessionState 继承了SessionState类，创建了一些记录用户输入的字符串，在实例化的过程中，主要是用来记录HiveConf，并生成一个会话ID，参见SessionState构造函数.</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">CliSessionState ss = new CliSessionState(new HiveConf(SessionState.class));</span><br><span class="line"></span><br><span class="line">ss.in = System.in;</span><br><span class="line">try &#123;</span><br><span class="line">    ss.out = new PrintStream(System.out, true, &quot;UTF-8&quot;);</span><br><span class="line"></span><br><span class="line">    ss.info = new PrintStream(System.err, true, &quot;UTF-8&quot;);</span><br><span class="line">    ss.err = new CachingPrintStream(System.err, true, &quot;UTF-8&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">catch (UnsupportedEncodingException e) &#123;</span><br><span class="line">    return 3;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>step 4. 根据stage1解析的参数内容，填充CliSessionState的字符串，比如用户输入了-e 则这个stage就把-e 对应的字符串赋值给CliSessionState的 execString成员。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if (!oproc.process_stage2(ss)) &#123;</span><br><span class="line">    return 2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>step 5. 在允许打印输出的模式下，如果日志初始化失败，打印失败信息</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">if (!ss.getIsSilent()) &#123;</span><br><span class="line">    if (logInitFailed) &#123;</span><br><span class="line">        System.err.println(logInitDetailMessage);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      SessionState.getConsole().printInfo(logInitDetailMessage);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>step 6. 将用户命令行输入的配置信息和变量等，覆盖HiveConf的默认值</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">HiveConf conf = ss.getConf();</span><br><span class="line">  for (Map.Entry&lt;Object, Object&gt; item : ss.cmdProperties.entrySet()) &#123;</span><br><span class="line">    conf.set((String) item.getKey(), (String) item.getValue());</span><br><span class="line">      ss.getOverriddenConfigurations().put((String) item.getKey(), (String) item.getValue());</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>step 7. 设置当前回话状态，执行CLI驱动</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">SessionState.start(ss);</span><br><span class="line"></span><br><span class="line">try &#123;</span><br><span class="line">    return executeDriver(ss, conf, oproc);</span><br><span class="line">&#125; finally &#123;</span><br><span class="line">    ss.close();</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="executeDriver"><a href="#executeDriver" class="headerlink" title="executeDriver"></a>executeDriver</h3><p>在进入<code>executeDriver</code>之前，我们可以认为Hive处理的是用户进入Hive程序的指令，到此用户已经进入了Hive，Cli的Driver将不断读取用户的HiveQL语句并解析，提交给Driver。<code>executeDriver</code>函数内部出了根据用户参数做出的一些执行响应外，还设置了用户HiveQL的执行历史记录，也就是方便我们使用上下标键查看之前执行的指令的功能，不再详述。<code>executeDriver</code>函数内部核心的代码是通过while循环不断按行读取用户的输入，然后调用ProcessLine拼接一条命令<code>cmd</code>，传递给<code>processCmd</code>处理用户输入。下面就来看看<code>processCmd</code>函数。</p>
+<h3 id="processCmd"><a href="#processCmd" class="headerlink" title="processCmd"></a>processCmd</h3><ol>
+<li>首先是设置当前clisession的用户上一条指令，然后使用正则表达式，将用户输入的指令从空格，制表符等出断开（tokenizeCmd函数），得到token数组。</li>
+</ol>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CliSessionState ss = (CliSessionState) SessionState.get();</span><br><span class="line"></span><br><span class="line">ss.setLastCommand(cmd);</span><br><span class="line">// Flush the print stream, so it doesn&apos;t include output from the last command</span><br><span class="line">ss.err.flush();</span><br><span class="line">String cmd_trimmed = cmd.trim();</span><br><span class="line">String[] tokens = tokenizeCmd(cmd_trimmed);</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>然后根据用户的输入，进行不同的处理，这边的处理主要包括：</p>
+<ul>
+<li>quit或exit： 关闭回话，退出hive</li>
+<li>source： 文件处理？不清楚对应什么操作</li>
+<li><code>!</code> 开头： 调用Linux系统的shell执行指令</li>
+<li>本地模式：创建CommandProcessor, 执行用户指令</li>
+</ul>
+</li>
+</ol>
+<p>限于篇幅原因，前面三种情况的代码不再详述，重点介绍Hive的本地模式执行，也就是我们常用的HiveQL语句，DFS命令等的处理方式：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">try &#123;</span><br><span class="line">    CommandProcessor proc = CommandProcessorFactory.get(tokens, (HiveConf) conf);</span><br><span class="line">    ret = processLocalCmd(cmd, proc, ss);</span><br><span class="line">&#125; catch (SQLException e) &#123;</span><br><span class="line">    console.printError(&quot;Failed processing command &quot; + tokens[0] + &quot; &quot; + e.getLocalizedMessage(),</span><br><span class="line">    org.apache.hadoop.util.StringUtils.stringifyException(e));</span><br><span class="line">    ret = 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，<code>CommandProcessor</code>是一个接口类，定义如下:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public interface CommandProcessor &#123;</span><br><span class="line"> void init();</span><br><span class="line"> CommandProcessorResponse run(String command) throws CommandNeedRetryException;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>CommandProcessorFactory</code>根据用户指令生成的tokens和配置文件，返回<code>CommandProcessor</code>的一个具体实现。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public static CommandProcessor get(String[] cmd, HiveConf conf)</span><br><span class="line">     throws SQLException &#123;</span><br><span class="line">   CommandProcessor result = getForHiveCommand(cmd, conf);</span><br><span class="line">   if (result != null) &#123;</span><br><span class="line">     return result;</span><br><span class="line">   &#125;</span><br><span class="line">   if (isBlank(cmd[0])) &#123;</span><br><span class="line">     return null;</span><br><span class="line">   &#125; else &#123;</span><br><span class="line">     if (conf == null) &#123;</span><br><span class="line">       return new Driver();</span><br><span class="line">     &#125;</span><br><span class="line">     Driver drv = mapDrivers.get(conf);</span><br><span class="line">     if (drv == null) &#123;</span><br><span class="line">       drv = new Driver();</span><br><span class="line">       mapDrivers.put(conf, drv);</span><br><span class="line">     &#125;</span><br><span class="line">     drv.init();</span><br><span class="line">     return drv;</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
+<p>其中<code>getForHiveCommand</code>函数首先根据tokens的第一个字串，也就是用户输入指令的第一个单词，在<code>HiveCommand</code>这个<code>enum</code>中定义的一些非SQL查询操作集合中进行匹配，确定相应的<code>HiveCommand</code>类型。在依据<code>HiveCommand</code>选择合适的<code>CommandProcessor</code>实现方式，比如<code>dfs</code>命令对应的<code>DFSProcessor</code>，<code>set</code>命令对应的<code>SetProcessor</code>等，如果用户输入的是诸如<code>select</code>之类的SQL查询， <code>getForHiveCommand</code>返回null，直接在<code>get</code>函数中根据配置文件conf选择或者生成一个<code>Driver</code>类实例，并作为<code>CommandProcessor</code>返回。详细的代码参考<code>CommandProcessorFactory</code>和<code>HiveCommand</code>类。</p>
+<h3 id="processLocalCmd"><a href="#processLocalCmd" class="headerlink" title="processLocalCmd"></a>processLocalCmd</h3><p>到此Hive对用户的一个指令<code>cmd</code>，配置了回话状态<code>CliSessionState</code>，选择了一个合适的<code>CommandProcessor</code>， <code>CliDriver</code>将进行他的最后一步操作，提交用户的查询到指定的<code>CommandProcessor</code>，并获取结果。这一切都是在<code>processLocalCmd</code>中执行的。</p>
+<p><code>processLocalCmd</code>函数的主体是一个如下的循环：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line">do &#123;</span><br><span class="line">      try &#123;</span><br><span class="line">        needRetry = false;</span><br><span class="line">        if (proc != null) &#123;</span><br><span class="line">          //如果CommandProcessor是Driver实例</span><br><span class="line">          if (proc instanceof Driver) &#123;</span><br><span class="line">            Driver qp = (Driver) proc;</span><br><span class="line">            //获取标准输出流，打印结果信息</span><br><span class="line">            PrintStream out = ss.out;</span><br><span class="line">            long start = System.currentTimeMillis();</span><br><span class="line">            if (ss.getIsVerbose()) &#123;</span><br><span class="line">              out.println(cmd);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            qp.setTryCount(tryCount);</span><br><span class="line">            //driver实例运行用户指令，获取运行结果响应码</span><br><span class="line">            ret = qp.run(cmd).getResponseCode();</span><br><span class="line">            if (ret != 0) &#123;</span><br><span class="line">              qp.close();</span><br><span class="line">              return ret;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            // 统计指令的运行时间</span><br><span class="line">            long end = System.currentTimeMillis();</span><br><span class="line">            double timeTaken = (end - start) / 1000.0;</span><br><span class="line"></span><br><span class="line">            ArrayList&lt;String&gt; res = new ArrayList&lt;String&gt;();</span><br><span class="line">             //打印查询结果的列名称</span><br><span class="line">            printHeader(qp, out);</span><br><span class="line"></span><br><span class="line">            // 打印查询结果</span><br><span class="line">            int counter = 0;</span><br><span class="line">            try &#123;</span><br><span class="line">              if (out instanceof FetchConverter) &#123;</span><br><span class="line">                ((FetchConverter)out).fetchStarted();</span><br><span class="line">              &#125;</span><br><span class="line">              while (qp.getResults(res)) &#123;</span><br><span class="line">                for (String r : res) &#123;</span><br><span class="line">                  out.println(r);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                counter += res.size();</span><br><span class="line">                res.clear();</span><br><span class="line">                if (out.checkError()) &#123;</span><br><span class="line">                  break;</span><br><span class="line">                &#125;</span><br><span class="line">              &#125;</span><br><span class="line">            &#125; catch (IOException e) &#123;</span><br><span class="line">              console.printError(&quot;Failed with exception &quot; + e.getClass().getName() + &quot;:&quot;</span><br><span class="line">                  + e.getMessage(), &quot;\n&quot;</span><br><span class="line">                  + org.apache.hadoop.util.StringUtils.stringifyException(e));</span><br><span class="line">              ret = 1;</span><br><span class="line">            &#125;</span><br><span class="line">            //关闭结果</span><br><span class="line">            int cret = qp.close();</span><br><span class="line">            if (ret == 0) &#123;</span><br><span class="line">              ret = cret;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            if (out instanceof FetchConverter) &#123;</span><br><span class="line">              ((FetchConverter)out).fetchFinished();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            console.printInfo(&quot;Time taken: &quot; + timeTaken + &quot; seconds&quot; +</span><br><span class="line">                (counter == 0 ? &quot;&quot; : &quot;, Fetched: &quot; + counter + &quot; row(s)&quot;));</span><br><span class="line">          &#125; else &#123;</span><br><span class="line">            //如果proc不是Driver，也就是用户执行的是非SQL查询操作，直接执行语句，不自信FetchResult的操作</span><br><span class="line">            String firstToken = tokenizeCmd(cmd.trim())[0];</span><br><span class="line">            String cmd_1 = getFirstCmd(cmd.trim(), firstToken.length());</span><br><span class="line"></span><br><span class="line">            if (ss.getIsVerbose()) &#123;</span><br><span class="line">              ss.out.println(firstToken + &quot; &quot; + cmd_1);</span><br><span class="line">            &#125;</span><br><span class="line">            CommandProcessorResponse res = proc.run(cmd_1);</span><br><span class="line">            if (res.getResponseCode() != 0) &#123;</span><br><span class="line">              ss.out.println(&quot;Query returned non-zero code: &quot; + res.getResponseCode() +</span><br><span class="line">                  &quot;, cause: &quot; + res.getErrorMessage());</span><br><span class="line">            &#125;</span><br><span class="line">            ret = res.getResponseCode();</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; catch (CommandNeedRetryException e) &#123;</span><br><span class="line">        //如果执行过程中出现异常，修改needRetry标志，下次循环是retry。</span><br><span class="line">        console.printInfo(&quot;Retry query with a different approach...&quot;);</span><br><span class="line">        tryCount++;</span><br><span class="line">        needRetry = true;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; while (needRetry);</span><br></pre></td></tr></table></figure></p>
+<p>前面对函数中关键的执行语句已经给出了注释，这里单独对<code>printHeader</code>进行一下说明。<br><code>printHeader</code>函数通过调用<code>driver.getSchema.getFiledSchema</code>，获取查询结果的列集合 ，然后依次打印出列名。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">private void printHeader(Driver qp, PrintStream out) &#123;</span><br><span class="line">    List&lt;FieldSchema&gt; fieldSchemas = qp.getSchema().getFieldSchemas();</span><br><span class="line">    if (HiveConf.getBoolVar(conf, HiveConf.ConfVars.HIVE_CLI_PRINT_HEADER)</span><br><span class="line">          &amp;&amp; fieldSchemas != null) &#123;</span><br><span class="line">      // Print the column names</span><br><span class="line">      boolean first_col = true;</span><br><span class="line">      for (FieldSchema fs : fieldSchemas) &#123;</span><br><span class="line">        if (!first_col) &#123;</span><br><span class="line">          out.print(&apos;\t&apos;);</span><br><span class="line">        &#125;</span><br><span class="line">        out.print(fs.getName());</span><br><span class="line">        first_col = false;</span><br><span class="line">      &#125;</span><br><span class="line">      out.println();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2016/03/20/hive0/">Hive 源码解析之 Hive 基本框架和执行入口</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2016/03/20/hive0/">https://gsmtoday.github.io/2016/03/20/hive0/</a></li>
+            <li><strong>发布时间：</strong>2016-03-20</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Hive/">Hive</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2016/05/18/hive1/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Hive Driver源码执行流程分析</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2015/03/05/jvmOutline/">
+                <span class="level-item">JVM以及垃圾回收器的工作原理</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

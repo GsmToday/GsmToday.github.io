@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Redis RDB持久化 - Redis源码分析 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="Redis是内存数据库，持久化的功能可以将Redis在内存中的数据保存到磁盘里，避免数据在进程退出或者意外宕机等情况下意外丢失。Redis提供了两种持久化的方式，RDB和AOF。本文重点关注RDB相关的知识点。">
+<meta name="keywords" content="Redis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis RDB持久化 - Redis源码分析">
+<meta property="og:url" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="Redis是内存数据库，持久化的功能可以将Redis在内存中的数据保存到磁盘里，避免数据在进程退出或者意外宕机等情况下意外丢失。Redis提供了两种持久化的方式，RDB和AOF。本文重点关注RDB相关的知识点。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/rdb文件.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/rdb文件结构.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/length_code.jpg">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/RDB整数字符串编码.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/lzf压缩.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/rdb浮点数编码.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/ziplist_struct.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/ziplist_dump.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/redis_dict_structure.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/redis_skiplist_example.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/skiplist_dump.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/redis_quicklist_structure.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/lzf压缩.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/intset.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/inset_rdb_dump.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/rdbSave.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/rdbBgSave.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:36.144Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis RDB持久化 - Redis源码分析">
+<meta name="twitter:description" content="Redis是内存数据库，持久化的功能可以将Redis在内存中的数据保存到磁盘里，避免数据在进程退出或者意外宕机等情况下意外丢失。Redis提供了两种持久化的方式，RDB和AOF。本文重点关注RDB相关的知识点。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2018/07/30/redis-rdb/rdb文件.jpg">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/lu.jpg" alt="Redis RDB持久化 - Redis源码分析">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-07-30T09:49:50.000Z">2018-07-30</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    41 分钟 读完 (大约 6123 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Redis RDB持久化 - Redis源码分析
+            
+        </h1>
+        <div class="content">
+            <p>Redis是内存数据库，持久化的功能可以将Redis在内存中的数据保存到磁盘里，避免数据在进程退出或者意外宕机等情况下意外丢失。Redis提供了两种持久化的方式，RDB和AOF。本文重点关注RDB相关的知识点。<br><a id="more"></a></p>
+<h3 id="初识RDB"><a href="#初识RDB" class="headerlink" title="初识RDB"></a>初识RDB</h3><p>RDB的持久化方式是将内存数据以快照的形式写入磁盘文件，并在Redis启动的时候，通过此文件恢复内存数据的状态。</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">redis&gt; <span class="hljs-built_in">set</span> <span class="hljs-number">1</span> <span class="hljs-number">2</span></span><br><span class="line">redis&gt; <span class="hljs-built_in">set</span> <span class="hljs-number">123456789</span> <span class="hljs-number">2</span></span><br><span class="line">redis&gt; <span class="hljs-built_in">set</span> msg hello</span><br><span class="line">redis&gt; save</span><br></pre></td></tr></table></figure>
+<p>上述命令执行完成后，生成的rdb文件如下：(Redis version 4.0.8)</p>
+<p><img src="/2018/07/30/redis-rdb/rdb文件.jpg" width="600" height="400" align="center" title="dump.rdb文件"></p>
+<h3 id="RDB文件结构"><a href="#RDB文件结构" class="headerlink" title="RDB文件结构"></a>RDB文件结构</h3><p>从上面的二进制文件，不容易看出RDB文件的组织方式。实际上RDB文件的整体结构如下图所示:<br><img src="/2018/07/30/redis-rdb/rdb文件结构.png" width="600" height="400" align="center" title="rdb文件"></p>
+<h5 id="Magic-Version"><a href="#Magic-Version" class="headerlink" title="Magic+Version"></a>Magic+Version</h5><p>开头的幻数，用来标识文件为RDB文件。Magic为固定的REDIS这五个字符，Version指定了当前RDB文件的版本号。结合上图的二进制dump文件，知道当前RDB文件的版本号为8。</p>
+<h5 id="AuxFields"><a href="#AuxFields" class="headerlink" title="AuxFields"></a>AuxFields</h5><p>一些记录redis状态的附属信息，包括redis-ver(版本), redis-bits(机器位数), ctime(创建时间), user-mem(内存占比)以及slave节点编号(可选)等。每个附属域字段的前置标识码都是250，即上图的372。</p>
+<h5 id="DB-SNAPSHOT"><a href="#DB-SNAPSHOT" class="headerlink" title="DB SNAPSHOT"></a>DB SNAPSHOT</h5><p>每一个内存库的快照，以标识码SELECT_DB=254(即上图的376)开始，后面紧跟当前内存库的编号。标识码RESIZE_DB=251(即上图的376)开始的三段内存，记录了数据库中键值对个数和设置了到期时间的键值对个数。回顾上面的操作指令和二进制dump文件，我们设置了3条数据，没有设置过期时间，二者相稳合。</p>
+<p>接下来就是每一条键值对的持久化信息。如果某一条记录设置了过期时间，并且执行SAVE持久化的时候，还没过期，那么会首先记录下到期的时间戳，以标识码252开始。由于Redis内置了多种数据类型，为了高效的存储和还原，其持久化时候的编码方式各异，但整体上都遵循type+key+value的格式。以dump文件倒数第二行中比较明显的 msg=》hello为例，做个简要说明：类型码0表示value在Redis内部是以字符串格式进行的编码，003表示key的长度为3，紧跟着key的字符串msg，value也一样。详细的每一种数据结构的编码方式会在后文阐述。</p>
+<h5 id="EOF"><a href="#EOF" class="headerlink" title="EOF"></a>EOF</h5><p>文件结束标识码EOF=255，即rdb dump文件中的377。</p>
+<h5 id="CHECK-SUM"><a href="#CHECK-SUM" class="headerlink" title="CHECK_SUM"></a>CHECK_SUM</h5><p>RDB文件校验和，校验RDB文件是否损坏，8字节长，紧随EOF。</p>
+<h3 id="重点问题"><a href="#重点问题" class="headerlink" title="重点问题"></a>重点问题</h3><p>对RDB文件有了基础的了解后，继续深入对RDB持久化的学习。在此之前，先思考下设计实现一个持久化机制前，需要重点解决那些问题？</p>
+<ol>
+<li>由于Redis内部有多种数据结构的实现，如何为每一种数据结构，设计一种编码方式，达到高效存储和还原的目的。</li>
+<li>Redis需要快速的响应用户请求，如何在尽量小地影响用户访问的情况下，完成持久化的操作。</li>
+<li>对问题2的一个延伸，在哪些情况下触发持久化的流程，以及如何配置。</li>
+<li>持久化的具体实现流程和恢复流程。</li>
+</ol>
+<p>带着这些问题，一一分析。</p>
+<h4 id="如何设计存储协议，支持多种数据结构的存储"><a href="#如何设计存储协议，支持多种数据结构的存储" class="headerlink" title="如何设计存储协议，支持多种数据结构的存储"></a>如何设计存储协议，支持多种数据结构的存储</h4><h5 id="长度编码"><a href="#长度编码" class="headerlink" title="长度编码"></a>长度编码</h5><p>在介绍各种数据结构的持久化编码方式之前，先介绍一下RDB中对长度信息的编码。在RDB文件中有很多地方需要存储长度信息，如字符串长度、list长度等等。如果使用固定的int或long类型来存储该信息，在长度值比较小的时候会造成较大的空间浪费。Redis设计了一套针对长度的编码方式，主要通过读取第一字节的最高 2 位来决定接下来如何解析长度信息：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">编码方式</th>
+<th style="text-align:center">占用字节</th>
+<th style="text-align:center">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><strong>00</strong> \</td>
+<td style="text-align:center">000000</td>
+<td style="text-align:center">1 byte</td>
+<td>低6位表示长度，最大63</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>01</strong> \</td>
+<td style="text-align:center">00··000</td>
+<td style="text-align:center">2 byte</td>
+<td>低14位表示长度</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>10</strong> \</td>
+<td style="text-align:center">000000 + 4byte</td>
+<td style="text-align:center">5 byte</td>
+<td>后面4 byte表示长度，网络字节序</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>10</strong> \</td>
+<td style="text-align:center">000001 + 8byte</td>
+<td style="text-align:center">9 byte</td>
+<td>后面8 byte表示长度，网络字节序</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>11</strong> \</td>
+<td style="text-align:center">OBKIND</td>
+<td style="text-align:center">1 byte</td>
+<td>低6位指定了对象的类型</td>
+</tr>
+</tbody>
+</table>
+<p>OBKIND的几种定义如下</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#define RDB_ENC_INT8  0    /* 8 bit signed integer */</span><br><span class="line">#define RDB_ENC_INT16 1    /* 16 bit signed integer */</span><br><span class="line">#define RDB_ENC_INT32 2    /* 32 bit signed integer */</span><br><span class="line">#define RDB_ENC_LZF   3    /* string compressed with FASTLZ */</span><br></pre></td></tr></table></figure>
+<p>举个例子，执行如下几条Redis指令:</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">redis&gt;<span class="hljs-built_in">set</span> <span class="hljs-number">-1</span> <span class="hljs-number">2</span></span><br><span class="line">redis&gt;<span class="hljs-built_in">set</span> msg hello</span><br><span class="line">redis&gt;save</span><br></pre></td></tr></table></figure>
+<p>分析RDB的dump文件如图：<br><img src="/2018/07/30/redis-rdb/length_code.jpg" width="400" height="200" align="center" title="长度编码"></p>
+<p>第一条指令的编码中300(对应十进制192)，二进制高两位都是1，表示采用了特殊的自定义编码，低6位都是0，说明使用了<strong>RDB_ENC_INT8</strong>的方式编码，即紧随着的内容377(对应二进制11111111)是一个有符号的整数-1，这与key是-1稳合，同理value是2；第二条指令dump比较直观，看下value hello的编码，005高二位都是0，表示采用1字节的长度编码，低6位的值就是5，说明value的长度为5， 与hello稳合。</p>
+<h5 id="String"><a href="#String" class="headerlink" title="String"></a>String</h5><p>由于Redis中key总是以字符串的形式组织，所以将其纳入字符串类型的value中一起分析，不再单独描述。字符串的编码方式有两种：整数编码(OBJ_ENCODING_INT )和普通字符串序列(REDIS_ENCODING_RAW)。</p>
+<p>整数编码根据数字的大小有两种不同的实现方式：能在32bit中表示的有符号数，按照32位整数形式存储；否则按照字符数组的形式存储。核心代码如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/* Save a long long value as either an encoded string or a string. */</span></span><br><span class="line"><span class="hljs-keyword">ssize_t</span> rdbSaveLongLongAsStringObject(rio *rdb, <span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span> value) &#123;</span><br><span class="line">    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> buf[<span class="hljs-number">32</span>];</span><br><span class="line">    <span class="hljs-keyword">ssize_t</span> n, nwritten = <span class="hljs-number">0</span>;</span><br><span class="line">    <span class="hljs-comment">/*Encode as signed integer*/</span></span><br><span class="line">    <span class="hljs-keyword">int</span> enclen = rdbEncodeInteger(value,buf); </span><br><span class="line">    <span class="hljs-keyword">if</span> (enclen &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> rdbWriteRaw(rdb,buf,enclen);</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        <span class="hljs-comment">/* Encode as string */</span></span><br><span class="line">        enclen = ll2string((<span class="hljs-keyword">char</span>*)buf,<span class="hljs-number">32</span>,value); </span><br><span class="line">        serverAssert(enclen &lt; <span class="hljs-number">32</span>);</span><br><span class="line">        <span class="hljs-keyword">if</span> ((n = rdbSaveLen(rdb,enclen)) == <span class="hljs-number">-1</span>) <span class="hljs-keyword">return</span> <span class="hljs-number">-1</span>;</span><br><span class="line">        nwritten += n;</span><br><span class="line">        <span class="hljs-keyword">if</span> ((n = rdbWriteRaw(rdb,buf,enclen)) == <span class="hljs-number">-1</span>) <span class="hljs-keyword">return</span> <span class="hljs-number">-1</span>;</span><br><span class="line">        nwritten += n;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> nwritten;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，整数编码的实现比较简单，根据字面值值能否使用1byte,  2byte,  4byte来表示，将数字按位存储到一个字节数组里。整体结构如下图：<br><img src="/2018/07/30/redis-rdb/RDB整数字符串编码.png" width="300" height="200" align="center" title="RDB整数字符串编码"></p>
+<p>对于太长的数字值，Redis使用ll2string方法进行转换。一般我们把一个数字转换为字符表示时，比较直观的做法就是除10取余，然后再加上对应的数字字符。但是，对于long long这种很长的数字，效率就比较低下了。看下ll2string的实现：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">ll2string</span><span class="hljs-params">(<span class="hljs-keyword">char</span> *dst, <span class="hljs-keyword">size_t</span> dstlen, <span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span> svalue)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">static</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> digits[<span class="hljs-number">201</span>] =</span><br><span class="line">        <span class="hljs-string">"0001020304050607080910111213141516171819"</span></span><br><span class="line">        <span class="hljs-string">"2021222324252627282930313233343536373839"</span></span><br><span class="line">        <span class="hljs-string">"4041424344454647484950515253545556575859"</span></span><br><span class="line">        <span class="hljs-string">"6061626364656667686970717273747576777879"</span></span><br><span class="line">        <span class="hljs-string">"8081828384858687888990919293949596979899"</span>;</span><br><span class="line">    <span class="hljs-keyword">int</span> negative;</span><br><span class="line">    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span> value;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* The main loop works with 64bit unsigned integers for simplicity, so</span></span><br><span class="line"><span class="hljs-comment">     * we convert the number here and remember if it is negative. */</span></span><br><span class="line">    <span class="hljs-keyword">if</span> (svalue &lt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (svalue != LLONG_MIN) &#123;</span><br><span class="line">            value = -svalue;</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">            value = ((<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span>) LLONG_MAX)+<span class="hljs-number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        negative = <span class="hljs-number">1</span>;</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        value = svalue;</span><br><span class="line">        negative = <span class="hljs-number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* Check length. */</span></span><br><span class="line">    <span class="hljs-keyword">uint32_t</span> <span class="hljs-keyword">const</span> length = digits10(value)+negative;</span><br><span class="line">    <span class="hljs-keyword">if</span> (length &gt;= dstlen) <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* Null term. */</span></span><br><span class="line">    <span class="hljs-keyword">uint32_t</span> next = length;</span><br><span class="line">    dst[next] = <span class="hljs-string">'\0'</span>;</span><br><span class="line">    next--;</span><br><span class="line">    <span class="hljs-keyword">while</span> (value &gt;= <span class="hljs-number">100</span>) &#123;</span><br><span class="line">        <span class="hljs-keyword">int</span> <span class="hljs-keyword">const</span> i = (value % <span class="hljs-number">100</span>) * <span class="hljs-number">2</span>;</span><br><span class="line">        value /= <span class="hljs-number">100</span>;</span><br><span class="line">        dst[next] = digits[i + <span class="hljs-number">1</span>];</span><br><span class="line">        dst[next - <span class="hljs-number">1</span>] = digits[i];</span><br><span class="line">        next -= <span class="hljs-number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* Handle last 1-2 digits. */</span></span><br><span class="line">    <span class="hljs-keyword">if</span> (value &lt; <span class="hljs-number">10</span>) &#123;</span><br><span class="line">        dst[next] = <span class="hljs-string">'0'</span> + (<span class="hljs-keyword">uint32_t</span>) value;</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        <span class="hljs-keyword">int</span> i = (<span class="hljs-keyword">uint32_t</span>) value * <span class="hljs-number">2</span>;</span><br><span class="line">        dst[next] = digits[i + <span class="hljs-number">1</span>];</span><br><span class="line">        dst[next - <span class="hljs-number">1</span>] = digits[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* Add sign. */</span></span><br><span class="line">    <span class="hljs-keyword">if</span> (negative) dst[<span class="hljs-number">0</span>] = <span class="hljs-string">'-'</span>;</span><br><span class="line">    <span class="hljs-keyword">return</span> length;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其核心实现的思想，比较直接，除以10比较慢，那就一次除以100，余数在表digits中查。由于每个余数可以占据digits中两个位置，可以通过余数乘以2来定位。</p>
+<p>原生字符串编码的处理，如果字符串长度小于等于11，首先会尝试按照整数方式进行编码，否则如果配置了启动rdb_compression功能，并且字符串内容大于等于20个字节，则使用lzf算法压缩后存储。通过lzf算法压缩后，编码得到的结构如下图：</p>
+<p><img src="/2018/07/30/redis-rdb/lzf压缩.png" width="600" height="400" align="center" title="lzf压缩"></p>
+<p>如果前面两个条件都不满足，则先按照前述长度编码的方式，记录字符串的长度，然后逐个字节的写入字符串内容。</p>
+<p>string浮点数的存储按照原生字符串的形式编码，验证如下图：</p>
+<p><img src="/2018/07/30/redis-rdb/rdb浮点数编码.png" width="600" height="400" align="center" title="浮点数编码"></p>
+<h5 id="HASH"><a href="#HASH" class="headerlink" title="HASH"></a>HASH</h5><p>hash对象的编码方式有两种：ziplist和dict。</p>
+<p>当哈希对象可以同时满足以下两个条件时列表对象使用ziplist编码：</p>
+<ol>
+<li>哈希对象保存的所有字符串元素的长度都小于64字节</li>
+<li>哈希对象保存的元素数量小于512个</li>
+</ol>
+<p>否则哈希对象需要使用dict编码。</p>
+<p>ziplist的内存结构可以描述为：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;zlbytes&gt;&lt;zltail&gt;&lt;zllen&gt;&lt;entry&gt;…&lt;entry&gt;&lt;zlend&gt;</span><br></pre></td></tr></table></figure>
+<p>其中zlbytes占4字节，表示ziplist占用的总字节数；zltail占4字节，表示最后一项在ziplist中的偏移量，方便在尾端直接进行PUSH和POP等操作，zllen占2字节，表示entry的个数；zlend结束符，和前述的EOF一致，值为255。entry是真正存放数据的数据项，有自己独立的内部结构如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;prevrawlen&gt;&lt;len&gt;&lt;data&gt;</span><br></pre></td></tr></table></figure>
+<p>prevrawlen表示前一项数据的总字节数，len表示当前数据项data的长度。这两个长度都是根据实际情况变长编码的，这里不展开描述。</p>
+<p>我们使用一个简单的例子来观察RDB对ziplist类型的hash如何存储，并验证这种内存结构。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">redis&gt;hset me name niexiao</span><br><span class="line">redis&gt;hset me age 18</span><br><span class="line">redis&gt;save</span><br></pre></td></tr></table></figure>
+<p>执行这几条命令后，生成的ziplist结构如下图：</p>
+<p><img src="/2018/07/30/redis-rdb/ziplist_struct.png" width="600" height="400" align="center"></p>
+<p>如果hash对象以ziplist类型编码，首先按照当前机器的字节序，取前四个字节zlbytes，计算zset对象整体占据的字节数，然后按照原生字符串的形式，即将当前hash对象在内存中的表示，按字节顺序写入文件。整体结构如下图：<br><img src="/2018/07/30/redis-rdb/ziplist_dump.png" width="600" height="400" align="center"></p>
+<p>上图中按照方框分隔，依次表示的内容为：hash类型以ziplist编码时对应的持久化类型码13；对key的持久化内容长度2+内容’m’,’e’；ziplist总共占用的字节  数18；剩下的所有内容按照颜色与内存结构图中完全一致。</p>
+<p>Dict的结构比较常见，在Redis中的实现结构如下图：<br><img src="/2018/07/30/redis-rdb/redis_dict_structure.png" width="600" height="400" align="center"></p>
+<p>针对Dict的持久化过程比较简单，先写入dict的元素个数，然后再迭代entry，以字符串的方式，将entry.field和entry.value写入文件，不再验证。</p>
+<h5 id="ZSET"><a href="#ZSET" class="headerlink" title="ZSET"></a>ZSET</h5><p>zset对象的编码方式有两种：ziplist和skiplist。那么什么情况下会使用ziplist，什么情况下会使用skiplist呢？</p>
+<p>当zset对象同时满足以下两个条件时，对象使用ziplist编码</p>
+<ol>
+<li>有序集合保存的元素数量小于128个</li>
+<li>有序集合保存的所有元素成员的长度都小于64字节</li>
+</ol>
+<p>否则，将使用skiplist编码。</p>
+<p>ziplist编码的持久化在hash类型中已经有详细的说明。这里重点看一下对skiplist的持久化。</p>
+<p>同样，我们先用个例子回顾下skiplist的结构：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">redis&gt;zadd algebra <span class="hljs-number">87.5</span> Alice</span><br><span class="line">redis&gt;zadd algebra <span class="hljs-number">89.0</span> Bob</span><br><span class="line">redis&gt;zadd algebra <span class="hljs-number">65.5</span> Charles</span><br><span class="line">redis&gt;zadd algebra <span class="hljs-number">78.0</span> David</span><br><span class="line">redis&gt;zadd algebra <span class="hljs-number">93.5</span> Emily</span><br><span class="line">redis&gt;zadd algebra <span class="hljs-number">87.5</span> Fred</span><br><span class="line">redis&gt;zadd algebra <span class="hljs-number">95.5</span> <span class="hljs-string">"a long string bigger than 64 bytes"</span></span><br><span class="line">redis&gt;zrenrangebyscore algebra <span class="hljs-number">94</span> <span class="hljs-number">96</span>    </span><br><span class="line">redis&gt;save</span><br></pre></td></tr></table></figure>
+<p>执行上述命令后，Redis内部生成的一个跳表可能的结构如下图：<br><img src="/2018/07/30/redis-rdb/redis_skiplist_example.png" width="600" height="400" align="center"></p>
+<p>而对应的RDB dump文件如下：<br><img src="/2018/07/30/redis-rdb/skiplist_dump.png" width="600" height="400" align="center"></p>
+<p>针对skiplist类型value的持久化，整体流程为首先存储整个skiplist的长度，也就是节点个数，然后遍历节点，再依次写入节点内容和得分。需要注意的地方有两点：对skiplist的持久化，value数据是按照跳表节点从后往前存储的。这么做的好处是，有助于提升还原skiplist时候的效率，因为每次插入的都是当前最小值，减少了查找的过程，Redis源码中给出的注释是：</p>
+<blockquote>
+<p>We save the skiplist elements from the greatest to the smallest (that’s trivial since the elements are already ordered in the  skiplist): this improves the load process, since the next loaded element will always be the smaller, so adding to the skiplist will always immediately stop at the head, making the insertion O(1) instead of O(log(N)). </p>
+</blockquote>
+<p>第二，对于节点内容，按照原生字符串方式进行持久化，而对于double类型的score，并非按照整数类型的编码，而是全部转换为小端后，按照内存布局写入。</p>
+<h5 id="LIST"><a href="#LIST" class="headerlink" title="LIST"></a>LIST</h5><p>Redis中list类型遍量的底层数据结构是quicklist，它是一个双向链表，源码注释中是这样描述的：</p>
+<blockquote>
+<p>A doubly linked list of ziplists</p>
+</blockquote>
+<p>它确实是一个双向链表，而且是一个ziplist的双向链表。这里不对具体的结构以及涉及到的ziplist节点大小调参等细节做过多描述。还有一个影响持久化的特性是：当列表很长的时候，最容易被访问的很可能是两端的数据，中间的数据被访问的频率比较低（访问起来性能也很低）。如果应用场景符合这个特点，那么list还提供了一个选项，能够把中间的数据节点进行压缩，从而进一步节省内存空间。</p>
+<p><img src="/2018/07/30/redis-rdb/redis_quicklist_structure.png" width="800" height="600" align="center"></p>
+<p> 有了数据结构的支持，持久化的过程也就很直观了：首先写入quicklist节点中的长度信息，也就是quicklistNode的节点个数。然后从头结点开始遍历，如果不是被压缩过的节点，则直接把上文ziplist的内存结构按原生字符串的方式，写入文件。否则，按照如下lzf压缩格式编码写入。</p>
+<p><img src="/2018/07/30/redis-rdb/lzf压缩.png" width="600" height="400" align="center"></p>
+<h5 id="SET"><a href="#SET" class="headerlink" title="SET"></a>SET</h5><p>set对象的编码方式也有两种：intset和dict。当set中添加的元素都是整型且元素数目较少时(512)，set使用intset作为底层数据结构，否则，set使用dict作为底层数据结构。dict格式的持久化在前面已经介绍过了。</p>
+<p>这里重点看下intset，它整体结构有header和content两部分组成。Header中encoding指定了content里整数占据的字节数，length指定了整数 的个数，而content的整体长度就是encoding*content。</p>
+<p>intset还有一个比较重要的特性是：它所包含的整数元素是按照有序的方式组织，从而便于在上面进行二分查找，用于快速地判断一个元素是否属于这个集合。<br><img src="/2018/07/30/redis-rdb/intset.png" width="600" height="400" align="center"></p>
+<p>针对intset的持久化，由于其在内存上的连续性，所以持久化的时候可以直接按照内存布局，也就是原生字符串的形式写入文件。拿个例子验证下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redis&gt;sadd score <span class="hljs-number">10</span></span><br><span class="line">redis&gt;sadd score <span class="hljs-number">5</span></span><br><span class="line">redis&gt;sadd score <span class="hljs-number">7</span></span><br><span class="line">redis&gt;sadd score <span class="hljs-number">9</span></span><br><span class="line">redis&gt;save</span><br></pre></td></tr></table></figure>
+<p>执行上诉命令后生成的dump文件如下图：<br><img src="/2018/07/30/redis-rdb/inset_rdb_dump.png" width="600" height="400" align="center"></p>
+<p>图中被彩色区域框起来的部分，依次表示：intset的总大小：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4byte(encoding)+4byte(length)+2*4 = 16bytes</span><br></pre></td></tr></table></figure>
+<p>encoding：2，表示每个整数元素使用2字节编码</p>
+<p>length: 4，表示总共有4个元素</p>
+<p>content: 按照数据元素的大小，从小到大排序依次存储。</p>
+<h4 id="如何解决数据存储时的阻塞问题"><a href="#如何解决数据存储时的阻塞问题" class="headerlink" title="如何解决数据存储时的阻塞问题"></a>如何解决数据存储时的阻塞问题</h4><p>前面对持久化过程中，不同对象和编码的持久化写入方式和RDB文件结构进行了介绍。那么如何生成RDB文件呢？Redis提供了两个命令来生成RDB文件，SAVE和BGSAVE。</p>
+<ol>
+<li>SAVE命令会阻塞Redis服务器进程，直到RDB文件创建完毕为止，在服务器进程阻塞期间，不能处理任何命令请求。显然，在线上的应用环境中，这种操作是不被允许的。SAVE只适合在确认影响范围的情况下，手动执行。</li>
+<li>BGSAVE派生一个子进程，负责处理RDB文件的创建工作，父进程继续处理命令请求。</li>
+</ol>
+<p>这里可能会有一个疑问，为什么不在主进程中创建新的线程，而是创建新的子进程来执行RDB的持久化呢？主要是出于Redis性能的考虑，我们知道Redis对客户端响应请求的工作模型是单进程和单线程的，如果在主进程内启动一个线程，这样会造成对数据的竞争条件。所以为了避免使用锁降低性能，Redis选择启动新的子进程，独立拥有一份父进程的内存拷贝，以此为基础执行RDB持久化。</p>
+<p>从代码的角度来说，SAVE命令的执行流程如下图：<br><img src="/2018/07/30/redis-rdb/rdbSave.png" width="300" height="200" align="center"></p>
+<p>SAVE的实现过程比较直白，没有太多的逻辑分支，要么全部成功，要么报错。这里隐含了一种”原子性”的概念，因为，rdb的dump文件无论执行多少次SAVE，都只会有一个文件，所以要求要么SAVE成功后，新的dump文件，被更新，要么任何一环出问题，旧的dump文件保持不变。Redis的实现方式就是，利用rename调用，先生成一个临时文件，<strong>并完成刷盘</strong> ，然后使用rename调用对旧的dump文件进行替换。关于rename的原子性可以参考rename的<a href="http://man7.org/linux/man-pages/man2/rename.2.html" target="_blank" rel="noopener">man page</a> 和 <a href="https://stackoverflow.com/questions/7054844/is-rename-atomic" target="_blank" rel="noopener">讨论</a>。</p>
+<p>BGSAVE的执行流程如下：</p>
+<p><img src="/2018/07/30/redis-rdb/rdbBgSave.png" width="500" height="300" align="center"></p>
+<ol>
+<li>如果有正在执行的AOF子进程或者RDB子进程，直接返回失败，防止两个子进程，同时执行大量的磁盘写入，影响效率。</li>
+<li>保存执行bgsave时，已修改未持久化的脏数据项个数。</li>
+<li>打开一个双向管道，用于后续父子进程的通信。</li>
+<li>fork出一个子进程。</li>
+<li>子进程中首先关闭从父进程继承来的套接字，然后设置进程名称。</li>
+<li>子进程调用save执行持久化保存。</li>
+<li>如果子进程保存成功，则统计持久化过程中，因copy-on-write机制，生成的脏页内存信息，写日志并通过管道，同步给父进程，用于展示Redis的状态信息时使用(<strong>info</strong> command)。</li>
+<li>如果子进程持久化出错，直接退出(使用错误码1)。</li>
+<li>父进程首先统计执行fork操作的时间以及内存分配的速率。</li>
+<li>如果子进程创建成功，则记录子进程pid和持久化类型；否则，关闭创建的双向管道，设置bgsave的状态为出错。</li>
+</ol>
+<p>从bgsave的实现流程不难看出，解决父进程阻塞的问题主要依赖于fork出子进程，独立运行。但是，在实际线上应用场景中，Redis分配的内存都比较大，并且更新很频繁，那么当Copy-On-Write机制出发的内存拷贝过程，会非常消耗资源。参考<a href="http://www.cnblogs.com/qq78292959/p/3994333.html" target="_blank" rel="noopener">bgsave的fork问题</a></p>
+<p>所以，为了尽可能的避免内存脏页的问题，在父进程的最后，选择关闭dict的resize功能，避免出发大量的内存拷贝。</p>
+<h4 id="持久化的配置与触发时机"><a href="#持久化的配置与触发时机" class="headerlink" title="持久化的配置与触发时机"></a>持久化的配置与触发时机</h4><p>显然，线上应用场景中，持久化功能需要自动的执行，并且是可配置的。Redis允许用户通过设置服务器的save选项，让服务器每隔一段时间自动执行一次BGSAVE命令。save选项的设置可以包含多个条件，只要其中任意一个被满足，服务器就会执行BGSAVE命令。</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">save <span class="hljs-number">900</span> <span class="hljs-number">1</span></span><br><span class="line">save <span class="hljs-number">300</span> <span class="hljs-number">10</span></span><br><span class="line">save <span class="hljs-number">60</span> <span class="hljs-number">10000</span></span><br></pre></td></tr></table></figure>
+<p>以上诉配置为例，只要服务器900秒之内进行了至少1次修改，或者300秒之内进行了至少10次修改，或者60秒之内进行了至少10000次修改，都会触发bgsave。</p>
+<p>Redis服务器保存此配置的结构体为：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">saveparam</span> &#123;</span></span><br><span class="line">    <span class="hljs-keyword">time_t</span> seconds; <span class="hljs-comment">//秒数</span></span><br><span class="line">    <span class="hljs-keyword">int</span> changes;    <span class="hljs-comment">//被修改次数</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>Redis的服务器会在内部启动一个定时操作，维护Redis的状态，其中一项工作就是检查saveparam，判断是否需要执行bgsave命令。具体的检查逻辑如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"> <span class="hljs-comment">/* Check if a background saving or AOF rewrite in progress terminated. */</span></span><br><span class="line">    <span class="hljs-keyword">if</span> (server.rdb_child_pid != <span class="hljs-number">-1</span> || server.aof_child_pid != <span class="hljs-number">-1</span> || ldbPendingChildren()) &#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> ((pid = wait3(&amp;statloc,WNOHANG,<span class="hljs-literal">NULL</span>)) != <span class="hljs-number">0</span>) &#123;</span><br><span class="line">            ...</span><br><span class="line">                </span><br><span class="line">            <span class="hljs-keyword">if</span> (pid == server.rdb_child_pid) &#123;</span><br><span class="line">                backgroundSaveDoneHandler(exitcode,bysignal);</span><br><span class="line">                <span class="hljs-keyword">if</span> (!bysignal &amp;&amp; exitcode == <span class="hljs-number">0</span>) </span><br><span class="line">                    receiveChildInfo();</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;<span class="hljs-keyword">else</span>&#123;</span><br><span class="line">        <span class="hljs-keyword">for</span> (j = <span class="hljs-number">0</span>; j &lt; server.saveparamslen; j++) &#123;</span><br><span class="line">            struct saveparam *sp = server.saveparams+j;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">/* Save if we reached the given amount of changes,</span></span><br><span class="line"><span class="hljs-comment">* the given amount of seconds, and if the latest bgsave was</span></span><br><span class="line"><span class="hljs-comment">* successful or if, in case of an error, at least</span></span><br><span class="line"><span class="hljs-comment">* CONFIG_BGSAVE_RETRY_DELAY seconds already elapsed. */</span></span><br><span class="line">            <span class="hljs-keyword">if</span> (server.dirty &gt;= sp-&gt;changes &amp;&amp;</span><br><span class="line">                server.unixtime-server.lastsave &gt; sp-&gt;seconds &amp;&amp;</span><br><span class="line">                (server.unixtime-server.lastbgsave_try &gt;</span><br><span class="line">                 CONFIG_BGSAVE_RETRY_DELAY ||</span><br><span class="line">                 server.lastbgsave_status == C_OK))</span><br><span class="line">            &#123;</span><br><span class="line">                serverLog(LL_NOTICE,<span class="hljs-string">"%d changes in %d seconds. Saving..."</span>,</span><br><span class="line">                    sp-&gt;changes, (<span class="hljs-keyword">int</span>)sp-&gt;seconds);</span><br><span class="line">                rdbSaveInfo rsi, *rsiptr;</span><br><span class="line">                rsiptr = rdbPopulateSaveInfo(&amp;rsi);</span><br><span class="line">                rdbSaveBackground(server.rdb_filename,rsiptr);</span><br><span class="line">                <span class="hljs-keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">         &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>首先检查是否有持久化的子进程未关闭，如果有则对子进程执行后，服务器dirty项，上一次保存时间和是否执行成功等状态进行更新，同时恢复dict的resize功能，并关闭父进程打开的pipe。否则，遍历配置项，检查当前的dirty项和上一次保存到现在的时间差是否满足配置的条件，如果是，则再执行一次bgsave。由于，子进程的持久化可能会失败（比如前面说的fork()拷贝内存过大的问题导致），所以检查条件的时候，如果发现上一次失败了，那么会延迟一段时间，再执行bgsave来消弱这种出错的问题。</p>
+<h3 id="其他实现细节"><a href="#其他实现细节" class="headerlink" title="其他实现细节"></a>其他实现细节</h3><p>Redis对IO操作做了统一的封装，提供了一个抽象的访问接口。根据IO操作媒介的不同，有不同的实现，主要分为Buffer IO，Stdio file pointer IO和File descriptors set IO三种。</p>
+<p>核心IO结构体定义如下,  它对不同IO实现所依赖的底层读写接口进行了定义，以union的方式，把IO操作的IO变量组织起来。</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> _<span class="hljs-title">rio</span> &#123;</span></span><br><span class="line"><span class="hljs-comment">/* Backend functions.</span></span><br><span class="line"><span class="hljs-comment">* Since this functions do not tolerate short writes or reads the return</span></span><br><span class="line"><span class="hljs-comment">* value is simplified to: zero on error, non zero on complete success. */</span></span><br><span class="line">    <span class="hljs-keyword">size_t</span> (*read)(struct _rio *, <span class="hljs-keyword">void</span> *buf, <span class="hljs-keyword">size_t</span> len);</span><br><span class="line">    <span class="hljs-keyword">size_t</span> (*write)(struct _rio *, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *buf, <span class="hljs-keyword">size_t</span> len);</span><br><span class="line">    <span class="hljs-keyword">off_t</span> (*tell)(struct _rio *);</span><br><span class="line">    <span class="hljs-keyword">int</span> (*flush)(struct _rio *);</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">void</span> (*update_cksum)(struct _rio *, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *buf, <span class="hljs-keyword">size_t</span> len);</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* The current checksum */</span></span><br><span class="line">    <span class="hljs-keyword">uint64_t</span> cksum;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* number of bytes read or written */</span></span><br><span class="line">    <span class="hljs-keyword">size_t</span> processed_bytes;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* maximum single read or write chunk size */</span></span><br><span class="line">    <span class="hljs-keyword">size_t</span> max_processing_chunk;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">/* Backend-specific vars. */</span></span><br><span class="line">    <span class="hljs-keyword">union</span> &#123;</span><br><span class="line">        <span class="hljs-comment">/* In-memory buffer target. */</span></span><br><span class="line">        <span class="hljs-class"><span class="hljs-keyword">struct</span> &#123;</span></span><br><span class="line">            sds ptr;</span><br><span class="line">            <span class="hljs-keyword">off_t</span> pos;</span><br><span class="line">        &#125; buffer;</span><br><span class="line">        <span class="hljs-comment">/* Stdio file pointer target. */</span></span><br><span class="line">        <span class="hljs-class"><span class="hljs-keyword">struct</span> &#123;</span></span><br><span class="line">            FILE *fp;</span><br><span class="line">            <span class="hljs-keyword">off_t</span> buffered; <span class="hljs-comment">/* Bytes written since last fsync. */</span></span><br><span class="line">            <span class="hljs-keyword">off_t</span> autosync; <span class="hljs-comment">/* fsync after 'autosync' bytes written. */</span></span><br><span class="line">        &#125; file;</span><br><span class="line">        <span class="hljs-comment">/* Multiple FDs target (used to write to N sockets). */</span></span><br><span class="line">        <span class="hljs-class"><span class="hljs-keyword">struct</span> &#123;</span></span><br><span class="line">            <span class="hljs-keyword">int</span> *fds;       <span class="hljs-comment">/* File descriptors. */</span></span><br><span class="line">            <span class="hljs-keyword">int</span> *state;     <span class="hljs-comment">/* Error state of each fd. 0 (if ok) or errno. */</span></span><br><span class="line">            <span class="hljs-keyword">int</span> numfds;</span><br><span class="line">            <span class="hljs-keyword">off_t</span> pos;</span><br><span class="line">            sds buf;</span><br><span class="line">        &#125; fdset;</span><br><span class="line">    &#125; io;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p> RDB持久化的文件写入，就是基于文件的IO实现:</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">static</span> <span class="hljs-keyword">const</span> rio rioFileIO = &#123;</span><br><span class="line">    rioFileRead,   <span class="hljs-comment">/*基于文件读写接口的读写实现*/</span></span><br><span class="line">    rioFileWrite,</span><br><span class="line">    rioFileTell,</span><br><span class="line">    rioFileFlush,</span><br><span class="line">    <span class="hljs-literal">NULL</span>,           <span class="hljs-comment">/* update_checksum */</span></span><br><span class="line">    <span class="hljs-number">0</span>,              <span class="hljs-comment">/* current checksum */</span></span><br><span class="line">    <span class="hljs-number">0</span>,              <span class="hljs-comment">/* bytes read or written */</span></span><br><span class="line">    <span class="hljs-number">0</span>,              <span class="hljs-comment">/* read/write chunk size */</span></span><br><span class="line">    &#123; &#123; <span class="hljs-literal">NULL</span>, <span class="hljs-number">0</span> &#125; &#125; <span class="hljs-comment">/* union for io-specific vars */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这种高度抽象的代码实现方式，不仅通用而且精简了代码，值得学习~</p>
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><ol>
+<li><p><a href="http://zhangtielei.com/posts/blog-redis-ziplist.html" target="_blank" rel="noopener">redis-ziplist</a></p>
+</li>
+<li><p><a href="http://zhangtielei.com/posts/blog-redis-intset.html" target="_blank" rel="noopener">redis-intset</a></p>
+</li>
+<li><p><a href="http://zhangtielei.com/posts/blog-redis-skiplist.html" target="_blank" rel="noopener">redis-skiplist</a></p>
+</li>
+<li><p><a href="http://zhangtielei.com/posts/blog-redis-dict.html" target="_blank" rel="noopener">redis-dict</a></p>
+</li>
+<li><p><a href="https://www.cnblogs.com/paulversion/p/8206080.html" target="_blank" rel="noopener">redis-object</a></p>
+</li>
+<li><p>《Redis设计与实现》 黄健宏著</p>
+</li>
+</ol>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2018/07/30/redis-rdb/">Redis RDB持久化 - Redis源码分析</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2018/07/30/redis-rdb/">https://gsmtoday.github.io/2018/07/30/redis-rdb/</a></li>
+            <li><strong>发布时间：</strong>2018-07-30</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Redis/">Redis</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/07/30/Redis持久化总结/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Redis持久化总结</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/05/21/dive-into-mysql-execute/">
+                <span class="level-item">一条MySQL是怎么执行的？ - 《高性能MySQL》读书笔记</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#初识RDB">
+        <span class="has-mr-6">1</span>
+        <span>初识RDB</span>
+        </a></li><li>
+        <a class="is-flex" href="#RDB文件结构">
+        <span class="has-mr-6">2</span>
+        <span>RDB文件结构</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#Magic-Version">
+        <span class="has-mr-6">2.1.1</span>
+        <span>Magic+Version</span>
+        </a></li><li>
+        <a class="is-flex" href="#AuxFields">
+        <span class="has-mr-6">2.1.2</span>
+        <span>AuxFields</span>
+        </a></li><li>
+        <a class="is-flex" href="#DB-SNAPSHOT">
+        <span class="has-mr-6">2.1.3</span>
+        <span>DB SNAPSHOT</span>
+        </a></li><li>
+        <a class="is-flex" href="#EOF">
+        <span class="has-mr-6">2.1.4</span>
+        <span>EOF</span>
+        </a></li><li>
+        <a class="is-flex" href="#CHECK-SUM">
+        <span class="has-mr-6">2.1.5</span>
+        <span>CHECK_SUM</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#重点问题">
+        <span class="has-mr-6">3</span>
+        <span>重点问题</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#如何设计存储协议，支持多种数据结构的存储">
+        <span class="has-mr-6">3.1</span>
+        <span>如何设计存储协议，支持多种数据结构的存储</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#长度编码">
+        <span class="has-mr-6">3.1.1</span>
+        <span>长度编码</span>
+        </a></li><li>
+        <a class="is-flex" href="#String">
+        <span class="has-mr-6">3.1.2</span>
+        <span>String</span>
+        </a></li><li>
+        <a class="is-flex" href="#HASH">
+        <span class="has-mr-6">3.1.3</span>
+        <span>HASH</span>
+        </a></li><li>
+        <a class="is-flex" href="#ZSET">
+        <span class="has-mr-6">3.1.4</span>
+        <span>ZSET</span>
+        </a></li><li>
+        <a class="is-flex" href="#LIST">
+        <span class="has-mr-6">3.1.5</span>
+        <span>LIST</span>
+        </a></li><li>
+        <a class="is-flex" href="#SET">
+        <span class="has-mr-6">3.1.6</span>
+        <span>SET</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#如何解决数据存储时的阻塞问题">
+        <span class="has-mr-6">3.2</span>
+        <span>如何解决数据存储时的阻塞问题</span>
+        </a></li><li>
+        <a class="is-flex" href="#持久化的配置与触发时机">
+        <span class="has-mr-6">3.3</span>
+        <span>持久化的配置与触发时机</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#其他实现细节">
+        <span class="has-mr-6">4</span>
+        <span>其他实现细节</span>
+        </a></li><li>
+        <a class="is-flex" href="#参考文献">
+        <span class="has-mr-6">5</span>
+        <span>参考文献</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

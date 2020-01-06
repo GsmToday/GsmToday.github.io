@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>权限控制发展综述 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="本文试图用不那么学术性的白话解释各种权限管理模型和适合使用场景。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="权限控制发展综述">
+<meta property="og:url" content="https://gsmtoday.github.io/2019/12/04/access-control-policies/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="本文试图用不那么学术性的白话解释各种权限管理模型和适合使用场景。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/12/04/access-control-policies/acl.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/12/04/access-control-policies/rbac.png">
+<meta property="og:image" content="https://gsmtoday.github.io/2019/12/04/access-control-policies/abac.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.638Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="权限控制发展综述">
+<meta name="twitter:description" content="本文试图用不那么学术性的白话解释各种权限管理模型和适合使用场景。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2019/12/04/access-control-policies/acl.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/12.jpeg" alt="权限控制发展综述">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-04T03:46:34.000Z">2019-12-04</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    11 分钟 读完 (大约 1679 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                权限控制发展综述
+            
+        </h1>
+        <div class="content">
+            <p>本文试图用不那么学术性的白话解释各种权限管理模型和适合使用场景。<br><a id="more"></a></p>
+<h1 id="名词解释"><a href="#名词解释" class="headerlink" title="名词解释"></a>名词解释</h1><ul>
+<li>主体：进行资源访问的实体。例如用户，服务，进程等。为了易于理解起见，本文将主体简化为用户。</li>
+<li>客体：资源。例如系统，数据等，本文将客体简化为资源。</li>
+<li>访问控制：访问控制限制主体对客体的访问权限，从而使系统在合法范围内使用；其实就是解决谁可以对什么资源进行什么样的操作的问题。</li>
+</ul>
+<p>例如，某个页面只能由公司HR访问，这里主体是公司的HR，客体就是页面, 通过给公司HR关联权限达到限制页面访问的目的。</p>
+<h1 id="ACL"><a href="#ACL" class="headerlink" title="ACL"></a>ACL</h1><p>ACL（Access Contrl List）是上个世纪90年代提出的权限控制模型。ACL是一个规则列表, 将客体和主体进行了映射, 规定了客体资源可以被哪些主体进行操作。例如公司的docker白名单（给docker添加了某个IP白名单，这台docker就可以访问这个IP）。另外公司弹性云集群流量隔离都是通过ACL去实现的访问控制。再比如某些业务系统使用ACL定义了用户和业务线的访问控制关系。<br><img src="/2019/12/04/access-control-policies/acl.png" alt="ACL模型" width="400" height="200" align="center"><br>ACL的优点在于它非常简单，易于实现。但是它的缺点也非常明显： 用户和资源直接关联，在应对大量用户和客体资源的权限管控的时候，访问控制列表就会变得非常繁琐。解决思路也非常简单，用户和资源之间再抽象一层，给资源分一个资源类，用户直接和这个类别关联，这样就清晰很多 – 这个资源类就是角色。</p>
+<h1 id="RBAC"><a href="#RBAC" class="headerlink" title="RBAC"></a>RBAC</h1><p>RBAC （Role Based Access Control） 模型也是上个世纪90年代提出的ACL增强版的权限控制模型。RBAC将人和资源解耦，在用户和资源之间增加了一个中间桥梁 – 角色。 角色可以看做是一组操作的集合，不同的角色具有不同的操作集，这些操作集关联到用户身上。一个用户可以拥有多个角色，从而实现权限管理的灵活性。<br><img src="/2019/12/04/access-control-policies/rbac.png" alt="RBAC模型" width="600" height="300" align="center"></p>
+<p>例如「XX系统」根据用户的岗位分为了“运营角色”，“客服角色”，“电销管理员角色”，“财务角色”等多个角色。再例如「XX系统」根据自身业务内容划分了角色：“问题诊断角色”, “查询角色”等。</p>
+<h2 id="ACL✖️RBAC"><a href="#ACL✖️RBAC" class="headerlink" title="ACL✖️RBAC"></a>ACL✖️RBAC</h2><p>公司拥有多条业务线，例如专车，快车, 安全等等。这样在管理权限时候就会遇到一个问题 – 如何管理不同业务线的同一类操作问题。而这类问题使用RBAC和RBAC✖️ACL都可以解决:</p>
+<ul>
+<li>RBAC模型：「A系统」针对不同业务线的同一个操作设置了多个角色，例如角色“专车-看板角色”, “快车-看板角色”,”安全-看板角色”等等。</li>
+<li>RBAC✖️ACL的模型：「B系统」使用ACL标识定义了业务线资源（设置了标识位：专车，快车, 安全），再设置了一个“看板角色”，用户在申请角色的时候选择自己业务线的标识位，再选择看板角色即可。</li>
+</ul>
+<p>可以看出虽然是同一个RBAC模型，不同使用者（业务系统）使用的效果各异。这就好比在权限系统提供基础食材（权限模型），各个厨师（业务系统）对各个基础食材各有发挥，做出来的菜也不一样。同样是土豆，有的厨师做出了土豆丝，有的做出了薯条。每一种使用方式都可以解决业务系统的业务问题，权限系统重点在于提供一个可以让厨师自由选择食材的平台。</p>
+<p>RBAC模型的优点显而易见：大大简化了权限管理，降低了管理开销，使得权限管理系统具有更强大的可操作性和可管理性。事实证明，RBAC也是公司目前被业务系统使用最多的权限管理模型。</p>
+<p>纵观ACL和RBAC两个模型，这两个模型虽然强大，但是仍然很难覆盖所有权限管理场景。例如管控“预算部门是汽车资产管理中心且操作城市是北京”的用户的某一角色权限，普通的RBAC或者多个ACL✖️RBAC模型管理的复杂度会增加很多。总结来说，复杂的权限管控场景需要可以动态根据一个或者一组属性是否满足某种条件进行权限判断，而这就是ABAC产生的背景。</p>
+<h1 id="ABAC"><a href="#ABAC" class="headerlink" title="ABAC"></a>ABAC</h1><p>Attribute Based Access Control (ABAC)是2013提出的模型。不同于RBAC和ACL将用户通过某种方式与资源关联的方式，ABAC是通过动态计算一个或者一组属性是否满足某种条件进行授权判断。ABAC可以实现非常灵活的权限控制，几乎能满足所有类型的需求。</p>
+<p>ABAC的属性有四类：</p>
+<ul>
+<li>用户属性（用户职位）</li>
+<li>操作属性（增删改查）</li>
+<li>环境属性 （当前时间）</li>
+<li>资源属性</li>
+</ul>
+<p>目前我们的ABAC模型是给资源添加各种策略（属性），模型如下图：<br><img src="/2019/12/04/access-control-policies/abac.png" alt="ABAC模型" width="600" height="300" align="center"></p>
+<p>ABAC模型虽然强大，但是通常这个模型都是最后一个选择。实际使用中往往我们推荐给权限模型使用者都是RBAC&gt;ACL&gt;ABAC. 正是因为ABAC模型很强大，他试图解决所有权限管理场景，就会带来管理策略非常复杂的问题，使用起来也不是很用户友好，实际场景难以运营和落地。</p>
+<h1 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h1><p>目前我们的系统作为统一权限管理平台，支持ACL,RBAC以及ABAC三种权限模型的管理。 </p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/12/04/access-control-policies/">权限控制发展综述</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/12/04/access-control-policies/">https://gsmtoday.github.io/2019/12/04/access-control-policies/</a></li>
+            <li><strong>发布时间：</strong>2019-12-04</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/01/05/sort-base/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">工程中遇到的排序算法-基础篇</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/12/03/temp-file-table/">
+                <span class="level-item">关于MySQL的临时表和临时文件</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#名词解释">
+        <span class="has-mr-6">1</span>
+        <span>名词解释</span>
+        </a></li><li>
+        <a class="is-flex" href="#ACL">
+        <span class="has-mr-6">2</span>
+        <span>ACL</span>
+        </a></li><li>
+        <a class="is-flex" href="#RBAC">
+        <span class="has-mr-6">3</span>
+        <span>RBAC</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#ACL✖️RBAC">
+        <span class="has-mr-6">3.1</span>
+        <span>ACL✖️RBAC</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#ABAC">
+        <span class="has-mr-6">4</span>
+        <span>ABAC</span>
+        </a></li><li>
+        <a class="is-flex" href="#Summary">
+        <span class="has-mr-6">5</span>
+        <span>Summary</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 GSM&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

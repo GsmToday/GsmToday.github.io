@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>Hive Driver源码执行流程分析 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="引言接着上一篇来说[执行入口的分析][1]，CliDriver最终将用户指令command提交给了Driver的run方法（针对常用查询语句而言），在这里用户的command将会被编译，优化并生成MapReduce任务进行执行。所以Driver也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。">
+<meta name="keywords" content="Hive">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hive Driver源码执行流程分析">
+<meta property="og:url" content="https://gsmtoday.github.io/2016/05/18/hive1/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="引言接着上一篇来说[执行入口的分析][1]，CliDriver最终将用户指令command提交给了Driver的run方法（针对常用查询语句而言），在这里用户的command将会被编译，优化并生成MapReduce任务进行执行。所以Driver也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/2016/05/18/hive1/hivea1.png">
+<meta property="og:updated_time" content="2020-01-06T10:52:35.819Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Hive Driver源码执行流程分析">
+<meta name="twitter:description" content="引言接着上一篇来说[执行入口的分析][1]，CliDriver最终将用户指令command提交给了Driver的run方法（针对常用查询语句而言），在这里用户的command将会被编译，优化并生成MapReduce任务进行执行。所以Driver也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/2016/05/18/hive1/hivea1.png">
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/index.html">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/index.html">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/index.html">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/index.html">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="/images/insect.jpg" alt="Hive Driver源码执行流程分析">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2016-05-18T12:41:22.000Z">2016-05-18</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    21 分钟 读完 (大约 3143 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Hive Driver源码执行流程分析
+            
+        </h1>
+        <div class="content">
+            <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>接着上一篇来说[执行入口的分析][1]，<code>CliDriver</code>最终将用户指令<code>command</code>提交给了<code>Driver</code>的<code>run</code>方法（针对常用查询语句而言），在这里用户的<code>command</code>将会被编译，优化并生成MapReduce任务进行执行。所以<code>Driver</code>也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。</p>
+<a id="more"></a>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>在说<code>run</code>方法之前，由于<code>CliDriver</code>需要得到一个<code>Driver</code>类的实例，所以首先看一下<code>Driver</code>的构造方法。<code>Driver</code>有三个构造函数，主要功能也就是设置类的实例变量<code>HiveConf</code>。<code>SessionState</code>前文已经有介绍，<code>SessionState</code>返回了当前会话的一些信息，提取配置文件，初始化<code>Driver</code>实例。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public Driver() &#123;</span><br><span class="line">    if (SessionState.get() != null) &#123;</span><br><span class="line">      conf = SessionState.get().getConf();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="run"><a href="#run" class="headerlink" title="run"></a>run</h3><p>下面就开始解析<code>Driver</code>内部对用户命令<code>command</code>的处理流程，首先是入口函数<code>run</code>. <code>run</code>函数通过调用<code>runInternal</code>方法处理用户指令，在处理完成<code>runInternal</code>之后，如果执行过程中出现出错，还附加了对错误码和错误信息的处理，此处省略。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">public CommandProcessorResponse run(String command)</span><br><span class="line">      throws CommandNeedRetryException &#123;</span><br><span class="line">    return run(command, false);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public CommandProcessorResponse run(String command, boolean alreadyCompiled)</span><br><span class="line">        throws CommandNeedRetryException &#123;</span><br><span class="line">    CommandProcessorResponse cpr = runInternal(command, alreadyCompiled);</span><br><span class="line">     ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="runInternal"><a href="#runInternal" class="headerlink" title="runInternal"></a>runInternal</h3><p><code>runInternal</code>方法包含的主要操作有，处理<code>preRunHook</code>（具体功能可以顾名思义哦），<code>compile</code> ， <code>execute</code>， 处理<code>postRunHook</code>以及构造<code>CommandProcessorResponse</code>并返回。下面依次从代码的角度分析这几步的具体操作：</p>
+<h3 id="PreRunHook"><a href="#PreRunHook" class="headerlink" title="PreRunHook"></a>PreRunHook</h3><p>处理<code>preRunHook</code>，首先根据配置文件和指令，构造用户Hook执行的上下文<code>hookContext</code>，然后读取用户<code>PreRunHook</code>配置指定的类（字符串）， 此配置项对应于Hive配置文件当中的<code>“hive.exec.driver.run.hooks”</code>一项，利用反射机制<code>Class.forName</code>实例化<code>PreRunHook</code>类实例（<code>getHook</code>函数完成），依次执行各钩子的功能（<code>preDriverRun</code>函数完成）。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">HiveDriverRunHookContext hookContext</span><br><span class="line">    = new HiveDriverRunHookContextImpl(conf, command);</span><br><span class="line">    // Get all the driver run hooks and pre-execute them.</span><br><span class="line">List&lt;HiveDriverRunHook&gt; driverRunHooks;</span><br><span class="line">try&#123;</span><br><span class="line">      driverRunHooks = getHooks(HiveConf.ConfVars.HIVE_DRIVER_RUN_HOOKS,</span><br><span class="line">      HiveDriverRunHook.class);</span><br><span class="line">      for (HiveDriverRunHook driverRunHook : driverRunHooks) &#123;</span><br><span class="line">          driverRunHook.preDriverRun(hookContext);</span><br><span class="line">      &#125;</span><br><span class="line">&#125;catch (Exception e) &#123;</span><br><span class="line">  errorMessage = &quot;FAILED: Hive Internal Error: &quot; + Utilities.getNameMessage(e);</span><br><span class="line">  SQLState = ErrorMsg.findSQLState(e.getMessage());</span><br><span class="line">  downstreamError = e;</span><br><span class="line">  console.printError(errorMessage + &quot;\n&quot;</span><br><span class="line">          + org.apache.hadoop.util.StringUtils.stringifyException(e));</span><br><span class="line">  return createProcessorResponse(12);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="compile"><a href="#compile" class="headerlink" title="compile"></a>compile</h3><p>编译，直接调用<code>complieInternal</code>函数编译用户指令，将指令翻译成<code>MapReduce</code>任务。这一个过程涉及的内容比较多，也很重要，后面将单独用一篇文章说明编译优化的过程。这里借用网上的一幅图，帮助对<code>compile</code>的功能有个整体的理解，参考文献: Hive实现原理.pdf。<br><img src="/2016/05/18/hive1/hivea1.png" alt="编译流程"></p>
+<h3 id="execute"><a href="#execute" class="headerlink" title="execute"></a>execute</h3><p>在运行之前还有获取锁的操作，由于新版本添加了<code>ACID</code>事务的支持，还设置了事务管理器等，目前还没详细的弄懂这块的处理逻辑和功能，先放一下，主要看下<code>execute</code>函数执行了什么操作，也就是如何根据编译结果执行任务的。</p>
+<p>首先是从编译得到的查询计划<code>QueryPlan</code>里获取基本的查询ID，查询字串等信息，并在回话状态中把当前查询字串和查询计划插入到历史记录中。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">String queryId = plan.getQueryId();</span><br><span class="line">String queryStr = plan.getQueryStr();</span><br><span class="line"></span><br><span class="line">if (SessionState.get() != null) &#123;</span><br><span class="line">   SessionState.get().getHiveHistory().startQuery(queryStr,</span><br><span class="line">       conf.getVar(HiveConf.ConfVars.HIVEQUERYID));</span><br><span class="line">   SessionState.get().getHiveHistory().logPlanProgress(plan);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>与<code>PreRunHook</code>类似，在执行任务之前，检查并执行用户设定的<code>&quot;hive.pre.exec.hooks&quot;</code>，此处不再详述。完成这部操作之后，向控制台简单的打印一些信息之后，就开始正式执行任务了。</p>
+<ul>
+<li><strong>DriverContext</strong></li>
+</ul>
+<p>创建执行上下文DriverContext，它记录的信息主要包括可执行的任务队列(Queue<task> runnable), 正在运行的任务队列(Queue<taskrunner> running), 当前启动的任务数curJobNo, statsTasks（Map<string, statstask="">, what used for?）以及语义分析Semantic Analyzers依赖的Context对象等。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">DriverContext driverCxt = new DriverContext(ctx); driverCxt.prepare(plan);</span><br><span class="line"></span><br><span class="line">public DriverContext(Context ctx) &#123;</span><br><span class="line">    this.runnable = new ConcurrentLinkedQueue&lt;Task&lt;? extends Serializable&gt;&gt;();</span><br><span class="line">    this.running = new LinkedBlockingQueue&lt;TaskRunner&gt;();</span><br><span class="line">    this.ctx = ctx;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line">public void prepare(QueryPlan plan) &#123;</span><br><span class="line">    // extract stats keys from StatsTask</span><br><span class="line">    List&lt;Task&lt;?&gt;&gt; rootTasks = plan.getRootTasks();</span><br><span class="line">    NodeUtils.iterateTask(rootTasks, StatsTask.class, new Function&lt;StatsTask&gt;()  </span><br><span class="line">    &#123;</span><br><span class="line">      public void apply(StatsTask statsTask) &#123;</span><br><span class="line">        statsTasks.put(statsTask.getWork().getAggKey(), statsTask);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></string,></taskrunner></task></p>
+<p>顺便提一下<code>Context</code>对象，在<code>Context</code>的源码注释当中提到， 每一个查询都要对应一个<code>Context</code>对象，不同查询之间<code>Context</code>对象是不可重用的， 执行完一个查询之后需要<code>clear</code>对应的<code>Context</code>对象（主要是语法分析用到的<code>temp</code>文件目录），在Hive的实现中也是这么做的。回顾上一篇文章，从<code>CliDriver</code>循环的读取用户指令，每读取到一条指令都要进行<code>processLine</code>，<code>processCmd</code>，<code>processLocalCmd</code>的处理，然后提交给<code>Driver</code>编译解析。<code>Context</code>对象是在<code>compile</code>函数中实例化的，也就说每一条查询都会创建一个<code>Context</code>对象，当执行完一条查询从<code>Driver</code>返回到<code>processLocalCmd</code>中时，都会调用<code>Driver</code>对象的<code>close</code>函数对<code>Context</code>进行清理（<code>ctx.clear</code>），这样就保证了一条查询对应一个<code>Context</code>对象。对于<code>DriverContext</code>对象也是类似，在<code>execute</code>函数中实例化，<code>Driver</code>的<code>close</code>函数中关闭（<code>driverCtx.shutdown</code>），和<code>Context</code>相比一个用来辅助语义分析，一个用来辅助任务执行。还有，我们发现在<code>processCmd</code>函数中通过<code>CommandProcessorFactory</code>设置了<code>Driver</code>类的实例对象，也就是每一条查询都需要一个<code>Driver</code>对象进行处理，那这些<code>Driver</code>对象之间是否可以共享呢？答案是肯定的，在<code>CommandProcessorFactory</code>中维持了一个<code>HiveConf</code>到<code>Driver</code>的Map，每次获取<code>Driver</code>对象时都是根据conf对象来查找到的，如果不存在才重新创建一个<code>Driver</code>对象，而<code>HiveConf</code>对象又是在<code>CliDriver</code>的<code>run</code>方法中实例化的，与一个<code>CliSessionState</code>对应，所以<code>Driver</code>实例应该是与一个Cli的会话对应，同一个会话内部的查询共享一个<code>Driver</code>实例。</p>
+<ul>
+<li><strong>Manage and run all tasks</strong></li>
+</ul>
+<p>扯得有点远，继续看<code>Driver</code>对查询任务的执行，在实例化<code>DriverContext</code>对象之后，就将查询计划plan中的任务放入到<code>DriverContext</code>的<code>runnable</code>队列中。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">for (Task&lt;? extends Serializable&gt; tsk : plan.getRootTasks()) &#123;</span><br><span class="line">    assert tsk.getParentTasks() == null || tsk.getParentTasks().isEmpty();</span><br><span class="line">    driverCxt.addToRunnable(tsk);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>下面就开始运行任务Task，整个任务的运行由一个循环控制，只要<code>DriverContext</code>没有被关闭，并且<code>runnable</code>和<code>running</code>队列中还有任务就一直循环。为了方便描述，下文将一次对任务循环过程的每一步进行说明，这里只给出循环判断条件。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">while (!destroyed &amp;&amp; driverCxt.isRunning()) &#123;&#125;</span><br><span class="line"></span><br><span class="line">public synchronized boolean isRunning() &#123;</span><br><span class="line">    return !shutdown &amp;&amp; (!running.isEmpty() || !runnable.isEmpty());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p> <strong>1.</strong>  <strong>Put all the tasks into runnable queue</strong></p>
+<p>在循环内部，首先不停的从<code>runnable</code>队列中抽取队首的任务，然后<code>launch</code>该任务。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">while (!destroyed &amp;&amp; driverCxt.isRunning()) &#123;</span><br><span class="line">   // Launch upto maxthreads tasks</span><br><span class="line">   Task&lt;? extends Serializable&gt; task;</span><br><span class="line">   while ((task = driverCxt.getRunnable(maxthreads)) != null) &#123;</span><br><span class="line">       perfLogger.PerfLogBegin(CLASS_NAME, PerfLogger.TASK + task.getName() + &quot;.&quot; + task.getId());</span><br><span class="line">       TaskRunner runner = launchTask(task, queryId, noName, jobname, jobs, driverCxt);</span><br><span class="line">       if (!runner.isRunning()) &#123;</span><br><span class="line">           break;</span><br><span class="line">      &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p> <strong>2.</strong> <strong>Launch a task</strong></p>
+<p> 在launch一个任务的过程中，根据任务类型（是不是MapReduceTask或者ConditialTask），做一些操作(don’t know what used for），将<code>DriverContext</code>当前已启动任务数<code>curJobNo</code>加1，然后根据配置文件conf，查询计划plan，执行上下文cxt（<code>DriverContext</code>），初始化一个任务，接着创建任务结果<code>TaskResult</code>对象和任务执行对象<code>TaskRunner</code>，将<code>TaskRunner</code>放入<code>DriverContext</code>的<code>running</code>队列中，表示该任务正在运行。最后，根据配置文件指定的任务运行模式，即是否支持并行运行，启动任务。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">private TaskRunner launchTask(Task&lt;? extends Serializable&gt; tsk,</span><br><span class="line">    String queryId, boolean noName,</span><br><span class="line">    String jobname, int jobs, DriverContext cxt) throws HiveException &#123;</span><br><span class="line"></span><br><span class="line">    if (SessionState.get() != null) &#123;</span><br><span class="line">      SessionState.get().getHiveHistory().startTask(queryId, tsk,</span><br><span class="line">                         tsk.getClass().getName());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (tsk.isMapRedTask() &amp;&amp; !(tsk instanceof ConditionalTask)) &#123;</span><br><span class="line">      if (noName) &#123;</span><br><span class="line">        conf.setVar(HiveConf.ConfVars.HADOOPJOBNAME, jobname + &quot;(&quot; +</span><br><span class="line">        tsk.getId() + &quot;)&quot;);</span><br><span class="line">      &#125;</span><br><span class="line">      conf.set(&quot;mapreduce.workflow.node.name&quot;, tsk.getId());</span><br><span class="line">      Utilities.setWorkflowAdjacencies(conf, plan);</span><br><span class="line">      cxt.incCurJobNo(1);</span><br><span class="line">      console.printInfo(&quot;Launching Job &quot; + cxt.getCurJobNo() + &quot; out of &quot; + jobs);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    tsk.initialize(conf, plan, cxt);</span><br><span class="line">    TaskResult tskRes = new TaskResult();</span><br><span class="line">    TaskRunner tskRun = new TaskRunner(tsk, tskRes);</span><br><span class="line"></span><br><span class="line">    cxt.launching(tskRun);</span><br><span class="line">    // Launch Task</span><br><span class="line">    if (HiveConf.getBoolVar(conf, HiveConf.ConfVars.EXECPARALLEL)</span><br><span class="line">        &amp;&amp; (tsk.isMapRedTask() || (tsk instanceof MoveTask))) &#123;</span><br><span class="line">      // Launch it in the parallel mode, as a separate thread only for MR tasks</span><br><span class="line">     //并发执行</span><br><span class="line">      if (LOG.isInfoEnabled())&#123;</span><br><span class="line">        LOG.info(&quot;Starting task [&quot; + tsk + &quot;] in parallel&quot;);</span><br><span class="line">      &#125;</span><br><span class="line">      tskRun.setOperationLog(OperationLog.getCurrentOperationLog());</span><br><span class="line">      tskRun.start();</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      if (LOG.isInfoEnabled())&#123;</span><br><span class="line">        LOG.info(&quot;Starting task [&quot; + tsk + &quot;] in serial mode&quot;);</span><br><span class="line">      &#125;</span><br><span class="line">     //顺序执行</span><br><span class="line">      tskRun.runSequential();</span><br><span class="line">    &#125;</span><br><span class="line">    return tskRun;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong>3. Poll a finished task</strong></p>
+<p>完成任务的启动之后，将调用<code>DriverContext</code>的<code>pollFinished</code>函数，查看任务是否执行完毕，如果有任务完成，则将该任务出队，并将已完成的任务添加到钩子上下文<code>HookContext</code>中。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">TaskRunner tskRun = driverCxt.pollFinished();</span><br><span class="line">        if (tskRun == null) &#123;</span><br><span class="line">          continue;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">hookContext.addCompleteTask(tskRun);</span><br><span class="line"></span><br><span class="line">public synchronized TaskRunner pollFinished() throws InterruptedException &#123;</span><br><span class="line">    while (!shutdown) &#123;</span><br><span class="line">      Iterator&lt;TaskRunner&gt; it = running.iterator();</span><br><span class="line">      while (it.hasNext()) &#123;</span><br><span class="line">        TaskRunner runner = it.next();</span><br><span class="line">        if (runner != null &amp;&amp; !runner.isRunning()) &#123;</span><br><span class="line">          it.remove();</span><br><span class="line">          return runner;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      wait(SLEEP_TIME);</span><br><span class="line">    &#125;</span><br><span class="line">    return null;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p><strong>4. Handle the finished task</strong></p>
+<p>针对一个已完成的任务，首先获取任务的结果对象<code>TaskResult</code>和退出状态, 如果任务非正常退出，则第一步先判断任务是否支持<code>Retry</code>，如果支持，关闭当前<code>DriverContext</code>，设置<code>jobTracker</code>为初始状态，抛出<code>CommandNeedRetry</code>异常，这个异常会在<code>CliDriver</code>的<code>processLocalCmd</code>中捕获，然后尝试重新处理该命令，参见上一篇文章的说明。如果任务不支持<code>Retry</code>，则启动备份任务<code>backupTask</code>（类似于回滚？），并添加到<code>runnable</code>队列，在下次循环过程中执行。如果没有<code>backupTask</code>，则查找用户配置<code>“hive.exec.failure.hooks”</code>,根据用户配置相应出错处理，并关闭<code>DriverContext</code>， 返回退出码。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">Task&lt;? extends Serializable&gt; tsk = tskRun.getTask();</span><br><span class="line">TaskResult result = tskRun.getTaskResult();</span><br><span class="line"></span><br><span class="line">int exitVal = result.getExitVal();</span><br><span class="line">   if (exitVal != 0) &#123;</span><br><span class="line">       if (tsk.ifRetryCmdWhenFail()) &#123;</span><br><span class="line">          driverCxt.shutdown();</span><br><span class="line">          // in case we decided to run everything in local mode, restore the</span><br><span class="line">          // the jobtracker setting to its initial value</span><br><span class="line">           ctx.restoreOriginalTracker();</span><br><span class="line">           throw new CommandNeedRetryException();</span><br><span class="line">       &#125;</span><br><span class="line">       Task&lt;? extends Serializable&gt; backupTask = tsk.getAndInitBackupTask();</span><br><span class="line">       if (backupTask != null) &#123;</span><br><span class="line">           setErrorMsgAndDetail(exitVal, result.getTaskError(), tsk);</span><br><span class="line">           console.printError(errorMessage);</span><br><span class="line">           errorMessage = &quot;ATTEMPT: Execute BackupTask: &quot; + backupTask.getClass().getName();</span><br><span class="line">           console.printError(errorMessage);</span><br><span class="line"></span><br><span class="line">               // add backup task to runnable</span><br><span class="line">           if (DriverContext.isLaunchable(backupTask)) &#123;</span><br><span class="line">              driverCxt.addToRunnable(backupTask);</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           continue;</span><br><span class="line"></span><br><span class="line">       &#125; else &#123;</span><br><span class="line">            hookContext.setHookType(HookContext.HookType.ON_FAILURE_HOOK);</span><br><span class="line">            // Get all the failure execution hooks and execute them.</span><br><span class="line">            for (Hook ofh : getHooks(HiveConf.ConfVars.ONFAILUREHOOKS)) &#123;</span><br><span class="line">              perfLogger.PerfLogBegin(CLASS_NAME, PerfLogger.FAILURE_HOOK + ofh.getClass().getName());</span><br><span class="line"></span><br><span class="line">              ((ExecuteWithHookContext) ofh).run(hookContext);</span><br><span class="line"></span><br><span class="line">              perfLogger.PerfLogEnd(CLASS_NAME, PerfLogger.FAILURE_HOOK + ofh.getClass().getName());</span><br><span class="line">            &#125;</span><br><span class="line">            setErrorMsgAndDetail(exitVal, result.getTaskError(), tsk);</span><br><span class="line">            SQLState = &quot;08S01&quot;;</span><br><span class="line">            console.printError(errorMessage);</span><br><span class="line">            driverCxt.shutdown();</span><br><span class="line">            // in case we decided to run everything in local mode, restore the</span><br><span class="line">            // the jobtracker setting to its initial value</span><br><span class="line">            ctx.restoreOriginalTracker();</span><br><span class="line">            return exitVal;</span><br><span class="line">          &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong>5. Find children tasks</strong></p>
+<p>最后调用<code>DriverContext</code>的<code>finished</code>函数，对完成的任务进行处理（处理逻辑没看懂）， 然后判断当前任务是否包含子任务，如果包含则依次将子任务添加到<code>runnable</code>队列，下次循环中被启动执行。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">driverCxt.finished(tskRun);</span><br><span class="line"></span><br><span class="line">if (tsk.getChildTasks() !=</span><br><span class="line">    for (Task&lt;? extends Serializable&gt; child : tsk.getChildTasks()) &#123;</span><br><span class="line">        if (DriverContext.isLaunchable(child)) &#123;</span><br><span class="line">           driverCxt.addToRunnable(child);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong>6. Do something before return</strong></p>
+<p>当所有的任务都完成之后，如果发现<code>DriverContext</code>已经被关闭，表明任务取消，打印信息并返回对应的状态码。最后清楚任务执行中不完整的输出，并加载执行用户指定的<code>&quot;hive.exec.post.hooks&quot;</code>，完成对应的钩子功能。对于执行过程中出现的异常，<code>CommandNeedRetryException</code>将会直接向上抛出，其他<code>Exception</code>，直接打印出错信息。无论是否发生异常，只要能够获取到任务执行过程中的MapReduce状态信息，都将在finally语句块中打印。（限于篇幅，此处只给出部分代码，钩子的处理方式前文已经给出不再详述，异常处理的部分，有兴趣的执行查看）<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">//判断DriverContext是否被关闭</span><br><span class="line">if (driverCxt.isShutdown()) &#123;</span><br><span class="line">        SQLState = &quot;HY008&quot;;</span><br><span class="line">        errorMessage = &quot;FAILED: Operation cancelled&quot;;</span><br><span class="line">        console.printError(errorMessage);</span><br><span class="line">        return 1000;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//删除不完整的输出</span><br><span class="line">HashSet&lt;WriteEntity&gt; remOutputs = new HashSet&lt;WriteEntity&gt;();</span><br><span class="line">      for (WriteEntity output : plan.getOutputs()) &#123;</span><br><span class="line">        if (!output.isComplete()) &#123;</span><br><span class="line">          remOutputs.add(output);</span><br><span class="line">        &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> for (WriteEntity output : remOutputs) &#123;</span><br><span class="line">     plan.getOutputs().remove(output);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
+<p>最后的最后，如果所有的任务都正常执行完毕，此次查询完成，plan.setDone()，打印OK~</p>
+<h3 id="PostRunHook-and-return"><a href="#PostRunHook-and-return" class="headerlink" title="PostRunHook and return"></a>PostRunHook and return</h3><p>还没完~当<code>execute</code>函数执行完成后，返回到<code>runInternal</code>函数中，接着释放锁，与之前的<code>PreRunHook</code>相对应，还需要加载相应用户自定义的<code>PostRunHook</code>（代码不再重复），最后才调用<code>creatProcessorResponse</code>，创建响应对象<code>CommandProcessorResponse</code>并返回。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private CommandProcessorResponse createProcessorResponse(int ret) &#123;</span><br><span class="line">    return new CommandProcessorResponse(ret, errorMessage, SQLState, downstreamError);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
+
+        </div>
+       
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2016/05/18/hive1/">Hive Driver源码执行流程分析</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2016/05/18/hive1/">https://gsmtoday.github.io/2016/05/18/hive1/</a></li>
+            <li><strong>发布时间：</strong>2016-05-18</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+                
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Hive/">Hive</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+<!--qrcode for 打赏-->
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2016/06/14/taiwan/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Taiwan - 台湾环岛</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2016/03/20/hive0/">
+                <span class="level-item">Hive 源码解析之 Hive 基本框架和执行入口</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                        
+                        <i class="fab fa-creative-commons"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
+                        
+                        <i class="fab fa-creative-commons-by"></i>
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
