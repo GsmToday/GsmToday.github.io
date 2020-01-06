@@ -1,7 +1,6 @@
 ---
 title: 权限控制发展综述
 toc: true
-thumbnail: /images/12.jpeg
 date: 2019-12-04 11:46:34
 author: GSM
 tags:

@@ -1,10 +1,10 @@
 ---
 title: 工程中遇到的排序算法-基础篇
 toc: true
-thumbnail: /images/
 date: 2020-01-05 12:12:19
 author:
 tags:
+article-thumbnail: false
 ---
 总结下经典的排序算法和工程中遇到的排序。
 <!--more-->

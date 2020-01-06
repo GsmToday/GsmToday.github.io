@@ -87,6 +87,15 @@ sitemap:
 baidusitemap:
   path: baidusitemap.xml
 
+comment:
+    # Name of the comment plugin
+    type: gitalk
+    owner: cloudy-liu         # (required) GitHub user name
+    repo: cloudy-liu.github.io   # (required) GitHub repository name
+    client_id: xxxx # (required) OAuth application client id
+    client_secret: xxx # (required) OAuth application client secret
+    admin: cloudy-liu
+
 baidu_url_submit:
   count: 100 # 提交最新的一个链接
   host: https://gsmtoday.github.io # 在百度站长平台中注册的域

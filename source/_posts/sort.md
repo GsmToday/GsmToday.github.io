@@ -5,6 +5,7 @@ thumbnail: /images/starbuck.jpeg
 date: 2019-12-02 10:42:00
 author: GSM 
 tags: 算法
+article-thumbnail: false
 ---
 总结下经典的排序算法和工程中遇到的排序。
 <!--more-->
