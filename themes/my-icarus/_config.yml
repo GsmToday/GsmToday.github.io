@@ -67,11 +67,11 @@ search:
 comment:
     # Name of the comment plugin
     type: gitalk
-    owner: Shimeng Gao         # (required) GitHub user name
-    repo: GsmToday.github.io   # (required) GitHub repository name
+    owner: GsmToday    # (required) GitHub user name
+    repo: blog-comments   # (required) GitHub repository name
     client_id: f1f080e6d22a498c3ab3 # (required) OAuth application client id
     client_secret: 5cdc320f3ad7501bd3f0872a223d150d02bd4b5c # (required) OAuth application client secret
-    admin: Shimeng Gao
+    admin: ['GsmToday','uestc-dpz']
 # Donation entries
 # http://ppoffice.github.io/hexo-theme-icarus/categories/Donation/
 #donate:
