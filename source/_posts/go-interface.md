@@ -1,6 +1,6 @@
 ---
 title: Go interface源码解析
-toc: false
+toc: true 
 thumbnail: /images/tuboshu.jpeg
 date: 2019-01-04 20:59:43
 author: NX

@@ -72,7 +72,7 @@ pagination_dir: page
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: icarus
+theme: my-theme
 
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
@@ -86,15 +86,6 @@ sitemap:
   path: sitemap.xml
 baidusitemap:
   path: baidusitemap.xml
-
-comment:
-    # Name of the comment plugin
-    type: gitalk
-    owner: cloudy-liu         # (required) GitHub user name
-    repo: cloudy-liu.github.io   # (required) GitHub repository name
-    client_id: xxxx # (required) OAuth application client id
-    client_secret: xxx # (required) OAuth application client secret
-    admin: cloudy-liu
 
 baidu_url_submit:
   count: 100 # 提交最新的一个链接
