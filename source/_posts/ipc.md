@@ -1,5 +1,5 @@
 ---
-title: ipc
+title: 一种进程间通信的方案与实现
 toc: true
 date: 2020-01-07 16:10:13
 author: NX

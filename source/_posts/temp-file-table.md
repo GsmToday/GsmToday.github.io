@@ -6,6 +6,7 @@ date: 2019-12-03 14:34:34
 author: GSM
 tags: MySQL
 categories: 学习积累
+article-thumbnail: false
 ---
 本文为学习摘抄。
 <!--more-->

@@ -6,6 +6,7 @@ date: 2019-02-22 15:30:25
 author:
 tags: MySQL
 categories: 学习积累
+article-thumbnail: false
 ---
 关于MySQL临时表和临时文件。
 <!--more-->

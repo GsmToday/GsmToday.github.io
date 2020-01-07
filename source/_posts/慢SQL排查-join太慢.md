@@ -6,6 +6,7 @@ date: 2019-09-11 21:38:28
 author: GSM
 tags: MySQL
 categories: 业务实践
+article-thumbnail: false
 ---
 一次慢SQL的排查。
 <!--more-->
