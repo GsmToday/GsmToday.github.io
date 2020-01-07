@@ -1,11 +1,12 @@
 # Version of the Icarus theme that is currently used
 version: 2.3.0
 # Path or URL to the website's icon
-favicon: /images/favicon.svg
+favicon:
 # Path or URL to RSS atom.xml
 rss: 
 # Path or URL to the website's logo to be shown on the left of the navigation bar or footer
-logo: /images/logo.png
+logo: 
+    text: 武青南路
 # Open Graph metadata
 # https://hexo.io/docs/helpers.html#open-graph
 open_graph:
@@ -23,11 +24,11 @@ open_graph:
 navbar:
     # Navigation bar menu links
     menu:
-        Home: /
-        Archives: /archives/
-        Categories: /categories/
-        Tags: /tags/
-        About: /about/
+        主页: /
+        收藏: /archives/
+        类别: /categories/
+        标签: /tags/
+        关于我们: /about/
     # Navigation bar links to be shown on the right
     links:
         GsmToday GitHub:
