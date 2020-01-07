@@ -14,10 +14,14 @@
 <meta property="og:site_name" content="我们">
 <meta property="og:description" content="总结下经典的排序算法和工程中遇到的排序。">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2020-01-06T11:07:38.320Z">
+<meta property="og:image" content="https://gsmtoday.github.io/images/og_image.png">
+<meta property="og:updated_time" content="2020-01-07T08:39:09.272Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="工程中遇到的排序算法-基础篇">
 <meta name="twitter:description" content="总结下经典的排序算法和工程中遇到的排序。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/images/og_image.png">
+
+
 
 
 
@@ -27,7 +31,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/github-gist.css">
 
 
     
@@ -77,6 +81,10 @@
     
     
     
+        <script async="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+
+    
 
 
 <link rel="stylesheet" href="/css/style.css">
@@ -99,16 +107,16 @@
                 href="/">主页</a>
                 
                 <a class="navbar-item"
-                href="/archives/index.html">收藏</a>
+                href="/archives/">收藏</a>
                 
                 <a class="navbar-item"
-                href="/categories/index.html">类别</a>
+                href="/categories/">类别</a>
                 
                 <a class="navbar-item"
-                href="/tags/index.html">标签</a>
+                href="/tags/">标签</a>
                 
                 <a class="navbar-item"
-                href="/about/index.html">关于我们</a>
+                href="/about/">关于我们</a>
                 
             </div>
             
@@ -116,7 +124,7 @@
                 
                     
                     
-                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                    <a class="navbar-item" target="_blank" title="GsmToday GitHub" href="https://github.com/GsmToday">
                         
                         <i class="fab fa-github"></i>
                         
@@ -143,45 +151,44 @@
             <div class="columns">
                 <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
     
-    <div class="card-image">
-        <span  class="image is-7by1">
-            <img class="thumbnail" src="/images/2.jpeg" alt="工程中遇到的排序算法-基础篇">
-        </span>
-    </div>
-    
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <i class="fas fa-angle-double-right"></i>工程中遇到的排序算法-基础篇
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2020-01-05T04:12:19.000Z">2020-01-05</time>
+                <time class="level-item has-text-grey" datetime="2020-01-05T04:12:19.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2020-01-05</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-07T08:39:09.272Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-07</time>
+                
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    5 分钟 读完 (大约 736 个字)
+                    5 分钟 读完 (大约 720 个字)
                 </span>
                 
+                
+                <span class="level-item has-text-grey" id="busuanzi_container_page_pv">
+                    <i class="far fa-eye"></i>
+                    <span id="busuanzi_value_page_pv">0</span>次访问
+                </span>
                 
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                工程中遇到的排序算法-基础篇
-            
-        </h1>
         <div class="content">
-            <p>总结下经典的排序算法和工程中遇到的排序。<br><a id="more"></a><br>工程中用到的排序算法大概有这么几类：</p>
-<ul>
-<li>基于比较</li>
-</ul>
-<p>排序算法</p>
+            <p>总结下经典的排序算法和工程中遇到的排序。<br><a id="more"></a></p>
 <h1 id="1-基于比较的排序算法"><a href="#1-基于比较的排序算法" class="headerlink" title="1. 基于比较的排序算法"></a>1. 基于比较的排序算法</h1><h2 id="时间复杂度-O-n-2-的-排序算法"><a href="#时间复杂度-O-n-2-的-排序算法" class="headerlink" title="时间复杂度$O(n^2)$ 的 排序算法"></a>时间复杂度$O(n^2)$ 的 排序算法</h2><p><strong>冒泡排序</strong>: 时间复杂度$O(n^2)$，空间复杂度：原地排序，稳定的排序算法。</p>
 <p><strong>快速排序</strong>: 时间复杂度$O(n^2)$，空间复杂度：原地排序，稳定的排序算法。</p>
 <p><strong>选择排序</strong>: 时间复杂度$O(n^2)$，空间复杂度：原地排序，不稳定的排序算法。</p>
 <p>上述三种排序算法因为时间复杂度比较高，$O(n^2)$。因此只适合小规模数据的排序。</p>
-<h2 id="时间复杂度-O-nlogn-的排序算法"><a href="#时间复杂度-O-nlogn-的排序算法" class="headerlink" title="时间复杂度$O(nlogn)$的排序算法"></a>时间复杂度$O(nlogn)$的排序算法</h2><p>对于大规模数据进行排序，应该选择时间复杂度$O(nlogn)$的排序算法。例如<strong>快速排序</strong>。</p>
+<h2 id="时间复杂度-O-nlogn-的排序算法"><a href="#时间复杂度-O-nlogn-的排序算法" class="headerlink" title="时间复杂度$O(nlogn)$的排序算法"></a>时间复杂度$O(nlogn)$的排序算法</h2><p>对于大规模数据进行排序，应该选择时间复杂度$O(nlogn)$的排序算法。</p>
 <p><strong>归并排序</strong>: 时间复杂度$O(nlogn)$，空间复杂度On, 稳定的排序算法。算法思想用到了分治思想。</p>
 <p>缺点：实战中使用归并并不多，这是因为归并不是原地排序算法。粗略举例来说，100MB数据，除了数据本身占用的内存之外，排序算法那还需要额外占用100MB的内存，空间耗费翻倍。</p>
 <p><strong>快速排序</strong>: 时间复杂度 $O(nlogn)$，原地排序，不稳定的排序算法。</p>
@@ -196,11 +203,11 @@
 <li>限制递归深度，一旦超过设定的阈值，就停止递归；</li>
 <li>在堆上模拟实现一个函数调用栈，手动模拟递归压栈、出栈的过程，这样就没有了系统栈大小的现在。</li>
 </ul>
-<h1 id="2"><a href="#2" class="headerlink" title="2."></a>2.</h1><p><strong>桶排序</strong><br><strong>计数排序</strong><br><strong>基数排序</strong></p>
-<p># </p>
+<p><strong>堆排序</strong></p>
+<h1 id="2-非基于比较排序"><a href="#2-非基于比较排序" class="headerlink" title="2. 非基于比较排序"></a>2. 非基于比较排序</h1><p>时间复杂度$O(n)$<br><strong>桶排序</strong><br><strong>计数排序</strong><br><strong>基数排序</strong></p>
 
         </div>
-       
+        
             <ul class="post-copyright">
             <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2020/01/05/sort-base/">工程中遇到的排序算法-基础篇</a></li>
             <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
@@ -209,7 +216,7 @@
             <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
             </li>
             </ul>
-                
+        
         
         
         
@@ -217,31 +224,18 @@
 </div>
 
 
-<!--qrcode for 打赏-->
-
-<div class="card">
-    <div class="card-content">
-        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
-        <div class="buttons is-centered">
-            
-                
-<a class="button is-info donate">
-    <span class="icon is-small">
-        <i class="fab fa-alipay"></i>
-    </span>
-    <span>支付宝</span>
-    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
-</a>
-
-                
-        </div>
-    </div>
-</div>
 
 
 
 <div class="card card-transparent">
     <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/01/07/ipc/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">一种进程间通信的方案与实现</span>
+            </a>
+        </div>
         
         
         <div class="level-end">
@@ -255,6 +249,29 @@
 </div>
 
 
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: 'f1f080e6d22a498c3ab3',
+        clientSecret: '5cdc320f3ad7501bd3f0872a223d150d02bd4b5c',
+        id: 'e561f36beaac22029c343b298f5cebc6',
+        repo: 'GsmToday.github.io',
+        owner: 'Shimeng Gao',
+        admin: "Shimeng Gao"
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+
 </div>
                 
 
@@ -264,7 +281,77 @@
 <div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
     
         
-<div class="card widget" id="toc">
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level" style="margin-bottom:1rem">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-96x96 has-mb-6" src="/images/logo.png" alt="N&amp;G">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        N&amp;G
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Developer
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Chengdu &amp; Beijing</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level menu-list is-mobile" style="margin-bottom:1rem">
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/archives/">
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        71
+                    </p>
+                </a>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/categories/">
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        5
+                    </p>
+                </a>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/tags/">
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        26
+                    </p>
+                </a>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://www.github.com/GsmToday" target="_blank">
+                <i class="fab fa-github"></i>&nbsp;&nbsp;关注我</a>
+        </div>
+        
+        
+    </div>
+</div>
+
+    
+        
+<div class="card widget column-left is-sticky" id="toc">
     <div class="card-content">
         <div class="menu">
             <h3 class="menu-label">
@@ -283,13 +370,14 @@
         <span class="has-mr-6">1.2</span>
         <span>时间复杂度$O(nlogn)$的排序算法</span>
         </a></li></ul></li><li>
-        <a class="is-flex" href="#2">
+        <a class="is-flex" href="#2-非基于比较排序">
         <span class="has-mr-6">2</span>
-        <span>2.</span>
+        <span>2. 非基于比较排序</span>
         </a></li></ul>
         </div>
     </div>
 </div>
+
 
     
     
@@ -317,6 +405,11 @@
                 Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
                         href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
                 
+                <br>
+                <span id="busuanzi_container_site_uv">
+                共<span id="busuanzi_value_site_uv">0</span>个访客
+                </span>
+                
                 </p>
             </div>
             <div class="level-end">
@@ -325,25 +418,17 @@
                 
                 
                 <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                    <a class="button is-white is-large" target="_blank" title="CC BY-NC-SA 4.0" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
                         
-                        <i class="fab fa-creative-commons"></i>
-                        
-                    </a>
-                </p>
-                
-                <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
-                        
-                        <i class="fab fa-creative-commons-by"></i>
+                        <i class="fab fa-creative-commons"></i>&nbsp;<i class="fab fa-creative-commons-by"></i>&nbsp;<i class="fab fa-creative-commons-nc"></i>&nbsp;<i class="fab fa-creative-commons-sa"></i>&nbsp;
                         
                     </a>
                 </p>
                 
                 <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                    <a class="button is-white is-large" target="_blank" title="GsmToday GitHub" href="https://www.github.com/GsmToday">
                         
-                        <i class="fab fa-github"></i>
+                        <i class="fab fa-github"></i>&nbsp;
                         
                     </a>
                 </p>
@@ -354,6 +439,7 @@
         </div>
     </div>
 </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
 <script>moment.locale("zh-CN");</script>
@@ -447,6 +533,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     
     
+    
+
     
 
 

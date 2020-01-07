@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<title>一种进程间通信的方案与实现 - 我们</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+
+
+    <meta name="description" content="背景在外化重构过程中，Python包的功能迁移到了Java服务端实现，而部分三方依赖，用Java语言重写开销过大，所以需要某种方式通过Java程序调用本地Python进程，执行用户请求并完成响应。">
+<meta name="keywords" content="optimize">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一种进程间通信的方案与实现">
+<meta property="og:url" content="https://gsmtoday.github.io/2020/01/07/ipc/index.html">
+<meta property="og:site_name" content="我们">
+<meta property="og:description" content="背景在外化重构过程中，Python包的功能迁移到了Java服务端实现，而部分三方依赖，用Java语言重写开销过大，所以需要某种方式通过Java程序调用本地Python进程，执行用户请求并完成响应。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/images/og_image.png">
+<meta property="og:updated_time" content="2020-01-07T08:33:29.595Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一种进程间通信的方案与实现">
+<meta name="twitter:description" content="背景在外化重构过程中，Python包的功能迁移到了Java服务端实现，而部分三方依赖，用Java语言重写开销过大，所以需要某种方式通过Java程序调用本地Python进程，执行用户请求并完成响应。">
+<meta name="twitter:image" content="https://gsmtoday.github.io/images/og_image.png">
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/github-gist.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+        <script async="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                武青南路
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives/">收藏</a>
+                
+                <a class="navbar-item"
+                href="/categories/">类别</a>
+                
+                <a class="navbar-item"
+                href="/tags/">标签</a>
+                
+                <a class="navbar-item"
+                href="/about/">关于我们</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="GsmToday GitHub" href="https://github.com/GsmToday">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <i class="fas fa-angle-double-right"></i>一种进程间通信的方案与实现
+            
+        </h1>
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-01-07T08:10:13.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2020-01-07</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-07T08:33:29.595Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-07</time>
+                
+                
+                <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
+                <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
+                    
+                    
+                    8 分钟 读完 (大约 1168 个字)
+                </span>
+                
+                
+                <span class="level-item has-text-grey" id="busuanzi_container_page_pv">
+                    <i class="far fa-eye"></i>
+                    <span id="busuanzi_value_page_pv">0</span>次访问
+                </span>
+                
+            </div>
+        </div>
+        
+        <div class="content">
+            <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在外化重构过程中，Python包的功能迁移到了Java服务端实现，而部分三方依赖，用Java语言重写开销过大，所以需要某种方式通过Java程序调用本地Python进程，执行用户请求并完成响应。</p>
+<a id="more"></a>
+<p>前期的实现方式为基于apache的exec包，每次用户请求，调起一个Python进程，完成用户请求。在压测过程中发现，当发压机生成的请求过多之后，会引发Linux操作系统的OOM机制，主动kill掉一些python进程甚至杀死Java的服务进程，QPS过低且存在服务崩溃的风险。</p>
+<h1 id="改造思路"><a href="#改造思路" class="headerlink" title="改造思路"></a>改造思路</h1><p>本次改造主要解决的问题在于提高系统吞吐量，并规避Linux OOM的问题，保护Java的服务进程。首先为每个请求创建一个Python进程的本身开销就很大，其次当遇到一些需要处理图片等内存占用较高的Python进程，请求量大了之后就极容易触发Linux的OOM kill机制。</p>
+<p>所以本次改造的着手点在于：</p>
+<ol>
+<li>固定Python进程数目，采用基于内存映射的方式，完成Java进程和Python进程间的通信</li>
+<li>引入请求的排队和超时机制，在流量突发的情况下，使得服务程序也能够平滑稳定的执行用户请求</li>
+</ol>
+<h1 id="实现要点"><a href="#实现要点" class="headerlink" title="实现要点"></a>实现要点</h1><ol>
+<li>Spring的异步请求；基于DeferredResult将用户请求异步化，避免因为执行某些耗时较长的python方法阻塞Spring执行用户请求的核心线程</li>
+<li>用户请求的排队，reject以及负载均衡机制</li>
+<li>基于内存映射的进程间通信，需要解决请求响应的匹配识别，通信消息的编解码方式以及映射文件的无锁化访问</li>
+<li>Python侧程序的改造</li>
+</ol>
+<h1 id="请求处理模型"><a href="#请求处理模型" class="headerlink" title="请求处理模型"></a>请求处理模型</h1><p>初始方案以每个独立的python进程为核心，构造一套闭环的执行Loop。</p>
+<p><img src="/2020/01/07/ipc/request-loop.png" width="600" height="400" title="request-loop"></p>
+<p>其中，每个用户请求会首先放入一个Blocking queue中，等待处理，如果队列满了，请求被直接拒绝。Pthread负责从直接关联的queue里取请求，通过mapped file通知python进程处理用户请求，python读取并执行后通过另外一个mapped file将结果发送给接收线程Cthread，由Cthread完成包装后，返回给用户。此处，之所以创建独立的Cthread来处理结果，是由于针对python执行结果的可能会比较耗时，比如会写图片到OSS这种操作，有利于提高吞吐量。</p>
+<p>在第一版的方案实现中存在一个问题就是：同一个Loop的Pthread需要等到Cthread回写结果完成后，才能继续处理下一个请求，（二者依赖信号量同步）其实在Cthread从mapped file取出处理结果后，Pthread就可以继续处理下一个请求，而无需等待Cthread的业务逻辑处理。所以，把Cthread的功能进一步拆解为两个部分：读mapped file 和 响应结果处理，并将读mapped file的逻辑上推至Pthread中，以线程池的方式执行响应结果处理，进一步提高并发程度，并且减少了一份 mmap file的使用。</p>
+<p>改进方案：</p>
+<p><img src="/2020/01/07/ipc/request-loop-final.png" width="600" height="400" title="request-loop-final"></p>
+<p>请求与响应的读写都由pthread控制， 减少mapped file文件的数量。引入线程池，独立执行响应的处理，做到更强的异步化处理。</p>
+<h1 id="压测结果"><a href="#压测结果" class="headerlink" title="压测结果"></a>压测结果</h1><p>以ybc_table为例，改造前10thread， 20s的压测结果如下</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">`&gt; ---- Global Information -------------------------------------------------------- </span><br><span class="line">&gt; request count                                      <span class="hljs-number">14140</span> (OK=<span class="hljs-number">424</span>    KO=<span class="hljs-number">13716</span> ) </span><br><span class="line">&gt; min response time                                      <span class="hljs-number">1</span> (OK=<span class="hljs-number">53</span>     KO=<span class="hljs-number">1</span>     ) </span><br><span class="line">&gt; max response time                                    <span class="hljs-number">426</span> (OK=<span class="hljs-number">426</span>    KO=<span class="hljs-number">100</span>   ) </span><br><span class="line">&gt; mean response time                                    <span class="hljs-number">13</span> (OK=<span class="hljs-number">238</span>    KO=<span class="hljs-number">7</span>     ) </span><br><span class="line">&gt; <span class="hljs-built_in">std</span> deviation                                         <span class="hljs-number">42</span> (OK=<span class="hljs-number">62</span>     KO=<span class="hljs-number">10</span>    ) </span><br><span class="line">&gt; response time <span class="hljs-number">50</span>th percentile                          <span class="hljs-number">6</span> (OK=<span class="hljs-number">250</span>    KO=<span class="hljs-number">6</span>     ) </span><br><span class="line">&gt; response time <span class="hljs-number">75</span>th percentile                          <span class="hljs-number">8</span> (OK=<span class="hljs-number">274</span>    KO=<span class="hljs-number">8</span>     ) </span><br><span class="line">&gt; response time <span class="hljs-number">95</span>th percentile                         <span class="hljs-number">50</span> (OK=<span class="hljs-number">332</span>    KO=<span class="hljs-number">18</span>    ) </span><br><span class="line">&gt; response time <span class="hljs-number">99</span>th percentile                        <span class="hljs-number">260</span> (OK=<span class="hljs-number">385</span>    KO=<span class="hljs-number">57</span>    ) </span><br><span class="line">&gt; mean requests/sec                                <span class="hljs-number">673.333</span> (OK=<span class="hljs-number">20.19</span>  KO=<span class="hljs-number">653.143</span>) </span><br><span class="line">---- Response Time Distribution ------------------------------------------------ </span><br><span class="line">&gt; t &lt; <span class="hljs-number">800</span> ms                                           <span class="hljs-number">424</span> (  <span class="hljs-number">3</span>%) </span><br><span class="line">&gt; <span class="hljs-number">800</span> ms &lt; t &lt; <span class="hljs-number">1200</span> ms                                   <span class="hljs-number">0</span> (  <span class="hljs-number">0</span>%) </span><br><span class="line">&gt; t &gt; <span class="hljs-number">1200</span> ms                                            <span class="hljs-number">0</span> (  <span class="hljs-number">0</span>%) </span><br><span class="line">&gt; failed                                             <span class="hljs-number">13716</span> ( <span class="hljs-number">97</span>%) </span><br><span class="line">---- Errors -------------------------------------------------------------------- </span><br><span class="line">&gt; status.find.in(<span class="hljs-number">200</span>,<span class="hljs-number">304</span>,<span class="hljs-number">201</span>,<span class="hljs-number">202</span>,<span class="hljs-number">203</span>,<span class="hljs-number">204</span>,<span class="hljs-number">205</span>,<span class="hljs-number">206</span>,<span class="hljs-number">207</span>,<span class="hljs-number">208</span>,<span class="hljs-number">209</span>), b  <span class="hljs-number">13716</span> (<span class="hljs-number">100.0</span>%) ut actually found <span class="hljs-number">500</span></span><br></pre></td></tr></table></figure>
+<p>改造后，10个独立的python进程，100thread， 60s的压测结果如下，吞吐量和响应时间都有显著提升</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">---- Global Information -------------------------------------------------------- </span><br><span class="line">&gt; request count                                      <span class="hljs-number">53235</span> (OK=<span class="hljs-number">53232</span>  KO=<span class="hljs-number">3</span>     ) </span><br><span class="line">&gt; min response time                                      <span class="hljs-number">1</span> (OK=<span class="hljs-number">1</span>      KO=<span class="hljs-number">3674</span>  ) </span><br><span class="line">&gt; max response time                                   <span class="hljs-number">4434</span> (OK=<span class="hljs-number">3913</span>   KO=<span class="hljs-number">4434</span>  ) </span><br><span class="line">&gt; mean response time                                   <span class="hljs-number">112</span> (OK=<span class="hljs-number">112</span>    KO=<span class="hljs-number">3954</span>  ) </span><br><span class="line">&gt; <span class="hljs-built_in">std</span> deviation                                        <span class="hljs-number">211</span> (OK=<span class="hljs-number">209</span>    KO=<span class="hljs-number">340</span>   ) </span><br><span class="line">&gt; response time <span class="hljs-number">50</span>th percentile                         <span class="hljs-number">13</span> (OK=<span class="hljs-number">13</span>     KO=<span class="hljs-number">3756</span>  ) </span><br><span class="line">&gt; response time <span class="hljs-number">75</span>th percentile                        <span class="hljs-number">153</span> (OK=<span class="hljs-number">153</span>    KO=<span class="hljs-number">4095</span>  ) </span><br><span class="line">&gt; response time <span class="hljs-number">95</span>th percentile                        <span class="hljs-number">481</span> (OK=<span class="hljs-number">481</span>    KO=<span class="hljs-number">4366</span>  ) </span><br><span class="line">&gt; response time <span class="hljs-number">99</span>th percentile                        <span class="hljs-number">771</span> (OK=<span class="hljs-number">769</span>    KO=<span class="hljs-number">4420</span>  ) </span><br><span class="line">&gt; mean requests/sec                                <span class="hljs-number">858.629</span> (OK=<span class="hljs-number">858.581</span> KO=<span class="hljs-number">0.048</span> ) </span><br><span class="line">---- Response Time Distribution ------------------------------------------------ </span><br><span class="line">&gt; t &lt; <span class="hljs-number">800</span> ms                                         <span class="hljs-number">52761</span> ( <span class="hljs-number">99</span>%) </span><br><span class="line">&gt; <span class="hljs-number">800</span> ms &lt; t &lt; <span class="hljs-number">1200</span> ms                                 <span class="hljs-number">324</span> (  <span class="hljs-number">1</span>%) </span><br><span class="line">&gt; t &gt; <span class="hljs-number">1200</span> ms                                          <span class="hljs-number">147</span> (  <span class="hljs-number">0</span>%) </span><br><span class="line">&gt; failed                                                 <span class="hljs-number">3</span> (  <span class="hljs-number">0</span>%) </span><br><span class="line">---- Errors -------------------------------------------------------------------- </span><br><span class="line">&gt; status.find.in(<span class="hljs-number">200</span>,<span class="hljs-number">304</span>,<span class="hljs-number">201</span>,<span class="hljs-number">202</span>,<span class="hljs-number">203</span>,<span class="hljs-number">204</span>,<span class="hljs-number">205</span>,<span class="hljs-number">206</span>,<span class="hljs-number">207</span>,<span class="hljs-number">208</span>,<span class="hljs-number">209</span>),<span class="hljs-number">3</span> (<span class="hljs-number">100.0</span>%) ut actually found <span class="hljs-number">500</span></span><br></pre></td></tr></table></figure>
+        </div>
+        
+            <ul class="post-copyright">
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2020/01/07/ipc/">一种进程间通信的方案与实现</a></li>
+            <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
+            <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2020/01/07/ipc/">https://gsmtoday.github.io/2020/01/07/ipc/</a></li>
+            <li><strong>发布时间：</strong>2020-01-07</li>
+            <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+            </li>
+            </ul>
+        
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/optimize/">optimize</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/01/05/sort-base/">
+                <span class="level-item">工程中遇到的排序算法-基础篇</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: 'f1f080e6d22a498c3ab3',
+        clientSecret: '5cdc320f3ad7501bd3f0872a223d150d02bd4b5c',
+        id: '3a822e316a362183c75e3413aa887c85',
+        repo: 'GsmToday.github.io',
+        owner: 'Shimeng Gao',
+        admin: "Shimeng Gao"
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level" style="margin-bottom:1rem">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-96x96 has-mb-6" src="/images/logo.png" alt="N&amp;G">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        N&amp;G
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Developer
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Chengdu &amp; Beijing</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level menu-list is-mobile" style="margin-bottom:1rem">
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/archives/">
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        71
+                    </p>
+                </a>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/categories/">
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        5
+                    </p>
+                </a>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/tags/">
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        26
+                    </p>
+                </a>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://www.github.com/GsmToday" target="_blank">
+                <i class="fab fa-github"></i>&nbsp;&nbsp;关注我</a>
+        </div>
+        
+        
+    </div>
+</div>
+
+    
+        
+<div class="card widget column-left is-sticky" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#背景">
+        <span class="has-mr-6">1</span>
+        <span>背景</span>
+        </a></li><li>
+        <a class="is-flex" href="#改造思路">
+        <span class="has-mr-6">2</span>
+        <span>改造思路</span>
+        </a></li><li>
+        <a class="is-flex" href="#实现要点">
+        <span class="has-mr-6">3</span>
+        <span>实现要点</span>
+        </a></li><li>
+        <a class="is-flex" href="#请求处理模型">
+        <span class="has-mr-6">4</span>
+        <span>请求处理模型</span>
+        </a></li><li>
+        <a class="is-flex" href="#压测结果">
+        <span class="has-mr-6">5</span>
+        <span>压测结果</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    武青南路
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 NX&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
+                
+                <br>
+                <span id="busuanzi_container_site_uv">
+                共<span id="busuanzi_value_site_uv">0</span>个访客
+                </span>
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+                <div class="field has-addons is-flex-center-mobile has-mt-5-mobile is-flex-wrap is-flex-middle">
+                
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="CC BY-NC-SA 4.0" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                        
+                        <i class="fab fa-creative-commons"></i>&nbsp;<i class="fab fa-creative-commons-by"></i>&nbsp;<i class="fab fa-creative-commons-nc"></i>&nbsp;<i class="fab fa-creative-commons-sa"></i>&nbsp;
+                        
+                    </a>
+                </p>
+                
+                <p class="control">
+                    <a class="button is-white is-large" target="_blank" title="GsmToday GitHub" href="https://www.github.com/GsmToday">
+                        
+                        <i class="fab fa-github"></i>&nbsp;
+                        
+                    </a>
+                </p>
+                
+                </div>
+            
+            </div>
+        </div>
+    </div>
+</footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

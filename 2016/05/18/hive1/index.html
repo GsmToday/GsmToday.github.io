@@ -15,12 +15,14 @@
 <meta property="og:site_name" content="我们">
 <meta property="og:description" content="引言接着上一篇来说[执行入口的分析][1]，CliDriver最终将用户指令command提交给了Driver的run方法（针对常用查询语句而言），在这里用户的command将会被编译，优化并生成MapReduce任务进行执行。所以Driver也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:image" content="https://gsmtoday.github.io/2016/05/18/hive1/hivea1.png">
+<meta property="og:image" content="https://gsmtoday.github.io/images/insect.jpg">
 <meta property="og:updated_time" content="2020-01-06T10:52:35.819Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Hive Driver源码执行流程分析">
 <meta name="twitter:description" content="引言接着上一篇来说[执行入口的分析][1]，CliDriver最终将用户指令command提交给了Driver的run方法（针对常用查询语句而言），在这里用户的command将会被编译，优化并生成MapReduce任务进行执行。所以Driver也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。">
-<meta name="twitter:image" content="https://gsmtoday.github.io/2016/05/18/hive1/hivea1.png">
+<meta name="twitter:image" content="https://gsmtoday.github.io/images/insect.jpg">
+
+
 
 
 
@@ -30,7 +32,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/github-gist.css">
 
 
     
@@ -80,6 +82,10 @@
     
     
     
+        <script async="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+
+    
 
 
 <link rel="stylesheet" href="/css/style.css">
@@ -102,16 +108,16 @@
                 href="/">主页</a>
                 
                 <a class="navbar-item"
-                href="/archives/index.html">收藏</a>
+                href="/archives/">收藏</a>
                 
                 <a class="navbar-item"
-                href="/categories/index.html">类别</a>
+                href="/categories/">类别</a>
                 
                 <a class="navbar-item"
-                href="/tags/index.html">标签</a>
+                href="/tags/">标签</a>
                 
                 <a class="navbar-item"
-                href="/about/index.html">关于我们</a>
+                href="/about/">关于我们</a>
                 
             </div>
             
@@ -119,7 +125,7 @@
                 
                     
                     
-                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                    <a class="navbar-item" target="_blank" title="GsmToday GitHub" href="https://github.com/GsmToday">
                         
                         <i class="fab fa-github"></i>
                         
@@ -149,31 +155,41 @@
     </div>
     
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <i class="fas fa-angle-double-right"></i>Hive Driver源码执行流程分析
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2016-05-18T12:41:22.000Z">2016-05-18</time>
+                <time class="level-item has-text-grey" datetime="2016-05-18T12:41:22.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2016-05-18</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.819Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
                 
                 <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
                 <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
                     21 分钟 读完 (大约 3143 个字)
                 </span>
                 
                 
+                <span class="level-item has-text-grey" id="busuanzi_container_page_pv">
+                    <i class="far fa-eye"></i>
+                    <span id="busuanzi_value_page_pv">0</span>次访问
+                </span>
+                
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                Hive Driver源码执行流程分析
-            
-        </h1>
         <div class="content">
             <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>接着上一篇来说[执行入口的分析][1]，<code>CliDriver</code>最终将用户指令<code>command</code>提交给了<code>Driver</code>的<code>run</code>方法（针对常用查询语句而言），在这里用户的<code>command</code>将会被编译，优化并生成MapReduce任务进行执行。所以<code>Driver</code>也是Hive的核心，他扮演了一个将用户查询和MapReduce Task转换并执行的角色，下面我们就看看Hive是如何一步一步操作的。</p>
 <a id="more"></a>
@@ -212,7 +228,7 @@
 <h3 id="PostRunHook-and-return"><a href="#PostRunHook-and-return" class="headerlink" title="PostRunHook and return"></a>PostRunHook and return</h3><p>还没完~当<code>execute</code>函数执行完成后，返回到<code>runInternal</code>函数中，接着释放锁，与之前的<code>PreRunHook</code>相对应，还需要加载相应用户自定义的<code>PostRunHook</code>（代码不再重复），最后才调用<code>creatProcessorResponse</code>，创建响应对象<code>CommandProcessorResponse</code>并返回。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private CommandProcessorResponse createProcessorResponse(int ret) &#123;</span><br><span class="line">    return new CommandProcessorResponse(ret, errorMessage, SQLState, downstreamError);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure></p>
 
         </div>
-       
+        
             <ul class="post-copyright">
             <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2016/05/18/hive1/">Hive Driver源码执行流程分析</a></li>
             <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
@@ -221,12 +237,13 @@
             <li><strong>版权声明：</strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
             </li>
             </ul>
-                
         
+        
+        <hr style="height:1px;margin:1rem 0"/>
         <div class="level is-size-7 is-uppercase">
             <div class="level-start">
                 <div class="level-item">
-                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
                     <a class="has-link-grey -link" href="/tags/Hive/">Hive</a>
                 </div>
             </div>
@@ -238,26 +255,6 @@
 </div>
 
 
-<!--qrcode for 打赏-->
-
-<div class="card">
-    <div class="card-content">
-        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
-        <div class="buttons is-centered">
-            
-                
-<a class="button is-info donate">
-    <span class="icon is-small">
-        <i class="fab fa-alipay"></i>
-    </span>
-    <span>支付宝</span>
-    <div class="qrcode"><img src="https://mobilecodec.alipay.com/show.htm?code=a6x07119blh8i4zgxyugv0b&amp;picSize=L" alt="支付宝"></div>
-</a>
-
-                
-        </div>
-    </div>
-</div>
 
 
 
@@ -283,6 +280,29 @@
 </div>
 
 
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+<div id="comment-container"></div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.css">
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.4.1/dist/gitalk.min.js"></script>
+<script>
+    var gitalk = new Gitalk({
+        clientID: 'f1f080e6d22a498c3ab3',
+        clientSecret: '5cdc320f3ad7501bd3f0872a223d150d02bd4b5c',
+        id: '7e03cd923652967797d3f961dc5b8ef8',
+        repo: 'GsmToday.github.io',
+        owner: 'Shimeng Gao',
+        admin: "Shimeng Gao"
+    })
+    gitalk.render('comment-container')
+</script>
+
+    </div>
+</div>
+
 </div>
                 
 
@@ -292,6 +312,77 @@
 <div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
     
         
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level" style="margin-bottom:1rem">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-96x96 has-mb-6" src="/images/logo.png" alt="N&amp;G">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        N&amp;G
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Developer
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Chengdu &amp; Beijing</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level menu-list is-mobile" style="margin-bottom:1rem">
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/archives/">
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        71
+                    </p>
+                </a>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/categories/">
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        5
+                    </p>
+                </a>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <a href="/tags/">
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        26
+                    </p>
+                </a>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://www.github.com/GsmToday" target="_blank">
+                <i class="fab fa-github"></i>&nbsp;&nbsp;关注我</a>
+        </div>
+        
+        
+    </div>
+</div>
+
+    
+        
+
     
     
         <div class="column-right-shadow is-hidden-widescreen ">
@@ -318,6 +409,11 @@
                 Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
                         href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
                 
+                <br>
+                <span id="busuanzi_container_site_uv">
+                共<span id="busuanzi_value_site_uv">0</span>个访客
+                </span>
+                
                 </p>
             </div>
             <div class="level-end">
@@ -326,25 +422,17 @@
                 
                 
                 <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                    <a class="button is-white is-large" target="_blank" title="CC BY-NC-SA 4.0" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
                         
-                        <i class="fab fa-creative-commons"></i>
-                        
-                    </a>
-                </p>
-                
-                <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
-                        
-                        <i class="fab fa-creative-commons-by"></i>
+                        <i class="fab fa-creative-commons"></i>&nbsp;<i class="fab fa-creative-commons-by"></i>&nbsp;<i class="fab fa-creative-commons-nc"></i>&nbsp;<i class="fab fa-creative-commons-sa"></i>&nbsp;
                         
                     </a>
                 </p>
                 
                 <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                    <a class="button is-white is-large" target="_blank" title="GsmToday GitHub" href="https://www.github.com/GsmToday">
                         
-                        <i class="fab fa-github"></i>
+                        <i class="fab fa-github"></i>&nbsp;
                         
                     </a>
                 </p>
@@ -355,6 +443,7 @@
         </div>
     </div>
 </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
 <script>moment.locale("zh-CN");</script>
@@ -448,6 +537,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     
     
+    
+
     
 
 

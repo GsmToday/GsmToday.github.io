@@ -12,8 +12,12 @@
 <meta property="og:url" content="https://gsmtoday.github.io/page/10/index.html">
 <meta property="og:site_name" content="我们">
 <meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://gsmtoday.github.io/images/og_image.png">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="我们">
+<meta name="twitter:image" content="https://gsmtoday.github.io/images/og_image.png">
+
+
 
 
 
@@ -23,7 +27,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/github-gist.css">
 
 
     
@@ -73,6 +77,10 @@
     
     
     
+        <script async="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+
+    
 
 
 <link rel="stylesheet" href="/css/style.css">
@@ -95,16 +103,16 @@
                 href="/">主页</a>
                 
                 <a class="navbar-item"
-                href="/archives/index.html">收藏</a>
+                href="/archives/">收藏</a>
                 
                 <a class="navbar-item"
-                href="/categories/index.html">类别</a>
+                href="/categories/">类别</a>
                 
                 <a class="navbar-item"
-                href="/tags/index.html">标签</a>
+                href="/tags/">标签</a>
                 
                 <a class="navbar-item"
-                href="/about/index.html">关于我们</a>
+                href="/about/">关于我们</a>
                 
             </div>
             
@@ -112,7 +120,7 @@
                 
                     
                     
-                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                    <a class="navbar-item" target="_blank" title="GsmToday GitHub" href="https://github.com/GsmToday">
                         
                         <i class="fab fa-github"></i>
                         
@@ -133,7 +141,119 @@
     <section class="section">
         <div class="container">
             <div class="columns">
-                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main">
+                <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
+    <div class="card">
+    
+    <div class="card-image">
+        <a href="/2017/08/27/poolchunk/" class="image is-7by1">
+            <img class="thumbnail" src="/images/maotouying.jpg" alt="Netty 是怎么做内存管理--PoolChunk">
+        </a>
+    </div>
+    
+    <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/08/27/poolchunk/"><i class="fas fa-angle-double-right"></i>Netty 是怎么做内存管理--PoolChunk</a>
+            
+        </h1>
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-08-27T03:20:30.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-08-27</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.135Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
+                
+                <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
+                    
+                    
+                    15 分钟 读完 (大约 2200 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <div class="content">
+            <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>我们将PoolChunk上的内存分配视为一个算法来分析：</p>
+<ul>
+<li>输入：指定的连续内存空间大小</li>
+<li>输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败</li>
+</ul>
+<p>这里强调以下，Netty内存池分配出来的内存空间不是Client申请size的大小，而是大于size的最小2的幂次方（size &gt; 512）或者是16的倍数。比如Client申请100byte的内存，那么返回的将是128byte。Netty会在入口处对申请的大小统一做规整化的处理，来保证分配出来的内存都是2的幂次方，这样做有两点好处：内存保持对齐，不会有很零散的内存碎片，这点和操作系统的内存管理类似；其次可以基于2的幂次方在二进制上的特性，大量运用位运算提升效率。后面的详细流程中我们将会看到。</p>
+<h2 id="内存存储单元"><a href="#内存存储单元" class="headerlink" title="内存存储单元"></a>内存存储单元</h2><p>在分析原理之前，我们先看以下PoolChunk中一些默认参数：</p>
+<p>1.内存块Chunk，Netty向操作系统申请资源的最小单位，chunk是page单元的集合</p>
+<ul>
+<li>chunk默认大小16M，可调节，根据pageSize和maxOrder计算得到 </li>
+</ul>
+<p><img src="http://chart.googleapis.com/chart?cht=tx&amp;chl=\Large DefaultChunkSize=DefaultPageSize \times 2 ^ {DefaultMaxOrder} = 16M" alt=""></p>
+<ul>
+<li><p>MaxChunkSize, chunk最大大小为1G</p>
+</li>
+<li><p>DefaultMaxOrder = 11, 一个chunk默认由2<sup>11</sup>个页面构成，因为一个page 8k，所以默认完全二叉树11层。</p>
+</li>
+</ul>
+<p>2.内存页Page，当请求的内存小于页大小时，可继续划分为更小的内存段，使用位图标记各使用情况<br>Page大小的默认值为8K,可调节，必须为2的幂：<br><img src="http://chart.googleapis.com/chart?cht=tx&amp;chl=\Large DefaultPageSize =8192 Byte = 8k" alt=""></p>
+<p><img src="http://chart.googleapis.com/chart?cht=tx&amp;chl=\Large pageShifts =log_2 pageSize=13" alt=""></p>
+<h2 id="Data-structure"><a href="#Data-structure" class="headerlink" title="Data structure"></a>Data structure</h2><p>Chunk基于一个完全平衡的二叉树来管理它拥有的Pages，每个叶子节点表示一个Page。参考前述的默认参数：<br>ChunkSize = pageSize*2<sup>maxOrder</sup>, 也就是Page的个数是2的幂次方个，那么以此为叶子节点的二叉树一定是完全平衡的二叉树。二叉树中的父节点包含所有子节点的内存，也就是说父节点可以使用和分配以其为根的所有子节点表示的内存空间。其在内存分配的过程中（Page级别的分配），总是在此二叉树上（从左到右）寻找最先最小满足条件的Pages。</p>
+<h3 id="表示方式"><a href="#表示方式" class="headerlink" title="表示方式"></a>表示方式</h3><p>Netty使用了一个数组memoryMap来表示这个完全二叉树，数组元素的语义与二叉树拓扑结构的对应关系如下图:<br><img src="/2017/08/27/poolchunk/emptychunk.jpg" alt="empty chunk">  </p>
+<p>详细的来说，数组下标表示二叉树中各节点的编号id，数组元素内容表示当前节点可分配内存的子节点（即未分配）在二叉树中的深度。根据i节点在memoryMap中的取值不同，它可以有一下三种语义：</p>
+<ol>
+<li>memoryMap[i] = depth_of_i 当前节点及其所有子节点都可以用来分配</li>
+<li>memoryMap[i] = x &gt; depth_of_i 至少有一个子节点被分配，无法直接使用此节点，但其在第x层的子节点中有可分配的内存</li>
+<li>memoryMap[i] = maxOrder + 1 当前节点的所有子节点均已被分配</li>
+</ol>
+<p>以上图节点3为例，当memoryMap[3]=1时，表示该节点及其子节点均可分配，memoryMap[3]=2时，表示节点6和7中至少有一个已经被分配，并且在这两个节点中还能找到未分配的空间，memoryMap[3]=4时，表示该节点下的所有空间均已经被分配，无法再使用。</p>
+<h2 id="Procedure"><a href="#Procedure" class="headerlink" title="Procedure"></a>Procedure</h2><p>先看代码：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 向PoolChunk申请一段内存</span><br><span class="line"> * /</span><br><span class="line">long allocate(int normCapacity) &#123;</span><br><span class="line">    if ((normCapacity &amp; subpageOverflowMask) != 0) &#123; // &gt;= pageSize</span><br><span class="line">        return allocateRun(normCapacity); // 当要分配的内存大于pageSize时候，使用allocateRun在chunk内分配</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        return allocateSubpage(normCapacity); //否则使用向PoolChunk申请一段内存在page内分配</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Allocate a run of pages (&gt;=1)</span><br><span class="line"> *</span><br><span class="line"> * @param normCapacity normalized capacity</span><br><span class="line"> * @return index in memoryMap</span><br><span class="line"> */</span><br><span class="line">private long allocateRun(int normCapacity) &#123;</span><br><span class="line">    int d = maxOrder - (log2(normCapacity) - pageShifts);</span><br><span class="line">    int id = allocateNode(d);</span><br><span class="line">    if (id &lt; 0) &#123;</span><br><span class="line">        return id;</span><br><span class="line">    &#125;</span><br><span class="line">    freeBytes -= runLength(id);</span><br><span class="line">    return id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先根据请求内存的大小，选择采取合适的分配策略，这里详细讨论分配大于一个页面大小的情况，页内分配请移步<a href="/2017/08/27/poolsubpage/" title="Netty 是怎么做内存管理-PoolSubpage">Netty 是怎么做内存管理-PoolSubpage</a></p>
+<p>再根据请求内存的大小，定位其在二叉树中的深度：int d = maxOrder - (log2(normCapacity) - pageShifts)。参考前述二叉树的图，可以有两种理解方式：</p>
+<ol>
+<li>自底向上：父节点的内存是子节点的二倍，比子节点高一层；父节点的内存是孙子节点的四倍，比孙子节点高两层，所以拥有normalCapacity内存的节点应该比叶子节点高：log2(normalCapacity/pagesie) = log2(normalCapacity)-pageShifts层，也就是说它在树中的深度应该为maxOrder-(log2(normalCapacity)-pageShifts).</li>
+<li>自顶向下：观察上图右侧说明信息的第三列，根节点拥有整个chunk的内存，任意d层节点拥有的内存Capacity=chunksize／2<sup>d</sup>, 两边取对数可得拥有normalCapacity内存的节点应该在log2(chunksize/normalCapacity)这一层上。</li>
+</ol>
+<p>下面看最核心的一段：如何利用memoryMap在d层上寻找第一个可用内存节点。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Algorithm to allocate an index in memoryMap when we query for a free node</span><br><span class="line"> * at depth d</span><br><span class="line"> *</span><br><span class="line"> * @param d depth</span><br><span class="line"> * @return index in memoryMap</span><br><span class="line"> */</span><br><span class="line">private int allocateNode(int d) &#123;</span><br><span class="line">    int id = 1; // 从根节点开始计算</span><br><span class="line">    int initial = - (1 &lt;&lt; d); // has last d bits = 0 and rest all = 1</span><br><span class="line">    byte val = value(id);</span><br><span class="line">    if (val &gt; d) &#123; // 根节点的容量不足以满足要分配的内存大小</span><br><span class="line">        return -1;</span><br><span class="line">    &#125;</span><br><span class="line">    while (val &lt; d || (id &amp; initial) == 0) &#123; // id &amp; initial == 1 &lt;&lt; d for all ids at depth d, for &lt; d it is 0</span><br><span class="line">        id &lt;&lt;= 1; //取左子节点</span><br><span class="line">        val = value(id);</span><br><span class="line">        if (val &gt; d) &#123;</span><br><span class="line">            id ^= 1; //取邻居节点（2-&gt;3, 3-&gt;2）</span><br><span class="line">            val = value(id);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    byte value = value(id);</span><br><span class="line">    assert value == d &amp;&amp; (id &amp; initial) == 1 &lt;&lt; d : String.format(&quot;val = %d, id &amp; initial = %d, d = %d&quot;,</span><br><span class="line">            value, id &amp; initial, d);</span><br><span class="line">    setValue(id, unusable); // mark as unusable</span><br><span class="line">    updateParentsAlloc(id);</span><br><span class="line">    return id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private byte value(int id) &#123;</span><br><span class="line">    return memoryMap[id];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这一段的核心思想是：</p>
+<p>从根节点开始，如果根节点已经被分配，并且其可分配内存的子节点深度大于d，表示已没有足够且连续的内存空间用来分配，返回-1；</p>
+<p>如果左子节点上的内存可分配则在左子节点上分配，否则尝试右子节点，依次迭代。</p>
+<p>这里主要注意下循环的迭代条件：</p>
+<ol>
+<li>如果当前节点可分配节点的深度小于目标深度（相应的内存也就大于请求的内存），说明子节点就能够满足条件，进入下一层；</li>
+<li>当一个节点(id)可分配节点的深度与目标深度相等时，只要当前节点(id)的深度小于目标深度（id &amp; initial == 0），就应该进入下一层迭代到目标深度那一层，寻找可用的节点。</li>
+</ol>
+<p>更直观的来看，如下图:</p>
+<div align="center"><br><br><img src="/2017/08/27/poolchunk/chunkexample.jpg" alt="chunk example"><br><br></div>   
+
+<p>假设现在经过内存的分配，我们待分配的内存应该在第二层d=2上寻找，首先从根节点1开始，memoryMap[1]=1 &lt; d，符合迭代条件1，进入左子节点2；  </p>
+<p>memoryMap[2]=2=d，说明节点2在第二层的子节点上有内存可以分配，虽然此时已不满足迭代条件1，但节点2的深度还是要小于d的，满足迭代条件2，进入左子节点4，由于4的叶子节点都被分配，已经被标记为不可用（val = maxorder+1），所以尝试邻居节点5;</p>
+<p>由于memoryMap[5]=2 并且 5 &amp; initial != 0, 无法再迭代，推出循环，找到目标节点5.  </p>
+<p>分配完成后需要将当前节点标记为不可用，并更改将父节点可分配节点的情况，防止重复分配。具体的步骤如下：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * Update method used by allocate</span><br><span class="line"> * This is triggered only when a successor is allocated and all its predecessors</span><br><span class="line"> * need to update their state</span><br><span class="line"> * The minimal depth at which subtree rooted at id has some free space</span><br><span class="line"> *</span><br><span class="line"> * @param id id</span><br><span class="line"> */</span><br><span class="line">private void updateParentsAlloc(int id) &#123;</span><br><span class="line">    while (id &gt; 1) &#123;</span><br><span class="line">        int parentId = id &gt;&gt;&gt; 1;</span><br><span class="line">        byte val1 = value(id);</span><br><span class="line">        byte val2 = value(id ^ 1);</span><br><span class="line">        byte val = val1 &lt; val2 ? val1 : val2;</span><br><span class="line">        setValue(parentId, val);</span><br><span class="line">        id = parentId;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>过程比较简单：从当前节点开始向上回溯，以当前两个子节点memoryMap中取值较小的那个，来更新父节点的值，这样就维持了节点memoryMap[id]的语义：在第x层的子节点中有可分配的内存。</p>
+
+        </div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
     <div class="card">
     
     <div class="card-image">
@@ -143,13 +263,22 @@
     </div>
     
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/08/23/tomcat-slow-start/"><i class="fas fa-angle-double-right"></i>Spring项目加载慢问题</a>
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-08-23T12:42:59.000Z">2017-08-23</time>
+                <time class="level-item has-text-grey" datetime="2017-08-23T12:42:59.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-08-23</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-07T08:32:01.797Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-07</time>
+                
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
                     3 分钟 读完 (大约 387 个字)
@@ -159,22 +288,26 @@
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/08/23/tomcat-slow-start/">Spring项目加载慢问题</a>
-            
-        </h1>
         <div class="content">
             <p>最近遇到一个诡异的问题，项目启动异常缓慢(每次重启tomcat都要6-7分钟)，这对于开发来说简直是灾难式体验，所以决心修正此问题。</p>
 <p>首先google搜索解决tomcat启动慢的问题，按照大多数人反映的计算熵SecureRandom的方法修改，发现无效。于是只好阅读tomcat启动日志，发现每次项目启动，时间都卡在这里<code>org.apache.catalina.core.ApplicationContext.log Initializing Spring root WebApplicationContext</code>。这时候搜索结果就与计算熵SecureRandom无关了，而是spring启动的问题，摘取排查问题步骤如下，果然解决。<br></p>
         </div>
-               
         
         
-        <div class="level is-mobile">
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-mobile is-flex">
+            <div class="level-start">
+                
+                <div class="level-item is-size-7 is-uppercase">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/Spring/">Spring</a>
+                </div>
+                
+            </div>
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/08/23/tomcat-slow-start/#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2017/08/23/tomcat-slow-start/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
                 </div>
             </div>
         </div>
@@ -184,7 +317,7 @@
 </div>
 
 
-<!--qrcode for 打赏-->
+
 
 
 
@@ -200,17 +333,27 @@
     </div>
     
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/07/23/multithread/"><i class="fas fa-angle-double-right"></i>庖丁解牛-多服务器并发场景下乐观锁的实际应用</a>
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-07-23T13:30:09.000Z">2017-07-23</time>
+                <time class="level-item has-text-grey" datetime="2017-07-23T13:30:09.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-07-23</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.998Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
                 
                 <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
                 <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
                     5 分钟 读完 (大约 720 个字)
@@ -220,23 +363,27 @@
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/07/23/multithread/">庖丁解牛-多服务器并发场景下乐观锁的实际应用</a>
-            
-        </h1>
         <div class="content">
             <p>庖丁解牛-多服务器并发场景下乐观锁的实际应用</p>
 <p>笔者面临的一个业务场景为：项目中多条业务线的实现都需要创建一个实例ID(instanceID)，实例ID的值为系统当前的实例ID最大值+1。这样就会面临着在同一时间下有多个用户更新实例ID，造成并发冲突的问题。</p>
 <p>笔者首先想到的解决方法是使用关键字<code>synchronized</code>来解决。但是组内同事提出光有<code>synchronized</code>是不够的，因为<code>synchronized</code>只能解决单台机器的JVM多线程并发问题，无法解决线上多台服务器分布式导致的并发问题。</p>
         </div>
-               
         
         
-        <div class="level is-mobile">
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-mobile is-flex">
+            <div class="level-start">
+                
+                <div class="level-item is-size-7 is-uppercase">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>,&nbsp;<a class="has-link-grey -link" href="/tags/并发编程/">并发编程</a>
+                </div>
+                
+            </div>
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/07/23/multithread/#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2017/07/23/multithread/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
                 </div>
             </div>
         </div>
@@ -246,7 +393,7 @@
 </div>
 
 
-<!--qrcode for 打赏-->
+
 
 
 
@@ -256,17 +403,27 @@
     <div class="card">
     
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/05/28/post/"><i class="fas fa-angle-double-right"></i>徒步奶子沟</a>
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-05-28T09:05:53.000Z">2017-05-28</time>
+                <time class="level-item has-text-grey" datetime="2017-05-28T09:05:53.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-05-28</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.139Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
                 
                 <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
                 <a class="has-link-grey -link" href="/categories/游中国/">游中国</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
                     几秒 读完 (大约 42 个字)
@@ -276,21 +433,25 @@
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/05/28/post/">徒步奶子沟</a>
-            
-        </h1>
         <div class="content">
             <p>是的，名字很..awkward。不过重点是徒步了40km，过程很酸爽，过后可以吹牛。<br></p>
         </div>
-               
         
         
-        <div class="level is-mobile">
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-mobile is-flex">
+            <div class="level-start">
+                
+                <div class="level-item is-size-7 is-uppercase">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/侣行/">侣行</a>
+                </div>
+                
+            </div>
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/05/28/post/#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2017/05/28/post/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
                 </div>
             </div>
         </div>
@@ -300,7 +461,7 @@
 </div>
 
 
-<!--qrcode for 打赏-->
+
 
 
 
@@ -316,17 +477,27 @@
     </div>
     
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/04/18/es-note4/"><i class="fas fa-angle-double-right"></i>Elastic Search学习笔记-4 (常见搜索类型实践)</a>
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-04-18T14:55:46.000Z">2017-04-18</time>
+                <time class="level-item has-text-grey" datetime="2017-04-18T14:55:46.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-04-18</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.801Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
                 
                 <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
                 <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
                     23 分钟 读完 (大约 3517 个字)
@@ -336,21 +507,25 @@
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/04/18/es-note4/">Elastic Search学习笔记-4 (常见搜索类型实践)</a>
-            
-        </h1>
         <div class="content">
             <p><img src="/2017/04/18/es-note4/esquerytype.png" alt="查询分类"></p>
         </div>
-               
         
         
-        <div class="level is-mobile">
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-mobile is-flex">
+            <div class="level-start">
+                
+                <div class="level-item is-size-7 is-uppercase">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/ElasticSearch/">ElasticSearch</a>
+                </div>
+                
+            </div>
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/04/18/es-note4/#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2017/04/18/es-note4/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
                 </div>
             </div>
         </div>
@@ -360,7 +535,7 @@
 </div>
 
 
-<!--qrcode for 打赏-->
+
 
 
 
@@ -376,17 +551,27 @@
     </div>
     
     <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/04/12/es-note3/"><i class="fas fa-angle-double-right"></i>Elastic Search 学习笔记-3 (深入了解ES搜索原理)</a>
+            
+        </h1>
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-04-12T14:47:09.000Z">2017-04-12</time>
+                <time class="level-item has-text-grey" datetime="2017-04-12T14:47:09.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-04-12</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.801Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
                 
                 <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
                 <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
                     
                     
                     13 分钟 读完 (大约 1969 个字)
@@ -396,21 +581,25 @@
             </div>
         </div>
         
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/04/12/es-note3/">Elastic Search 学习笔记-3 (深入了解ES搜索原理)</a>
-            
-        </h1>
         <div class="content">
             <p>We will not venture into Lucene’s implementation details, but rather stick to how the inverted index<br>is used and built. That is what influences how we can search and index.</p>
         </div>
-               
         
         
-        <div class="level is-mobile">
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-mobile is-flex">
+            <div class="level-start">
+                
+                <div class="level-item is-size-7 is-uppercase">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/ElasticSearch/">ElasticSearch</a>
+                </div>
+                
+            </div>
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/04/12/es-note3/#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2017/04/12/es-note3/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
                 </div>
             </div>
         </div>
@@ -420,69 +609,7 @@
 </div>
 
 
-<!--qrcode for 打赏-->
 
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-image">
-        <a href="/2017/04/08/es-note2/" class="image is-7by1">
-            <img class="thumbnail" src="/images/squirrel.jpg" alt="Elastic Search 学习笔记-2 (搜索相关)">
-        </a>
-    </div>
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-04-08T14:39:59.000Z">2017-04-08</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    32 分钟 读完 (大约 4835 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/04/08/es-note2/">Elastic Search 学习笔记-2 (搜索相关)</a>
-            
-        </h1>
-        <div class="content">
-            <p>整理自<a href="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/distrib-multi-doc.html" target="_blank" rel="noopener">ES.cn</a>，并加入个人理解</p>
-<h2 id="Search-API"><a href="#Search-API" class="headerlink" title="Search API"></a>Search API</h2><p>一种是 “轻量的” <em>查询字符串版本</em> ，要求在查询字符串中传递所有的 参数。但是查询字符串参数需要URL编码</p>
-<p>另一种是更完整的 <em>请求体版本</em> ，要求使用 JSON 格式和更丰富的查询表达式作为搜索语言。（ES提供了DSL即领域特定语言）</p>
-        </div>
-               
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/04/08/es-note2/#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-<!--qrcode for 打赏-->
 
 
 
@@ -527,11 +654,11 @@
         
 <div class="card widget">
     <div class="card-content">
-        <nav class="level">
+        <nav class="level" style="margin-bottom:1rem">
             <div class="level-item has-text-centered">
                 <div>
                     
-                        <img class="image is-128x128 has-mb-6" height="128px" width="228px" src="/images/logo1.png" alt="N&amp;G">
+                        <img class="image is-96x96 has-mb-6" src="/images/logo.png" alt="N&amp;G">
                     
                     
                     <p class="is-size-4 is-block">
@@ -546,373 +673,432 @@
                     
                     <p class="is-size-6 is-flex is-flex-center has-text-grey">
                         <i class="fas fa-map-marker-alt has-mr-7"></i>
-                        <span>成都&amp;北京</span>
+                        <span>Chengdu &amp; Beijing</span>
                     </p>
                     
                 </div>
             </div>
         </nav>
-        <nav class="level is-mobile">
+        <nav class="level menu-list is-mobile" style="margin-bottom:1rem">
             <div class="level-item has-text-centered is-marginless">
-                <div>
+                <a href="/archives/">
                     <p class="heading">
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        70
+                        71
                     </p>
-                </div>
+                </a>
             </div>
             <div class="level-item has-text-centered is-marginless">
-                <div>
+                <a href="/categories/">
                     <p class="heading">
                         分类
                     </p>
                     <p class="title has-text-weight-normal">
                         5
                     </p>
-                </div>
+                </a>
             </div>
             <div class="level-item has-text-centered is-marginless">
-                <div>
+                <a href="/tags/">
                     <p class="heading">
                         标签
                     </p>
                     <p class="title has-text-weight-normal">
-                        25
+                        26
                     </p>
-                </div>
+                </a>
             </div>
         </nav>
         <div class="level">
-            <a class="level-item button is-link is-rounded" href="https://gsmtoday.github.io">
-                关注我</a>
+            <a class="level-item button is-link is-rounded" href="https://www.github.com/GsmToday" target="_blank">
+                <i class="fab fa-github"></i>&nbsp;&nbsp;关注我</a>
         </div>
         
-        
-        <div class="level is-mobile">
-            
-            <a class="level-item button is-white is-marginless" target="_blank"
-                title="Github" href="https://github.com/GsmToday">
-                
-                <i class="fab fa-github"></i>
-                
-            </a>
-            
-            <a class="level-item button is-white is-marginless" target="_blank"
-                title="Facebook" href="http://facebook.com">
-                
-                <i class="fab fa-facebook"></i>
-                
-            </a>
-            
-            <a class="level-item button is-white is-marginless" target="_blank"
-                title="RSS" href="https://www.douban.com/people/51681179/">
-                
-                <i class="fas fa-rss"></i>
-                
-            </a>
-            
-        </div>
         
     </div>
 </div>
-    
-        
+
     
         
 
-<div class="card widget">
+    
+        
+
+
+    
+        
+<div class="card widget is-hidden-mobile">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/CPU/" style="font-size: 10px;">CPU</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/ElasticSearch/" style="font-size: 14.29px;">ElasticSearch</a> <a href="/tags/Flink/" style="font-size: 10px;">Flink</a> <a href="/tags/GO/" style="font-size: 10px;">GO</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Hive/" style="font-size: 11.43px;">Hive</a> <a href="/tags/JVM/" style="font-size: 12.86px;">JVM</a> <a href="/tags/Java/" style="font-size: 17.14px;">Java</a> <a href="/tags/Kafka/" style="font-size: 10px;">Kafka</a> <a href="/tags/My-SQL/" style="font-size: 10px;">My SQL</a> <a href="/tags/MySQL/" style="font-size: 20px;">MySQL</a> <a href="/tags/Netty/" style="font-size: 15.71px;">Netty</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Redis/" style="font-size: 15.71px;">Redis</a> <a href="/tags/RocketMQ/" style="font-size: 17.14px;">RocketMQ</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/optimize/" style="font-size: 10px;">optimize</a> <a href="/tags/侣行/" style="font-size: 18.57px;">侣行</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/架构/" style="font-size: 10px;">架构</a> <a href="/tags/架构设计/" style="font-size: 10px;">架构设计</a> <a href="/tags/模型学习/" style="font-size: 10px;">模型学习</a> <a href="/tags/算法/" style="font-size: 10px;">算法</a> <a href="/tags/高可用/" style="font-size: 10px;">高可用</a>
+    </div>
+</div>
+
+
+    
+        <div class="card widget is-hidden-mobile">
     <div class="card-content">
         <div class="menu">
         <h3 class="menu-label">
-            链接
+            归档
         </h3>
         <ul class="menu-list">
         
-            <li>
-                <a class="level is-mobile" href="https://hexo.io" target="_blank">
-                    <span class="level-left">
-                        <span class="level-item">Hexo</span>
-                    </span>
-                    <span class="level-right">
-                        <span class="level-item tag">hexo.io</span>
-                    </span>
-                </a>
-            </li>
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
         
-            <li>
-                <a class="level is-mobile" href="https://github.com/ppoffice" target="_blank">
-                    <span class="level-left">
-                        <span class="level-item">PPOffice</span>
-                    </span>
-                    <span class="level-right">
-                        <span class="level-item tag">github.com</span>
-                    </span>
-                </a>
-            </li>
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2018/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2018</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2017/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2017</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2016/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2016</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2016/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2016</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2016/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2016</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2016/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2016</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2016/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2016</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2016/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2016</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2015/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2015</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
         
         </ul>
         </div>
     </div>
 </div>
 
-
     
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
         
-<div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-            <h3 class="menu-label">
-                分类
-            </h3>
-            <ul class="menu-list">
-            <li>
-        <a class="level is-marginless" href="/categories/业务实践/">
-            <span class="level-start">
-                <span class="level-item">业务实践</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">11</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/学习积累/">
-            <span class="level-start">
-                <span class="level-item">学习积累</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">48</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/游世界/">
-            <span class="level-start">
-                <span class="level-item">游世界</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">4</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/游中国/">
-            <span class="level-start">
-                <span class="level-item">游中国</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">3</span>
-            </span>
-        </a></li><li>
-        <a class="level is-marginless" href="/categories/读书笔记/">
-            <span class="level-start">
-                <span class="level-item">读书笔记</span>
-            </span>
-            <span class="level-end">
-                <span class="level-item tag">1</span>
-            </span>
-        </a></li>
-            </ul>
-        </div>
-    </div>
-</div>
-    
-        
-<div class="card widget">
-    <div class="card-content">
-        <h3 class="menu-label">
-            标签云
-        </h3>
-        <a href="/tags/CPU/" style="font-size: 10px;">CPU</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/ElasticSearch/" style="font-size: 14.29px;">ElasticSearch</a> <a href="/tags/Flink/" style="font-size: 10px;">Flink</a> <a href="/tags/GO/" style="font-size: 10px;">GO</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Hive/" style="font-size: 11.43px;">Hive</a> <a href="/tags/JVM/" style="font-size: 12.86px;">JVM</a> <a href="/tags/Java/" style="font-size: 17.14px;">Java</a> <a href="/tags/Kafka/" style="font-size: 10px;">Kafka</a> <a href="/tags/My-SQL/" style="font-size: 10px;">My SQL</a> <a href="/tags/MySQL/" style="font-size: 20px;">MySQL</a> <a href="/tags/Netty/" style="font-size: 15.71px;">Netty</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Redis/" style="font-size: 15.71px;">Redis</a> <a href="/tags/RocketMQ/" style="font-size: 17.14px;">RocketMQ</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/侣行/" style="font-size: 18.57px;">侣行</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/架构/" style="font-size: 10px;">架构</a> <a href="/tags/架构设计/" style="font-size: 10px;">架构设计</a> <a href="/tags/模型学习/" style="font-size: 10px;">模型学习</a> <a href="/tags/算法/" style="font-size: 10px;">算法</a> <a href="/tags/高可用/" style="font-size: 10px;">高可用</a>
-    </div>
-</div>
-
-    
-        <div class="card widget">
-    <div class="card-content">
-        <div class="menu">
-            <h3 class="menu-label">
-                标签
-            </h3>
-            <div class="field is-grouped is-grouped-multiline">
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/CPU/">
-                        <span class="tag">CPU</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Design-Pattern/">
-                        <span class="tag">Design Pattern</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/ElasticSearch/">
-                        <span class="tag">ElasticSearch</span>
-                        <span class="tag is-grey">4</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Flink/">
-                        <span class="tag">Flink</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/GO/">
-                        <span class="tag">GO</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Git/">
-                        <span class="tag">Git</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Hive/">
-                        <span class="tag">Hive</span>
-                        <span class="tag is-grey">2</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/JVM/">
-                        <span class="tag">JVM</span>
-                        <span class="tag is-grey">3</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Java/">
-                        <span class="tag">Java</span>
-                        <span class="tag is-grey">6</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Kafka/">
-                        <span class="tag">Kafka</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/My-SQL/">
-                        <span class="tag">My SQL</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/MySQL/">
-                        <span class="tag">MySQL</span>
-                        <span class="tag is-grey">14</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Netty/">
-                        <span class="tag">Netty</span>
-                        <span class="tag is-grey">5</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Nginx/">
-                        <span class="tag">Nginx</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/PHP/">
-                        <span class="tag">PHP</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Redis/">
-                        <span class="tag">Redis</span>
-                        <span class="tag is-grey">5</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/RocketMQ/">
-                        <span class="tag">RocketMQ</span>
-                        <span class="tag is-grey">6</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/Spring/">
-                        <span class="tag">Spring</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/侣行/">
-                        <span class="tag">侣行</span>
-                        <span class="tag is-grey">7</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/并发编程/">
-                        <span class="tag">并发编程</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/架构/">
-                        <span class="tag">架构</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/架构设计/">
-                        <span class="tag">架构设计</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/模型学习/">
-                        <span class="tag">模型学习</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/算法/">
-                        <span class="tag">算法</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-                <div class="control">
-                    <a class="tags has-addons" href="/tags/高可用/">
-                        <span class="tag">高可用</span>
-                        <span class="tag is-grey">1</span>
-                    </a>
-                </div>
-                
-            </div>
-        </div>
-    </div>
-</div>
-    
-        
+            
 <div class="card widget">
     <div class="card-content">
         <h3 class="menu-label">
@@ -921,9 +1107,28 @@
         
         <article class="media">
             
+            <a href="/2020/01/07/ipc/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="一种进程间通信的方案与实现">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-07T08:10:13.000Z">2020-01-07</time></div>
+                    <a href="/2020/01/07/ipc/" class="has-link-black-ter is-size-6">一种进程间通信的方案与实现</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
             <a href="/2020/01/05/sort-base/" class="media-left">
                 <p class="image is-64x64">
-                    <img class="thumbnail" src="/images/2.jpeg" alt="工程中遇到的排序算法-基础篇">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="工程中遇到的排序算法-基础篇">
                 </p>
             </a>
             
@@ -942,7 +1147,7 @@
             
             <a href="/2019/12/04/access-control-policies/" class="media-left">
                 <p class="image is-64x64">
-                    <img class="thumbnail" src="/images/12.jpeg" alt="权限控制发展综述">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="权限控制发展综述">
                 </p>
             </a>
             
@@ -995,20 +1200,172 @@
             </div>
         </article>
         
+    </div>
+</div>
+
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/业务实践/">
+            <span class="level-start">
+                <span class="level-item">业务实践</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习积累/">
+            <span class="level-start">
+                <span class="level-item">学习积累</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">48</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/游世界/">
+            <span class="level-start">
+                <span class="level-item">游世界</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/游中国/">
+            <span class="level-start">
+                <span class="level-item">游中国</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/读书笔记/">
+            <span class="level-start">
+                <span class="level-item">读书笔记</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        
+        </div>
+    
+</div>
+
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only has-order-3 column-right ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
         <article class="media">
             
-            <a href="/2019/11/24/kafka-problem/" class="media-left">
+            <a href="/2020/01/07/ipc/" class="media-left">
                 <p class="image is-64x64">
-                    <img class="thumbnail" src="/images/pollor bear.jpg" alt="一次Kafka消费不到数据的踩坑记录">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="一种进程间通信的方案与实现">
                 </p>
             </a>
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-11-24T05:55:20.000Z">2019-11-24</time></div>
-                    <a href="/2019/11/24/kafka-problem/" class="has-link-black-ter is-size-6">一次Kafka消费不到数据的踩坑记录</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-07T08:10:13.000Z">2020-01-07</time></div>
+                    <a href="/2020/01/07/ipc/" class="has-link-black-ter is-size-6">一种进程间通信的方案与实现</a>
                     <p class="is-size-7 is-uppercase">
                         <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2020/01/05/sort-base/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="工程中遇到的排序算法-基础篇">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-05T04:12:19.000Z">2020-01-05</time></div>
+                    <a href="/2020/01/05/sort-base/" class="has-link-black-ter is-size-6">工程中遇到的排序算法-基础篇</a>
+                    <p class="is-size-7 is-uppercase">
+                        
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/04/access-control-policies/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/thumbnail.svg" alt="权限控制发展综述">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-04T03:46:34.000Z">2019-12-04</time></div>
+                    <a href="/2019/12/04/access-control-policies/" class="has-link-black-ter is-size-6">权限控制发展综述</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/03/temp-file-table/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/sorth.jpeg" alt="关于MySQL的临时表和临时文件">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-03T06:34:34.000Z">2019-12-03</time></div>
+                    <a href="/2019/12/03/temp-file-table/" class="has-link-black-ter is-size-6">关于MySQL的临时表和临时文件</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <a href="/2019/12/02/sort/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/starbuck.jpeg" alt="工程中遇到的排序算法-实践篇">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-02T02:42:00.000Z">2019-12-02</time></div>
+                    <a href="/2019/12/02/sort/" class="has-link-black-ter is-size-6">工程中遇到的排序算法-实践篇</a>
+                    <p class="is-size-7 is-uppercase">
+                        
                     </p>
                 </div>
             </div>
@@ -1018,14 +1375,63 @@
 </div>
 
     
-    
-        <div class="column-right-shadow is-hidden-widescreen ">
         
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/业务实践/">
+            <span class="level-start">
+                <span class="level-item">业务实践</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习积累/">
+            <span class="level-start">
+                <span class="level-item">学习积累</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">48</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/游世界/">
+            <span class="level-start">
+                <span class="level-item">游世界</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/游中国/">
+            <span class="level-start">
+                <span class="level-item">游中国</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/读书笔记/">
+            <span class="level-start">
+                <span class="level-item">读书笔记</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
         </div>
+    </div>
+</div>
+    
     
 </div>
 
-                
             </div>
         </div>
     </section>
@@ -1043,6 +1449,11 @@
                 Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
                         href="http://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>
                 
+                <br>
+                <span id="busuanzi_container_site_uv">
+                共<span id="busuanzi_value_site_uv">0</span>个访客
+                </span>
+                
                 </p>
             </div>
             <div class="level-end">
@@ -1051,25 +1462,17 @@
                 
                 
                 <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Creative Commons" href="https://creativecommons.org/">
+                    <a class="button is-white is-large" target="_blank" title="CC BY-NC-SA 4.0" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
                         
-                        <i class="fab fa-creative-commons"></i>
-                        
-                    </a>
-                </p>
-                
-                <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/">
-                        
-                        <i class="fab fa-creative-commons-by"></i>
+                        <i class="fab fa-creative-commons"></i>&nbsp;<i class="fab fa-creative-commons-by"></i>&nbsp;<i class="fab fa-creative-commons-nc"></i>&nbsp;<i class="fab fa-creative-commons-sa"></i>&nbsp;
                         
                     </a>
                 </p>
                 
                 <p class="control">
-                    <a class="button is-white is-large" target="_blank" title="Download on GitHub" href="http://github.com/ppoffice/hexo-theme-icarus">
+                    <a class="button is-white is-large" target="_blank" title="GsmToday GitHub" href="https://www.github.com/GsmToday">
                         
-                        <i class="fab fa-github"></i>
+                        <i class="fab fa-github"></i>&nbsp;
                         
                     </a>
                 </p>
@@ -1080,6 +1483,7 @@
         </div>
     </div>
 </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
 <script>moment.locale("zh-CN");</script>
@@ -1173,6 +1577,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     
     
+    
+
     
 
 
