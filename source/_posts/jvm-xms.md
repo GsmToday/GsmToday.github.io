@@ -39,8 +39,6 @@ jmap -heap 970
 
 这里发现一个很奇怪的地方MaxHeapSize 竟然近30G，而docker的内存只是4G，说明JVM对堆的内存并没有进行实际限制。我们知道Xmx 默认值是物理内存的1/4（宿主机128G），由此怀疑我们的Java服务很可能没有配置XMX。排查代码，果然如此。
 
-看了下新生代NewSize = 670MB，老年代OldSize=1341MB, 预估分配2GXmx应该够了。
-
 遂增加配置：
 ```
 -Xmx2g -Xms2g
