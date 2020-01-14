@@ -16,7 +16,7 @@
 <meta property="og:description" content="服务又收到报警了系列。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/">
-<meta property="og:updated_time" content="2020-01-14T08:19:44.648Z">
+<meta property="og:updated_time" content="2020-01-14T08:39:32.074Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JVM调优系列">
 <meta name="twitter:description" content="服务又收到报警了系列。">
@@ -173,7 +173,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2020-01-10T10:02:30.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2020-01-10</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-14T08:19:44.648Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-14</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-14T08:39:32.074Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-14</time>
                 
                 
                 <div class="level-item">
@@ -186,7 +186,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    3 分钟 读完 (大约 375 个字)
+                    3 分钟 读完 (大约 399 个字)
                 </span>
                 
                 
@@ -205,6 +205,7 @@ var _hmt = _hmt || [];
 <p>再看JVM堆内存使用分布：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap 970</span><br></pre></td></tr></table></figure></p>
 <p><img src="/2020/01/10/jvm-xms/jmap.png" alt=""></p>
 <p>这里发现一个很奇怪的地方MaxHeapSize 竟然近30G，而docker的内存只是4G，说明JVM对堆的内存并没有进行实际限制。我们知道Xmx 默认值是物理内存的1/4（宿主机128G），由此怀疑我们的Java服务很可能没有配置XMX。排查代码，果然如此。</p>
+<p>看了下新生代NewSize = 670MB，老年代OldSize=1341MB, 预估分配2GXmx应该够了。</p>
 <p>遂增加配置：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-Xmx2g -Xms2g</span><br></pre></td></tr></table></figure></p>
 <hr>
 <p>其他JVM文章：</p>
