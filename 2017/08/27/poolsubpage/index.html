@@ -7,19 +7,19 @@
 
 
 
-    <meta name="description" content="当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。 初始化PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。123456789101112PoolSubpage(PoolSubpage&amp;lt;T&amp;g">
+    <meta name="description" content="Netty 是怎么做内存管理–PoolSubPage部分。">
 <meta name="keywords" content="Netty">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty 是怎么做内存管理--PoolSubPage">
 <meta property="og:url" content="https://gsmtoday.github.io/2017/08/27/poolsubpage/index.html">
 <meta property="og:site_name" content="我们">
-<meta property="og:description" content="当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。 初始化PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。123456789101112PoolSubpage(PoolSubpage&amp;lt;T&amp;g">
+<meta property="og:description" content="Netty 是怎么做内存管理–PoolSubPage部分。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/tuboshu.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.138Z">
+<meta property="og:updated_time" content="2020-03-05T02:30:32.938Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty 是怎么做内存管理--PoolSubPage">
-<meta name="twitter:description" content="当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。 初始化PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。123456789101112PoolSubpage(PoolSubpage&amp;lt;T&amp;g">
+<meta name="twitter:description" content="Netty 是怎么做内存管理–PoolSubPage部分。">
 <meta name="twitter:image" content="https://gsmtoday.github.io/images/tuboshu.jpg">
 
 
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2017-08-27T03:20:30.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-08-27</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.138Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:30:32.938Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    12 分钟 读完 (大约 1727 个字)
+                    12 分钟 读完 (大约 1741 个字)
                 </span>
                 
                 
@@ -205,10 +205,11 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <p>当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。</p>
+            <p>Netty 是怎么做内存管理–PoolSubPage部分。<br><a id="more"></a></p>
+<p>当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。</p>
 <h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">PoolSubpage(PoolSubpage&lt;T&gt; head,</span><br><span class="line">    PoolChunk&lt;T&gt; chunk,</span><br><span class="line">    int memoryMapIdx, int runOffset,</span><br><span class="line">    int pageSize, elemSize) &#123;</span><br><span class="line"></span><br><span class="line">    this.chunk = chunk;</span><br><span class="line">    this.memoryMapIdx = memoryMapIdx;</span><br><span class="line">    this.runOffset = runOffset;</span><br><span class="line">    this.pageSize = pageSize;</span><br><span class="line">    bitmap = new long[pageSize &gt;&gt;&gt; 10]; // pageSize / 16 / 64</span><br><span class="line">    init(head, elemSize);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>可以发现，以默认的PageSize=8192byte为例，位图bitmap的大小被初始化为8:<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">long bitmap[] = new long[pageSize &gt;&gt;&gt; 10]</span><br></pre></td></tr></table></figure></p>
-<a id="more"></a>
+<!-- more -->
 <p>简单说明一下，在Page中subpage以16字节为最小单位划分内存段，而一个long类型的变量有64位，所以最多使用PageSize/16/64=8个<br>long型的变量就可以表示所有内存段。</p>
 <p>假设我们以elemSize=72字节为单位，在页内进行内存段的划分，那最多将有maxNumElem=PageSize/elemSize=113个内存段。（elemSize一旦确定就不会改变， 页面中内存段都是大小一致的）<br>那么这113个内存段就要占用位图中113个位置，那需要多少个bitmap元素呢？</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bitmapLength = maxNumElems &gt;&gt;&gt; 6;</span><br><span class="line">if ((maxNumElems &amp; 63) != 0) &#123;</span><br><span class="line">    bitmapLength ++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>

@@ -7,19 +7,19 @@
 
 
 
-    <meta name="description" content="Preface我们将PoolChunk上的内存分配视为一个算法来分析：  输入：指定的连续内存空间大小 输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败  这里强调以下，Netty内存池分配出来的内存空间不是Client申请size的大小，而是大于size的最小2的幂次方（size &amp;gt; 512）或者是16的倍数。比如Client申请100byte的内存，那么返回的将是">
+    <meta name="description" content="Netty 是怎么做内存管理–PoolChunk部分。">
 <meta name="keywords" content="Netty">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty 是怎么做内存管理--PoolChunk">
 <meta property="og:url" content="https://gsmtoday.github.io/2017/08/27/poolchunk/index.html">
 <meta property="og:site_name" content="我们">
-<meta property="og:description" content="Preface我们将PoolChunk上的内存分配视为一个算法来分析：  输入：指定的连续内存空间大小 输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败  这里强调以下，Netty内存池分配出来的内存空间不是Client申请size的大小，而是大于size的最小2的幂次方（size &amp;gt; 512）或者是16的倍数。比如Client申请100byte的内存，那么返回的将是">
+<meta property="og:description" content="Netty 是怎么做内存管理–PoolChunk部分。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/maotouying.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.135Z">
+<meta property="og:updated_time" content="2020-03-05T02:30:32.082Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty 是怎么做内存管理--PoolChunk">
-<meta name="twitter:description" content="Preface我们将PoolChunk上的内存分配视为一个算法来分析：  输入：指定的连续内存空间大小 输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败  这里强调以下，Netty内存池分配出来的内存空间不是Client申请size的大小，而是大于size的最小2的幂次方（size &amp;gt; 512）或者是16的倍数。比如Client申请100byte的内存，那么返回的将是">
+<meta name="twitter:description" content="Netty 是怎么做内存管理–PoolChunk部分。">
 <meta name="twitter:image" content="https://gsmtoday.github.io/images/maotouying.jpg">
 
 
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2017-08-27T03:20:30.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-08-27</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.135Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:30:32.082Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    15 分钟 读完 (大约 2200 个字)
+                    15 分钟 读完 (大约 2214 个字)
                 </span>
                 
                 
@@ -205,7 +205,8 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>我们将PoolChunk上的内存分配视为一个算法来分析：</p>
+            <p>Netty 是怎么做内存管理–PoolChunk部分。<br><a id="more"></a></p>
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>我们将PoolChunk上的内存分配视为一个算法来分析：</p>
 <ul>
 <li>输入：指定的连续内存空间大小</li>
 <li>输出：如果分配成功，返回一个包含目标空闲内存地址信息的句柄，否则返回失败</li>

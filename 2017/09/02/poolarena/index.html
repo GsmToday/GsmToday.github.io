@@ -7,19 +7,19 @@
 
 
 
-    <meta name="description" content="内存结构顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。  We use 2  available processors by default to reduce contention as we use 2  available pro">
+    <meta name="description" content="Netty 是怎么做内存管理–PoolArena部分。">
 <meta name="keywords" content="Netty">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty 是怎么做内存管理--PoolArena">
 <meta property="og:url" content="https://gsmtoday.github.io/2017/09/02/poolarena/index.html">
 <meta property="og:site_name" content="我们">
-<meta property="og:description" content="内存结构顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。  We use 2  available processors by default to reduce contention as we use 2  available pro">
+<meta property="og:description" content="Netty 是怎么做内存管理–PoolArena部分。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/butterfly.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.132Z">
+<meta property="og:updated_time" content="2020-03-05T02:30:52.184Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty 是怎么做内存管理--PoolArena">
-<meta name="twitter:description" content="内存结构顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。  We use 2  available processors by default to reduce contention as we use 2  available pro">
+<meta name="twitter:description" content="Netty 是怎么做内存管理–PoolArena部分。">
 <meta name="twitter:image" content="https://gsmtoday.github.io/images/butterfly.jpg">
 
 
@@ -175,7 +175,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2017-09-02T13:06:04.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-09-02</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.132Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:30:52.184Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -188,7 +188,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    20 分钟 读完 (大约 3058 个字)
+                    20 分钟 读完 (大约 3072 个字)
                 </span>
                 
                 
@@ -201,11 +201,12 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <h2 id="内存结构"><a href="#内存结构" class="headerlink" title="内存结构"></a>内存结构</h2><p>顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。</p>
+            <p>Netty 是怎么做内存管理–PoolArena部分。<br><a id="more"></a></p>
+<h2 id="内存结构"><a href="#内存结构" class="headerlink" title="内存结构"></a>内存结构</h2><p>顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。</p>
 <blockquote>
 <p>We use 2 <em> available processors by default to reduce contention as we use 2 </em> available processors for the number of EventLoops in NIO and EPOLL as well. If we choose a smaller number we will run into hot spots as allocation and de-allocation needs to be synchronized on the PoolArena.  </p>
 </blockquote>
-<a id="more"></a>
+<!-- more -->
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">final int defaultMinNumArena = NettyRuntime.availableProcessors() * 2;</span><br></pre></td></tr></table></figure>
 <p>PoolArena 内部对chunk与subpage的内存组织方式如下图：</p>
 <div align="center"><br><br><img src="/2017/09/02/poolarena/PoolArena.jpg" alt="PoolArena"><br><br></div>

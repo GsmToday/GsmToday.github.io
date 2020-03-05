@@ -473,7 +473,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2017-09-03T04:22:46.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-09-03</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.100Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:39:59.164Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -486,7 +486,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    7 分钟 读完 (大约 1028 个字)
+                    7 分钟 读完 (大约 1029 个字)
                 </span>
                 
                 
@@ -494,17 +494,7 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <p>内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。</p>
-<p>从Netty层面来说，操作系统分配内存容易有碎页并且比较耗时，一次性申请足够空间，自己管理更高效。Netty内存管理其实质就是先分配一块大内存，然后在内存的分配和回收过程中，使用一些数据结构记录内存使用状态，如果有新的分配请求，根据这些状态信息寻找最合适的位置并更新内存结构。释放内存时候：同步修改数据结构.</p>
-<h2 id="Netty-是怎么做内存管理–内存池"><a href="#Netty-是怎么做内存管理–内存池" class="headerlink" title="Netty 是怎么做内存管理–内存池"></a>Netty 是怎么做内存管理–内存池</h2><blockquote>
-<p>Netty is a NIO client server framework which enables quick and easy development of network applications such as protocol servers and clients. It greatly simplifies and streamlines network programming such as TCP and UDP socket server.  </p>
-</blockquote>
-<p>个人以为Netty之所以优秀的关键词可以概括为以下两点：</p>
-<ul>
-<li>方便：良好的封装与接口设计，对多种通信协议的支持，使得上手简单，快速</li>
-<li>高效（性能）：异步的、事件驱动的线程模型和高效的内存管理机制</li>
-</ul>
-<p>作为服务端的开发人员，有必要深入学习一下其内部原理。话不多说，先从内存池开始。<br></p>
+            <p>内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。<br></p>
         </div>
         
         
@@ -557,7 +547,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2017-09-02T13:06:04.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-09-02</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.132Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:30:52.184Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -570,7 +560,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    20 分钟 读完 (大约 3058 个字)
+                    20 分钟 读完 (大约 3072 个字)
                 </span>
                 
                 
@@ -578,10 +568,7 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <h2 id="内存结构"><a href="#内存结构" class="headerlink" title="内存结构"></a>内存结构</h2><p>顾名思义，PoolArena负责缓存池的全局调度，它负责在上层组织和管理所有的chunk以及subpage单元。为了减少多线程请求内存池时的同步处理，Netty默认提供了cpu核数*2个PoolArena示例。</p>
-<blockquote>
-<p>We use 2 <em> available processors by default to reduce contention as we use 2 </em> available processors for the number of EventLoops in NIO and EPOLL as well. If we choose a smaller number we will run into hot spots as allocation and de-allocation needs to be synchronized on the PoolArena.  </p>
-</blockquote>
+            <p>Netty 是怎么做内存管理–PoolArena部分。<br></p>
         </div>
         
         

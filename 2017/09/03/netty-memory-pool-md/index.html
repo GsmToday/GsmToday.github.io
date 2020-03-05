@@ -7,19 +7,19 @@
 
 
 
-    <meta name="description" content="内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。 从Netty层面来说，操作系统分配内存容易有碎页并且比较耗时，一次性申请足够空间，自己管理更高效。Netty内存管理其实质就是先分配一块大内存，然后在内存的分配和回收过程中，使用一些数据结构记录内存使用状态，如果有新的分配请求，根据这些状态信息寻找最合适的位置并更新内存结构。释">
+    <meta name="description" content="内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。">
 <meta name="keywords" content="Netty">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty 是怎么做内存管理--内存池">
 <meta property="og:url" content="https://gsmtoday.github.io/2017/09/03/netty-memory-pool-md/index.html">
 <meta property="og:site_name" content="我们">
-<meta property="og:description" content="内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。 从Netty层面来说，操作系统分配内存容易有碎页并且比较耗时，一次性申请足够空间，自己管理更高效。Netty内存管理其实质就是先分配一块大内存，然后在内存的分配和回收过程中，使用一些数据结构记录内存使用状态，如果有新的分配请求，根据这些状态信息寻找最合适的位置并更新内存结构。释">
+<meta property="og:description" content="内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/shark.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.100Z">
+<meta property="og:updated_time" content="2020-03-05T02:39:59.164Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty 是怎么做内存管理--内存池">
-<meta name="twitter:description" content="内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。 从Netty层面来说，操作系统分配内存容易有碎页并且比较耗时，一次性申请足够空间，自己管理更高效。Netty内存管理其实质就是先分配一块大内存，然后在内存的分配和回收过程中，使用一些数据结构记录内存使用状态，如果有新的分配请求，根据这些状态信息寻找最合适的位置并更新内存结构。释">
+<meta name="twitter:description" content="内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。">
 <meta name="twitter:image" content="https://gsmtoday.github.io/images/shark.jpg">
 
 
@@ -175,7 +175,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2017-09-03T04:22:46.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-09-03</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.100Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:39:59.164Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -188,7 +188,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    7 分钟 读完 (大约 1028 个字)
+                    7 分钟 读完 (大约 1029 个字)
                 </span>
                 
                 
@@ -201,7 +201,7 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <p>内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。</p>
+            <p>内存管理的主要目的是合理分配内存，减少内存碎片，及时回收资源，提高内存使用效率。（任何一个组件管理内存的目的都是这个）。<br><a id="more"></a></p>
 <p>从Netty层面来说，操作系统分配内存容易有碎页并且比较耗时，一次性申请足够空间，自己管理更高效。Netty内存管理其实质就是先分配一块大内存，然后在内存的分配和回收过程中，使用一些数据结构记录内存使用状态，如果有新的分配请求，根据这些状态信息寻找最合适的位置并更新内存结构。释放内存时候：同步修改数据结构.</p>
 <h2 id="Netty-是怎么做内存管理–内存池"><a href="#Netty-是怎么做内存管理–内存池" class="headerlink" title="Netty 是怎么做内存管理–内存池"></a>Netty 是怎么做内存管理–内存池</h2><blockquote>
 <p>Netty is a NIO client server framework which enables quick and easy development of network applications such as protocol servers and clients. It greatly simplifies and streamlines network programming such as TCP and UDP socket server.  </p>
@@ -211,7 +211,7 @@ var _hmt = _hmt || [];
 <li>方便：良好的封装与接口设计，对多种通信协议的支持，使得上手简单，快速</li>
 <li>高效（性能）：异步的、事件驱动的线程模型和高效的内存管理机制</li>
 </ul>
-<p>作为服务端的开发人员，有必要深入学习一下其内部原理。话不多说，先从内存池开始。<br><a id="more"></a></p>
+<p>作为服务端的开发人员，有必要深入学习一下其内部原理。话不多说，先从内存池开始。<br><!-- more --></p>
 <p>Netty内存池的实现参考了jemalloc的原理，关于jemalloc的介绍可以参考:<a href="https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919/" target="_blank" rel="noopener">jemalloc</a>或者自行google。  </p>
 <p>宏观上来说，Netty对内存的管理分为两个层面。在为线程分配内存的过程中，会首先查找<strong>线程私有缓存</strong>（默认为线程开启缓存，可配置关闭），当私有缓存不满足需求时，会在内存池中查找合适的内存空间，提供给线程。：</p>
 <ul>
