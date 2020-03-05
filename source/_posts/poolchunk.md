@@ -7,9 +7,10 @@ tags:
   - Netty
 categories: 学习积累
 ---
+Netty 是怎么做内存管理--PoolChunk部分。
+<!-- more -->
 
 ## Preface
-
 
 我们将PoolChunk上的内存分配视为一个算法来分析：
 

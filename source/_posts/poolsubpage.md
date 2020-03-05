@@ -7,6 +7,9 @@ tags:
   - Netty
 categories: 学习积累
 ---
+Netty 是怎么做内存管理--PoolSubPage部分。
+<!-- more -->
+
 当Netty分配内存大小小于page时候，Netty提供PoolSubpage把chunk的一个page节点8k内存划分成更小的内存段，通过对每个内存段的标记与清理标记进行内存的分配和释放。
 ## 初始化
 PoolSubPage在页内进行内存分配，用位图记录内存分配的情况，位图标记为0表示未分配，标记为1表示已分配。

@@ -8,6 +8,8 @@ tags:
   - Netty
 categories: 学习积累
 ---
+Netty 是怎么做内存管理--PoolArena部分。
+<!-- more -->
 
 ## 内存结构
 
