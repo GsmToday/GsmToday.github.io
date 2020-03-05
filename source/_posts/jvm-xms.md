@@ -1,7 +1,6 @@
 ---
-title: JVM调优系列
+title: JVM调优系列之处理内存报警
 toc: true
-thumbnail: /images/
 date: 2020-01-10 18:02:30
 author: GSM
 tags:

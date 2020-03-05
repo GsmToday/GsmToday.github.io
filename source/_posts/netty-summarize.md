@@ -31,7 +31,7 @@ categories: 学习积累
 <img src="serverClient.jpg" width = "500" height = "300" alt="server&client" align=center />
 
 早期的网络编程是一种阻塞的IO模型，如果存在多个客户端的连接socket就需要创建多个线程。这种无疑会造成大量线程空闲，管理和切换上资源的浪费。
-## NIO - Selector单路复用模型
+## NIO - Selector多路复用模型
 ([关于单路复用，使用国际象棋的大师车轮战这个例子更容易理解](https://gsmtoday.github.io/2017/10/29/nginx-principle/))
 NIO包提供了一种Selector-非阻塞IO模型。它使用了**事件通知**API以确定在一组非阻塞socket中有哪些已经就绪能够进行I/O相关操作。因为可以在任意事件检查任意的读操作or写操作的状态，所以一个单一的线程便可以处理多个并发连接。
 
