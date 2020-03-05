@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 netty基本组件 netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/dog.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.109Z">
+<meta property="og:updated_time" content="2020-03-05T01:07:33.793Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty入门综述">
 <meta name="twitter:description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 netty基本组件 netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-02-13T06:31:51.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-02-13</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.109Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T01:07:33.793Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    31 分钟 读完 (大约 4670 个字)
+                    32 分钟 读完 (大约 4837 个字)
                 </span>
                 
                 
@@ -228,7 +228,9 @@ var _hmt = _hmt || [];
 <li>继续循环步骤3<br><img src="/2018/02/13/netty-summarize/serverClient.jpg" width="500" height="300" alt="server&client" align="center"></li>
 </ol>
 <p>早期的网络编程是一种阻塞的IO模型，如果存在多个客户端的连接socket就需要创建多个线程。这种无疑会造成大量线程空闲，管理和切换上资源的浪费。</p>
-<h2 id="NIO-Selector单路复用模型"><a href="#NIO-Selector单路复用模型" class="headerlink" title="NIO - Selector单路复用模型"></a>NIO - Selector单路复用模型</h2><p>(<a href="https://gsmtoday.github.io/2017/10/29/nginx-principle/">关于单路复用，使用国际象棋的大师车轮战这个例子更容易理解</a>)<br>NIO包提供了一种Selector-非阻塞IO模型。它使用了<strong>事件通知</strong>API以确定在一组非阻塞socket中有哪些已经就绪能够进行I/O相关操作。因为可以在任意事件检查任意的读操作or写操作的状态，所以一个单一的线程便可以处理多个并发连接。</p>
+<h2 id="NIO-Selector多路复用模型"><a href="#NIO-Selector多路复用模型" class="headerlink" title="NIO - Selector多路复用模型"></a>NIO - Selector多路复用模型</h2><p>(<a href="https://gsmtoday.github.io/2017/10/29/nginx-principle/">关于单路复用，使用国际象棋的大师车轮战这个例子更容易理解</a>)</p>
+<p>单路的问题是每个请求响应独占一个连接/线程，并独占连接网络读写；这样导致连接在有大量时间被闲置无法更好地利用网络资源。由于是独占读写IO，这样导致并发量高的时候就会出现性能问题<a href="https://blog.csdn.net/chenrui310/article/details/101685827" target="_blank" rel="noopener">著名的C10K问题</a>。为了解决这个一个连接就要开一个线程的浪费，NIO包提供了一种Selector-非阻塞IO模型，可以在一个进程或者线程中处理多个请求。不用再一个请求开多个线程。解决C10K问题。</p>
+<p>Selector多路复用模型使用了<strong>事件通知</strong>API以确定在一组非阻塞socket中有哪些已经就绪能够进行I/O相关操作。因为可以在任意事件检查任意的读操作or写操作的状态，所以一个单一的线程便可以处理多个并发连接。</p>
 <p>例如如图，selector负责检查socketA-C哪些需要的数据已经准备好了，并告知thread. 假如此时socketA，socketB数据准备好了，selector把这两个socket准备已准备好的“事件”通知给thread. Thread依次去处理socketA和socketB. 这套处理机制对应着Linux操作系统的epoll和Mac的Kqueue.</p>
 <p>这种模型的好处是使用较少的线程可以处理大量连接，减少线程切换和管理的代价。但是一旦系统的并发量特别大，使用单一的线程处理是难以满足客户端要求的。另外Java原生的NIO使用并不是很方便, 因此Netty应运而生。<br><img src="/2018/02/13/netty-summarize/selector.jpg" alt="selector"></p>
 <h1 id="Netty-简介"><a href="#Netty-简介" class="headerlink" title="Netty 简介"></a>Netty 简介</h1><p>我们先来看看Netty之前的<strong>服务器网络通信框架模型</strong>都有哪些:<br>1.最基本的是使用阻塞I/O服务器单线程逐个处理连接请求。<br>2.接着发展为使用多线程处理请求。一旦一个连接建立成功后，创建一个单独的线程处理其I/O操作。显然这种通信框架在高并发下线程数激增，服务器难以支撑。<br>3.接着网络通信框架发展为使用线程池处理请求，将请求放入线程池的任务队列，避免大量的线程造成的切换代价。<br>4.Reactor模式 - Reactor单线程模型-多线程模型-主从模型(<a href="http://www.infoq.com/cn/articles/netty-threading-model" target="_blank" rel="noopener">更多关于Reactor模式Ref</a>)<br><img src="/2018/02/13/netty-summarize/reactor.jpg" width="500" height="300" alt="reactor多线程模式" align="reactor多线程模式"></p>
@@ -488,9 +490,9 @@ var _hmt = _hmt || [];
         <span class="has-mr-6">1.1</span>
         <span>早期的Socket API实现网络编程</span>
         </a></li><li>
-        <a class="is-flex" href="#NIO-Selector单路复用模型">
+        <a class="is-flex" href="#NIO-Selector多路复用模型">
         <span class="has-mr-6">1.2</span>
-        <span>NIO - Selector单路复用模型</span>
+        <span>NIO - Selector多路复用模型</span>
         </a></li></ul></li><li>
         <a class="is-flex" href="#Netty-简介">
         <span class="has-mr-6">2</span>

@@ -2,24 +2,24 @@
 <html  lang="zh">
 <head>
     <meta charset="utf-8">
-<title>分布式锁实现浅谈 - 我们</title>
+<title>分布式锁实现浅谈(Redis实现方式) - 我们</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
 
 
-    <meta name="description" content="和我厂老师傅练功夫系列。">
+    <meta name="description" content="和我厂老师傅练功夫系列。另，本文范围只是基于Redis实现。">
 <meta name="keywords" content="Redis">
 <meta property="og:type" content="article">
-<meta property="og:title" content="分布式锁实现浅谈">
+<meta property="og:title" content="分布式锁实现浅谈(Redis实现方式)">
 <meta property="og:url" content="https://gsmtoday.github.io/2019/06/21/distributed-lock/index.html">
 <meta property="og:site_name" content="我们">
-<meta property="og:description" content="和我厂老师傅练功夫系列。">
+<meta property="og:description" content="和我厂老师傅练功夫系列。另，本文范围只是基于Redis实现。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/5v.jpeg">
-<meta property="og:updated_time" content="2020-01-06T10:52:35.782Z">
+<meta property="og:updated_time" content="2020-02-25T06:05:17.587Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="分布式锁实现浅谈">
-<meta name="twitter:description" content="和我厂老师傅练功夫系列。">
+<meta name="twitter:title" content="分布式锁实现浅谈(Redis实现方式)">
+<meta name="twitter:description" content="和我厂老师傅练功夫系列。另，本文范围只是基于Redis实现。">
 <meta name="twitter:image" content="https://gsmtoday.github.io/images/5v.jpeg">
 
 
@@ -164,14 +164,14 @@ var _hmt = _hmt || [];
     
     <div class="card-image">
         <span  class="image is-7by1">
-            <img class="thumbnail" src="/images/5v.jpeg" alt="分布式锁实现浅谈">
+            <img class="thumbnail" src="/images/5v.jpeg" alt="分布式锁实现浅谈(Redis实现方式)">
         </span>
     </div>
     
     <div class="card-content article ">
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <i class="fas fa-angle-double-right"></i>分布式锁实现浅谈
+                <i class="fas fa-angle-double-right"></i>分布式锁实现浅谈(Redis实现方式)
             
         </h1>
         
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2019-06-21T01:33:06.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2019-06-21</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.782Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-02-25T06:05:17.587Z"><i class="far fa-calendar-check">&nbsp;</i>2020-02-25</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    12 分钟 读完 (大约 1779 个字)
+                    23 分钟 读完 (大约 3522 个字)
                 </span>
                 
                 
@@ -205,7 +205,7 @@ var _hmt = _hmt || [];
         </div>
         
         <div class="content">
-            <p>和我厂老师傅练功夫系列。<br><a id="more"></a></p>
+            <p>和我厂老师傅练功夫系列。另，本文范围只是基于Redis实现。<br><a id="more"></a></p>
 <h2 id="分布式锁想解决什么问题"><a href="#分布式锁想解决什么问题" class="headerlink" title="分布式锁想解决什么问题"></a>分布式锁想解决什么问题</h2><p>Martin Kleppmann 认为一般我们使用分布式锁有两个场景：</p>
 <ul>
 <li>效率： 使用分布式锁可以避免不同节点重复相同的工作，这些工作会浪费资源，比如用户付了钱之后可能不同节点会发出多封短信；再比如定时任务多个节点执行多次，实际上只需要任务执行一次。</li>
@@ -213,16 +213,42 @@ var _hmt = _hmt || [];
 </ul>
 <h2 id="分布式锁特点"><a href="#分布式锁特点" class="headerlink" title="分布式锁特点"></a>分布式锁特点</h2><ul>
 <li>1.互斥性：和本地锁一样，互斥性是最基本的特性。但是分布式锁需要<strong>保证在不同节点的不同线程</strong>的互斥。</li>
-<li>2.可重入性： 同一个节点的同一个线程如果获取了锁之后，那么也可以再次获得这个锁（用的少）。</li>
+<li>2.可重入性： 同一个节点的同一个线程获取了锁之后，那么也可以再次获得这个锁（用的少）。</li>
 <li>3.不会发生死锁：即使有一个客户端在持有锁期间崩溃而没有主动解锁，也能保证后续客户端能加锁。</li>
 <li>4.解铃还须系铃人：加锁和解锁必须是同一个客户端，客户端自己不能把别人家的锁给解了。</li>
 </ul>
-<h2 id="Redis实现"><a href="#Redis实现" class="headerlink" title="Redis实现"></a>Redis实现</h2><p>分布式锁本质上要实现的目标就是Redis里面占一个“坑”，当别的进程也要来占坑时，发现那里已经有一根“大萝卜”了，就只好放弃或者稍后再试。 占坑一般使用<code>setnx</code>,<br>只允许一个客户端占坑。先来先占，用完了，再调用del指令。</p>
+<p><img src="/2019/06/21/distributed-lock/1.png" alt=""></p>
+<h2 id="单机Redis分布式锁实现"><a href="#单机Redis分布式锁实现" class="headerlink" title="单机Redis分布式锁实现"></a>单机Redis分布式锁实现</h2><p>分布式锁本质上要实现的目标就是Redis里面占一个“坑”，当别的进程也要来占坑时，发现那里已经有一根“大萝卜”了，就只好放弃或者稍后再试。 占坑一般使用<code>setnx</code>,<br>只允许一个客户端占坑。先来先占，用完了，再调用del指令。</p>
 <p>最基本操作 <strong>distributed-lock 加锁1.0 版本</strong><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">setnx lock-key <span class="hljs-keyword">true</span> <span class="hljs-comment">// 加锁</span></span><br><span class="line"><span class="hljs-keyword">do</span> the job <span class="hljs-comment">// 执行任务</span></span><br><span class="line">del lock-key <span class="hljs-comment">// 解锁</span></span><br></pre></td></tr></table></figure></p>
-<p>1.0版本有个问题，如果执行逻辑到中间出现异常了，可能会导致del指令没有被调用，这样就会陷入死锁，锁永远得不到释放。所以需要在拿到锁之后加上一个过期时间，比如5s, 这样即使中间出现异常也可以保证5s之后锁会自动释放。于是 <strong>distributed-lock 加锁2.0 版本：</strong><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">setnx lock-key <span class="hljs-keyword">true</span> <span class="hljs-comment">// 加锁</span></span><br><span class="line">expire lock-key <span class="hljs-number">5</span> <span class="hljs-comment">// 加上过期时间避免死锁</span></span><br><span class="line"><span class="hljs-keyword">do</span> the job <span class="hljs-comment">// 执行任务</span></span><br><span class="line">del lock-key <span class="hljs-comment">// 解锁</span></span><br></pre></td></tr></table></figure></p>
+<p>1.0版本有个问题，如果执行逻辑到中间出现异常了，可能会导致del指令没有被调用，这样就会陷入死锁，锁永远得不到释放从而发生死锁。所以需要在拿到锁之后加上一个过期时间，比如5s, 这样即使中间出现异常也可以保证5s之后锁会自动释放。于是 <strong>distributed-lock 加锁2.0 版本：</strong><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">setnx lock-key <span class="hljs-keyword">true</span> <span class="hljs-comment">// 加锁</span></span><br><span class="line">expire lock-key <span class="hljs-number">5</span> <span class="hljs-comment">// 加上过期时间避免死锁</span></span><br><span class="line"><span class="hljs-keyword">do</span> the job <span class="hljs-comment">// 执行任务</span></span><br><span class="line">del lock-key <span class="hljs-comment">// 解锁</span></span><br></pre></td></tr></table></figure></p>
 <p>但是以上逻辑还是有问题，如果setnx和expire之间服务器进程突然挂掉了，可能是因为机器掉电或者人为导致，就会导致expire得不到执行，也会造成死锁。</p>
 <p>这种问题的根源就在于setnx和expire是两条指令而不是原子指令。如果这两条指令可以一起执行就不会出现问题。为了解决这个问题，Redis 2.8版本中，作者加入了set指令的扩展参数，使得expire和setnx可以一起执行，彻底解决了分布式锁的乱象。</p>
-<p><strong>distributed-lock 加锁3.0 版本：</strong><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set distributed-lock <span class="hljs-keyword">true</span> ex <span class="hljs-number">5</span> nx</span><br></pre></td></tr></table></figure></p>
+<p><strong>distributed-lock 加锁3.0 版本：</strong><br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">set lock-key <span class="hljs-keyword">true</span> ex <span class="hljs-number">5</span> nx <span class="hljs-comment">//5s超时</span></span><br><span class="line">del lock-key</span><br></pre></td></tr></table></figure></p>
+<p>3.0版本还有一个问题：如果锁被错误的释放（如超时），或被错误抢占，或因redis问题等导致锁丢失，无法很快感知到。例如：1号线程任务超时，这时候锁过期了，第二个线程重新持有了这把锁， 但是紧接着第一个线程执行完了业务逻辑，就把锁给释放了，第三个线程就会在第二个线程逻辑执行完之间拿到了锁。— 这就要求自己的锁只能自己解。<br><strong>distributed-lock 加锁4.0 版本：</strong><br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">set lock-key random_value ex 5 nx //5s超时</span><br><span class="line">// do sth</span><br><span class="line">eval &quot;if redis.call(&apos;get&apos;,KEYS[1]) == ARGV[1] then return redis.call(&apos;del&apos;,KEYS[1]) else return 0 end&quot;</span><br><span class="line">//方案4在3的基础上，增加对 value 的检查，只解除自己加的锁。</span><br><span class="line">//此方案 redis 原生命令不支持，为保证原子性，需要通过lua脚本实现:。</span><br></pre></td></tr></table></figure></p>
+<p>此方案更严谨：即使因为某些异常导致锁被错误的抢占，也能部分保证锁的正确释放。并且在释放锁时能检测到锁是否被错误抢占、错误释放，从而进行特殊处理。</p>
+<p>推荐使用此方式。</p>
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><p>1.锁的过期时间<br>锁的过期时间是一个比较重要的变量：</p>
+<p>锁的过期时间不能太短，否则在任务执行完成前就自动释放了锁，导致资源暴露在锁保护之外。<br>锁的过期时间不能太长，否则会导致意外死锁后长时间的等待。除非人为接入处理。<br>因此建议是根据任务内容，合理衡量锁的过期时间，将锁的过期时间设置为任务内容的几倍即可。<br>如果实在无法确定而又要求比较严格，可以采用定期 setex/expire 更新锁的过期时间实现。具体可以参考Reddision的看门狗机制，如果加锁的业务没有执行完，就会给锁的过期时间续期一段时间。</p>
+<p>2.重试<br>如果拿不到锁，建议根据任务性质、业务形式进行轮询等待。<br>等待次数需要参考任务执行时间。</p>
+<p>3.基于故障转移实现的缺陷–master挂掉<br>单点失败问题。如果Redis挂了怎么办？如果只增加一个slave节点解决是行不通的。Redis的主从同步通常是异步的。当正好一个节点挂掉的时候，多个客户端同时取到了锁 </p>
+<p>在这种场景（主从结构）中存在明显的竞态:</p>
+<ol>
+<li>客户端A从master获取到锁</li>
+<li>在master将锁同步到slave之前，master宕掉了。</li>
+<li>slave节点被晋级为master节点</li>
+<li>客户端B取得了同一个资源被客户端A已经获取到的另外一个锁。安全失效！</li>
+</ol>
+<h2 id="多机Redis分布式锁实现"><a href="#多机Redis分布式锁实现" class="headerlink" title="多机Redis分布式锁实现"></a>多机Redis分布式锁实现</h2><h3 id="RedLock"><a href="#RedLock" class="headerlink" title="RedLock"></a>RedLock</h3><p>RedLock主要解决Redis没有总是可用的保障，解决failover问题。加锁的时候，它会向过半节点发送 set(key, value, nx=True, ex=xxx)指令，只要过半节点set成功，那就认为加锁成功。释放锁时，需要向所有节点发送del 指令。不过Redlock算法还需要考虑出错重试、时钟漂移等很多细节问题，同时因为RedLock需要向多个节点进行读写，意味着相比单实例Redis性能会下降一些。</p>
+<h3 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h3><p>在Redis分布式环境中，我们假设有N个Redis master。这些节点完全独立，不存在主从复制或者其他集群协调机制。redlock确保在每（N)个实例上使用此方法获取和释放锁。假设有5个不会同时都宕掉的Redis master节点。</p>
+<p>为了取到锁，客户端应该执行以下操作:</p>
+<ol>
+<li>获取当前Unix时间，以毫秒为单位。</li>
+<li>依次尝试从N个实例，使用相同的key和随机值获取锁。在步骤2，当向Redis设置锁时,客户端应该设置一个网络连接和响应超时时间，这个超时时间应该小于锁的失效时间。例如你的锁自动失效时间为10秒，则超时时间应该在5-50毫秒之间。这样可以避免服务器端Redis已经挂掉的情况下，客户端还在死死地等待响应结果。如果服务器端没有在规定时间内响应，客户端应该尽快尝试另外一个Redis实例。</li>
+<li>客户端使用当前时间减去开始获取锁时间（步骤1记录的时间）就得到获取锁使用的时间。当且仅当从大多数（这里是3个节点）的Redis节点都取到锁，并且使用的时间小于锁失效时间时，锁才算获取成功。</li>
+<li>如果取到了锁，key的真正有效时间等于有效时间减去获取锁所使用的时间（步骤3计算的结果）。</li>
+<li>如果因为某些原因，获取锁失败（没有在至少N/2+1个Redis实例取到锁或者取锁时间已经超过了有效时间），客户端应该在所有的Redis实例上进行解锁（即便某些Redis实例根本就没有加锁成功）。</li>
+</ol>
+<p>这个方案的缺点就是太重，通常不被推荐。如果很在乎高可用性，希望挂了一台Redis完全不受影响，那么应该考虑redlock.</p>
 <h3 id="Jedis-实现"><a href="#Jedis-实现" class="headerlink" title="Jedis 实现"></a>Jedis 实现</h3><p>Java实现：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;redis.clients&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;jedis&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;2.9.0&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure></p>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String SET_IF_NOT_EXIST = <span class="hljs-string">"NX"</span>;</span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String SET_WITH_EXPIRE_TIME = <span class="hljs-string">"PX"</span>;</span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String LOCK_SUCCESS = <span class="hljs-string">"OK"</span>;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">tryGetDistributedLock</span><span class="hljs-params">(Jedis jedis, String lockKey, String requestId, <span class="hljs-keyword">int</span> expireTime)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">     * arg1 : key</span></span><br><span class="line"><span class="hljs-comment">     * arg2: value</span></span><br><span class="line"><span class="hljs-comment">     * arg3: nxxx, NX 代表set if not exist, 即当key 不存在的时候，进行set; 若key已经存在，不做任何操作</span></span><br><span class="line"><span class="hljs-comment">     * arg4: expx, PX 代表加个过期的设置</span></span><br><span class="line"><span class="hljs-comment">     * arg5: timeout 过期时间</span></span><br><span class="line"><span class="hljs-comment">     */</span></span><br><span class="line">    String result = jedis.set(lockKey, requestId, SET_IF_NOT_EXIST, SET_WITH_EXPIRE_TIME, expireTime);</span><br><span class="line">    <span class="hljs-keyword">if</span> (LOCK_SUCCESS.equals(result)) &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>再看解锁。<strong>distributed-lock 解锁1.0 版本</strong>如下：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">del distributed-lock // 解锁</span><br></pre></td></tr></table></figure></p>
@@ -233,15 +259,20 @@ var _hmt = _hmt || [];
 <p><strong>distributed-lock 解锁3.0 版本</strong>：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 释放分布式锁</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> jedis Redis客户端</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> lockKey 锁</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> requestId 请求标识</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> 是否释放成功</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">releaseDistributedLock</span><span class="hljs-params">(Jedis jedis, String lockKey, String requestId)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    String script = <span class="hljs-string">"if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"</span>;</span><br><span class="line">    Object result = jedis.eval(script, Collections.singletonList(lockKey), Collections.singletonList(requestId));</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">if</span> (RELEASE_SUCCESS.equals(result)) &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h3 id="Spring实现"><a href="#Spring实现" class="headerlink" title="Spring实现"></a>Spring实现</h3><p>到这里，基本上一个完整的Java Redis分布式锁已经实现了。但是在生产环境发现上述代码并不实用。因为我们的生产环境采用了Spring的template实现redis 客户端的封装，Spring封装的template并不精细，并没有distributed-lock 加锁3.0 版本：<code>set distributed-lock true ex 5 nx</code>的setnx+expire的原子性实现。所以只能用下面的时间戳方式缓解：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// 每个进程一个随机数，用来实现“解铃还须系铃人”功能。</span><br><span class="line">public class SoaTask extends BasicTask &#123;</span><br><span class="line">    public static final String  TASKKEY = &quot;:task&quot;;</span><br><span class="line">    public static final Integer EXPIRE  = 15;</span><br><span class="line">    public static volatile String code = &quot;default&quot;;</span><br><span class="line"></span><br><span class="line">    @PostConstruct</span><br><span class="line">    public void init() &#123;</span><br><span class="line">        code = UUID.randomUUID().toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">lock</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">     <span class="hljs-keyword">boolean</span> lockRes = codisCacheTemplate.setIfAbsent(SoaTask.TASKKEY+getTimestamp(), SoaTask.code);</span><br><span class="line">     <span class="hljs-keyword">if</span> (lockRes) &#123;</span><br><span class="line">         <span class="hljs-comment">// 任务一天执行一次</span></span><br><span class="line">         codisCacheTemplate.expire(SoaTask.TASKKEY+getTimestamp(), <span class="hljs-number">86400</span>);</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="hljs-keyword">return</span> lockRes;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">unlock</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">     <span class="hljs-keyword">if</span> (codisCacheTemplate.get(SoaTask.TASKKEY+getTimestamp()).equals(SoaTask.code)) &#123;</span><br><span class="line">         codisCacheTemplate.del(SoaTask.TASKKEY+getTimestamp());</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doJob</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">     <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">         <span class="hljs-keyword">if</span> (lock()) &#123;</span><br><span class="line">             <span class="hljs-comment">//do job</span></span><br><span class="line">         &#125;</span><br><span class="line">     &#125;<span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">         unlock();</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="hljs-function"><span class="hljs-keyword">private</span> String <span class="hljs-title">getTimestamp</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">     SimpleDateFormat formatter = <span class="hljs-keyword">new</span> SimpleDateFormat(PATTERN_YYYYMMDD);</span><br><span class="line">     String formatStr =formatter.format(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">     <span class="hljs-keyword">return</span> formatStr;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-<p>时间戳+随机数做分布式锁redis key的方式本质上是通过时间戳做一个超时方案，但时间戳的粒度需要结合分布式任务执行时间来操作。例如我们的分布式定时任务是1天执行一次，那么我就把时间戳设置为YYYYMMDD格式的，这样第二天的分布式锁的key即使不释放，key也是新的，新任务是可以执行的，以此避免了死锁。</p>
+<p>时间戳+随机数做分布式锁redis key的方式本质上是通过时间戳做一个超时方案，但时间戳的粒度需要结合分布式任务执行时间来操作。例如我们的分布式定时任务是1天执行一次，那么我就把时间戳设置为YYYYMMDD格式的，这样第二天的分布式锁的key即使不释放，key也是新的，新任务是可以执行的，以此避免了死锁。另外加上随机数保证了自己的锁只能自己解。</p>
+<h3 id="Reddison"><a href="#Reddison" class="headerlink" title="Reddison"></a>Reddison</h3><p>Redisson是Java语言编写的基于Redis的客户端。分布式锁的实现具有借鉴意义。为了解决“加锁线程在没有解锁之前崩溃而出现死锁“的问题，不同于Redis中通过设置超时时间来处理。Reddison采用了新的处理方式：Redisson内部提供了一个监控锁的看门狗，它的作用是在Redis实例被关闭前不断延长锁的有效期。跟Zookeeper类似，Redisson也提供了这几种分布式锁：可重入锁，公平锁，联锁，红锁，读写锁等。</p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
 <li><a href="https://wudashan.cn/2017/10/23/Redis-Distributed-Lock-Implement/" target="_blank" rel="noopener">https://wudashan.cn/2017/10/23/Redis-Distributed-Lock-Implement/</a></li>
+<li><a href="https://mp.weixin.qq.com/s/eU_2lh1slxv3H0v3gFk37Q" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/eU_2lh1slxv3H0v3gFk37Q</a></li>
+<li><a href="https://mp.weixin.qq.com/s/doYn9riDh4AdpTyT4OgCwA" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/doYn9riDh4AdpTyT4OgCwA</a></li>
+<li><a href="https://blog.csdn.net/wutengfei_java/article/details/100699538" target="_blank" rel="noopener">Reddision</a></li>
+<li><a href="https://mp.weixin.qq.com/s/JTsJCDuasgIJ0j95K8Ay8w" target="_blank" rel="noopener">基于Redis的分布式锁到底安全吗</a></li>
 </ol>
 
         </div>
         
             <ul class="post-copyright">
-            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/06/21/distributed-lock/">分布式锁实现浅谈</a></li>
+            <li><strong>本文标题：</strong><a href="https://gsmtoday.github.io/2019/06/21/distributed-lock/">分布式锁实现浅谈(Redis实现方式)</a></li>
             <li><strong>本文作者：</strong><a href="https://gsmtoday.github.io">N&amp;G</a></li>
             <li><strong>本文链接：</strong><a href="https://gsmtoday.github.io/2019/06/21/distributed-lock/">https://gsmtoday.github.io/2019/06/21/distributed-lock/</a></li>
             <li><strong>发布时间：</strong>2019-06-21</li>
@@ -408,20 +439,40 @@ var _hmt = _hmt || [];
         <span class="has-mr-6">2</span>
         <span>分布式锁特点</span>
         </a></li><li>
-        <a class="is-flex" href="#Redis实现">
+        <a class="is-flex" href="#单机Redis分布式锁实现">
         <span class="has-mr-6">3</span>
-        <span>Redis实现</span>
+        <span>单机Redis分布式锁实现</span>
         </a><ul class="menu-list"><li>
-        <a class="is-flex" href="#Jedis-实现">
+        <a class="is-flex" href="#注意事项">
         <span class="has-mr-6">3.1</span>
+        <span>注意事项</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#多机Redis分布式锁实现">
+        <span class="has-mr-6">4</span>
+        <span>多机Redis分布式锁实现</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#RedLock">
+        <span class="has-mr-6">4.1</span>
+        <span>RedLock</span>
+        </a></li><li>
+        <a class="is-flex" href="#具体实现">
+        <span class="has-mr-6">4.2</span>
+        <span>具体实现</span>
+        </a></li><li>
+        <a class="is-flex" href="#Jedis-实现">
+        <span class="has-mr-6">4.3</span>
         <span>Jedis 实现</span>
         </a></li><li>
         <a class="is-flex" href="#Spring实现">
-        <span class="has-mr-6">3.2</span>
+        <span class="has-mr-6">4.4</span>
         <span>Spring实现</span>
+        </a></li><li>
+        <a class="is-flex" href="#Reddison">
+        <span class="has-mr-6">4.5</span>
+        <span>Reddison</span>
         </a></li></ul></li><li>
         <a class="is-flex" href="#参考">
-        <span class="has-mr-6">4</span>
+        <span class="has-mr-6">5</span>
         <span>参考</span>
         </a></li></ul>
         </div>
