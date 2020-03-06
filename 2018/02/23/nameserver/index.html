@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文是RocketMQ源码分析系列之二，如有疑问或者技术探讨，可以email me,欢迎探讨.">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/stingray.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.096Z">
+<meta property="og:updated_time" content="2020-03-06T04:15:41.765Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码分析2--NameServer">
 <meta name="twitter:description" content="本文是RocketMQ源码分析系列之二，如有疑问或者技术探讨，可以email me,欢迎探讨.">
@@ -175,7 +175,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-02-23T11:25:00.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-02-23</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.096Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-06T04:15:41.765Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-06</time>
                 
                 
                 <div class="level-item">
@@ -188,7 +188,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    16 分钟 读完 (大约 2456 个字)
+                    20 分钟 读完 (大约 3055 个字)
                 </span>
                 
                 
@@ -207,10 +207,10 @@ var _hmt = _hmt || [];
 <p>先来讲讲什么是分布式系统的<font color="blue">服务治理</font>？</p>
 <p>服务治理在分布式系统的构建中是类似血液一样的存在。随着分布式系统服务的越来越多，而每个服务都可以横向扩展出多个机器，因此服务的各种状况都可能出现。服务可能出现某台机器宕机，如果用户的请求刚好打到宕机的机器，就会造成服务不可用；当提供服务的机器发生变化，也需要将机器的调用IP通知服务的调用方。另外当服务的主机有多台的时候，如何负载均衡地分发请求也是需要考虑的。</p>
 <p>服务治理具体为服务注册和服务发现。它作为一个管理中心一样的存在，解耦provider和consumer，需要分布式强一致性的存储服务的IP地址以及端口。目前业界常见的产品为Zookeeper，Zookeeper使用Paxos保证强一致性。</p>
-<p>在同一个分布式集群中的进程或服务，互相感知并建立连接，这就是服务发现。服务发现最明显的优点就是零配置，不用使用硬编码的网络地址，<font color="red">只需服务的名字，就能使用服务</font>。在现代体系架构中，单个服务实力的启动和销毁很常见，所以应该做到无需了解整个架构的部署拓扑，就能找到整个实例。复杂的服务发现组件要提供更多的功能，例如服务元数据存储，监控监控，多种查询和实时更新等。</p>
+<p>在同一个分布式集群中的进程或服务，互相感知并建立连接，这就是服务发现。服务发现最明显的优点就是零配置，不用使用硬编码的网络地址，<font color="red">只需服务的名字，就能使用服务</font>。在现代体系架构中，单个服务实例的启动和销毁很常见，所以应该做到无需了解整个架构的部署拓扑，就能找到整个实例。复杂的服务发现组件要提供更多的功能，例如服务元数据存储，监控监控，多种查询和实时更新等。</p>
 <p>在服务治理之前，RPC调用使用点对点方式，完全通过人为进行配置操作决定，运维成本高且容易出错，且整个系统运行期间的服务稳定性也无法很好感知。因此需要设计出包含基本功能服务的自动注册，客户端的自动发现，变更下发的服务治理。</p>
 <h2 id="NameServer作用"><a href="#NameServer作用" class="headerlink" title="NameServer作用"></a>NameServer作用</h2><p>当多Broker Master部署时，Master之间是不需要知道彼此的，这样的设计降低了Broker实现的复杂性。这样在分布式环境下，某台Master宕机或上线，不会对其他Master造成任何影响。那么怎样才能知道网络中有多少台Master和Slave？</p>
-<p><strong>NameServer作用1</strong>: Broker在启动的时候会去NameServer注册，Nameserver会维护Broker的状态和地址。</p>
+<p><strong>NameServer作用1</strong>: Broker在启动的时候会去NameServer注册，Nameserver会维护Broker的状态和地址, 以便Producer和Consumer能够获取正确的Broker信息，进行业务处理；</p>
 <p><strong>NameServer作用2</strong>：Nameserver还维护了一份Topic和Topic对应队列的地址列表，broker每次发送心跳过来的时候都会把Topic信息带上。客户端依靠Nameserver决定去获取对应topic的路由信息，从而决定对那些Broker做连接。</p>
 <p><strong>NameServer作用3</strong>：接收Producer和Consumer的请求，根据某个topic获取到对应的broker的路由信息，即实现服务发现功能。</p>
 <p><strong>Nameserver作用4</strong>：用来保存所有broker的Filter列表。</p>
@@ -219,13 +219,25 @@ var _hmt = _hmt || [];
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    RouteInfo&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> HashMap&lt;String<span class="hljs-comment">/* topic */</span>, List&lt;QueueData&gt;&gt; topicQueueTable; <span class="hljs-comment">// topic队列表，存储每个topic包含的队列数据</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> HashMap&lt;String<span class="hljs-comment">/* brokerName */</span>, BrokerData&gt; brokerAddrTable; <span class="hljs-comment">// broker的地址表</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> HashMap&lt;String<span class="hljs-comment">/* clusterName */</span>, Set&lt;String<span class="hljs-comment">/* brokerName */</span>&gt;&gt; clusterAddrTable;<span class="hljs-comment">//集群主备信息表</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> HashMap&lt;String<span class="hljs-comment">/* brokerAddr */</span>, BrokerLiveInfo&gt; brokerLiveTable; <span class="hljs-comment">// BrokerLiveInfo 存储了broker的版本号，channel以及最近心跳时间等信息</span></span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> HashMap&lt;String<span class="hljs-comment">/* brokerAddr */</span>, List&lt;String&gt;<span class="hljs-comment">/* Filter Server */</span>&gt; filterServerTable; <span class="hljs-comment">// 记录了每个broker的filter信息</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>NameServer初始化步骤：</p>
 <p><img src="/2018/02/23/nameserver/nameserver_ini.png" width="500" height="400" align="center"></p>
+<h2 id="Nameserver与Broker-Producer-Consumer关系"><a href="#Nameserver与Broker-Producer-Consumer关系" class="headerlink" title="Nameserver与Broker/Producer/Consumer关系"></a>Nameserver与Broker/Producer/Consumer关系</h2><ol>
+<li><p>Nameserver互相独立，彼此没有通信关系，单台Nameserver挂掉不影响其他Nameserver。Nameserver不去连接别的机器，不会主动推消息。</p>
+</li>
+<li><p>单个Broker无论是Master还是Slave与所有的NameServer进行定时注册，以便告知NameServer自己还活着。<br>Broker每隔30s向所有Nameserver发送心跳，Nameserver包含自己的topic配置信息。Nameserver每隔10秒，扫描所有还存活的Broker连接，如果某个连接的最后更新时间与当前时间差超过2分钟，则断开此连接。此外，Nameserver也会断开Broker下所有与Slave的连接，同时更新topic与队列的对应关系，但是不会通知生产者和消费者。</p>
+</li>
+<li><p>Consumer随机与一个Nameserver建立长连接，如果该Nameserver断开，则从Nameserver列表查找下一个Nameserver进行连接。<br> Consumer主要从NameServer中根据topic查询Broker地址，查到就会缓存到客户端，并向提供topic服务的Broker master/slave建立长连接，且定时向Broker Master/Save发送心跳。</p>
+<p> 如果Broker宕机，则Nameserver会将其剔除，而Consumer端的定时任务每30秒执行一次,定时任务类：MQClientInstance.this.updateTopicRouteInfoFromNameServer，会将topic对应的broker地址拉取下来，此地址已经为slave地址了，故此时consumer会从slave上消费。 消费者与master和slave都建有连接，在不同场景有不同的消费规则。</p>
+</li>
+<li><p>Producer随机与一个NameServer建立长连接，每隔30秒（此处时间可配置）从NameServer获取topic的最新队列情况，这就表示如果某个Broker Master宕机，Producer最多30秒才能感知，在这个期间，发往该Broker Master的消息将会失败。Producer会向提供topic服务的master建立长连接，且定时向Masterr发送心跳。生产者与所有的Master连接，但不能向Slave写入。 客户端是先从NameServer寻址的，得到可用Broker的IP和端口信息，然后自己去连接Broker。 </p>
+</li>
+</ol>
 <h2 id="路由信息的管理（Topic-amp-Broker）"><a href="#路由信息的管理（Topic-amp-Broker）" class="headerlink" title="路由信息的管理（Topic &amp; Broker）"></a>路由信息的管理（Topic &amp; Broker）</h2><p>Broker启动时候/topic配置变更/每隔30s（Broker启动时候的定时任务），broker会发起register到namserver的动作，把broker<br>自己的基础数据以及维护的topic 一起提交给nameserver进行管理，同时把broker注册到NameServer 这些信息最后组成RouteInfo路由信息，由生产者和消费者来使用。</p>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">RegisterBrokerResult registerBrokerResult = <span class="hljs-keyword">this</span>.brokerOuterAPI.registerBrokerAll(<span class="hljs-comment">//</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.brokerConfig.getBrokerClusterName(), <span class="hljs-comment">//</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.getBrokerAddr(), <span class="hljs-comment">//broker地址</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.brokerConfig.getBrokerName(), <span class="hljs-comment">//broker名称</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.brokerConfig.getBrokerId(), <span class="hljs-comment">//broker id</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.getHAServerAddr(), <span class="hljs-comment">//</span></span><br><span class="line">    topicConfigWrapper,<span class="hljs-comment">//所有topic</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.filterServerManager.buildNewFilterServerList(),<span class="hljs-comment">//</span></span><br><span class="line">    oneway);</span><br></pre></td></tr></table></figure>
 <h2 id="心跳检查"><a href="#心跳检查" class="headerlink" title="心跳检查"></a>心跳检查</h2><p>NameServer启动初始化过程，会异步启动定时任务线程，定时跑2个任务，监听broker的存活情况。<br>第一个：每隔10分钟扫描出不活动的broker,然后从routeinfo删除并关闭broker和nameserver通信的channel。<br>第二个：每隔10分钟定时打印configTable的信息</p>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="hljs-keyword">new</span> Runnable() &#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        NamesrvController.<span class="hljs-keyword">this</span>.routeInfoManager.scanNotActiveBroker();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="hljs-number">5</span>, <span class="hljs-number">10</span>, TimeUnit.SECONDS);</span><br></pre></td></tr></table></figure>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="hljs-keyword">new</span> Runnable() &#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        NamesrvController.<span class="hljs-keyword">this</span>.kvConfigManager.printAllPeriodically();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="hljs-number">1</span>, <span class="hljs-number">10</span>, TimeUnit.MINUTES);</span><br></pre></td></tr></table></figure>
 <p>通过定时扫描操作实现了服务治理中，如果出现机器宕机，可以自动摘除挂掉的机器，仍然保证服务可用。</p>
-<h2 id="服务发现"><a href="#服务发现" class="headerlink" title="服务发现"></a>服务发现</h2><p>接收Producer和Consumer的请求，根据某个topic获取到对应的broker的路由信息，即实现服务发现功能<br>当Broker收到Producer发送的消息并判断<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RequestCode = GET_ROUTINEINFO_BY_TOPIC</span><br></pre></td></tr></table></figure></p>
+<h2 id="服务发现"><a href="#服务发现" class="headerlink" title="服务发现"></a>服务发现</h2><p>服务发现主要做的事情：接收Producer和Consumer的请求，根据某个topic获取到对应的broker的路由信息。</p>
+<p>当Broker收到Producer发送的消息并判断<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RequestCode = GET_ROUTINEINFO_BY_TOPIC</span><br></pre></td></tr></table></figure></p>
 <p>之后，会调用默认注册的请求处理器（DefaultRequestProcessor）的getRouteInfoByTopic方法，该方法根据Topic获取对应的broker路由信息.<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TopicRouteData topicRouteData = <span class="hljs-keyword">this</span>.namesrvController.getRouteInfoManager().pickupTopicRouteData(requestHeader.getTopic());</span><br></pre></td></tr></table></figure></p>
 <p>pickupTopicRouteData关于获取Topic BrokerRouteInfo核心代码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"><span class="hljs-keyword">this</span>.lock.readLock().lockInterruptibly();</span><br><span class="line"></span><br><span class="line">List&lt;QueueData&gt; queueDataList = <span class="hljs-keyword">this</span>.topicQueueTable.get(topic);</span><br><span class="line"><span class="hljs-keyword">if</span> (queueDataList != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">    topicRouteData.setQueueDatas(queueDataList);</span><br><span class="line">...</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">this</span>.lock.readLock().unlock();</span><br></pre></td></tr></table></figure></p>
 <p>具体代码流程如下：<br>RouteInfoMananger的topicQueueTable记录了topic名称与broker队列[broker名称]的映射关系，而brokerAddrTable记录了brokerName与broker地址的映射关系，因此基于topicQueueTable和brokerAddrTable这两个关键属性即可以根据topic获取对应的broker路由地址。</p>
@@ -281,11 +293,14 @@ var _hmt = _hmt || [];
 </tbody>
 </table>
 <h2 id="快速问答"><a href="#快速问答" class="headerlink" title="快速问答"></a>快速问答</h2><ul>
-<li><p><strong>NameServer怎么知道有多少broker机器？</strong><br>RouteInfoManager 有一个brokerLiveInfo列表保存当前存货的broker机器，可以从这里get到。</p>
-</li>
-<li><p><strong>为什么不用Zookeeper而自己开发了一个NameServer?</strong><br><a href="http://blog.csdn.net/earthhour/article/details/78718064" target="_blank" rel="noopener">引用自</a>首先，ZooKeeper可以提供Master选举功能，比如Kafka用来给每个分区选一个broker作为leader<br><a href="http://blog.csdn.net/chunlongyu/article/details/54018010" target="_blank" rel="noopener">推荐看此文</a>，但对于RocketMQ来说，<strong>topic的数据在每个Master上是对等的，没有哪个Master上有topic上的全部数据</strong>，所以这里选举leader没有意义；</p>
-</li>
+<li><strong>NameServer怎么知道有多少broker机器？</strong></li>
 </ul>
+<p>RouteInfoManager 有一个brokerLiveInfo列表保存当前存活的broker机器，可以从这里get到。</p>
+<ul>
+<li><strong>为什么不用Zookeeper而自己开发了一个NameServer?</strong></li>
+</ul>
+<p><a href="http://blog.csdn.net/earthhour/article/details/78718064" target="_blank" rel="noopener">引用自</a>首先，RocketMQ 没用到ZK典型的选举场景。因为Master都是对等的。</p>
+<p>ZooKeeper可以提供Master选举功能，比如Kafka用来给每个分区选一个broker作为leader<br><a href="http://blog.csdn.net/chunlongyu/article/details/54018010" target="_blank" rel="noopener">推荐看此文</a>，但对于RocketMQ来说，<strong>topic的数据在每个Master上是对等的，没有哪个Master上有topic上的全部数据</strong>，所以这里选举leader没有意义；</p>
 <p>其次，RockeqMQ集群中，需要有构件来处理一些通用数据，比如broker列表，broker刷新时间，虽然ZooKeeper也能存放数据，并有一致性保证，但处理数据之间的一些逻辑关系却比较麻烦，而且数据的逻辑解析操作得交给ZooKeeper客户端来做，如果有多种角色的客户端存在，自己解析多级数据确实是个麻烦事情；</p>
 <p>既然RocketMQ集群中没有用到ZooKeeper的一些重量级的功能，只是使用ZooKeeper的数据一致性和发布订阅的话，与其依赖重量级的ZooKeeper，还不如写个轻量级的NameServer，NameServer也可以集群部署，NameServer与NameServer之间无任何信息同步，只有一千多行代码的NameServer稳定性肯定高于ZooKeeper，占用的系统资源也可以忽略不计，何乐而不为？</p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
