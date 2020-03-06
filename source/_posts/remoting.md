@@ -8,14 +8,15 @@ tags:
   - RocketMQ
 categories: 学习积累
 ---
-本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。[推荐Netty入门综述](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。
+本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟市面上太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。[推荐Netty入门综述](https://gsmtoday.github.io/2018/02/13/netty-summarize/)。
 
 本文是[RocketMQ源码分析系列](https://gsmtoday.github.io/tags/RocketMQ/)之一，如有疑问或者技术探讨，可以[email me](gsmuestc@163.com),欢迎探讨.
 
 
 <!-- more -->
+remoting模块是RocketMQ的基础通信模块。
 
-在分布式应用中，不可避免的一个问题就是跨进程的通信，此问题基本都通过RPC调用来解决。RocketMQ的通信模块无疑也是通过RPC实现的Producer、Consumer与Broker之间的通信。在讲解RocketMQ的通信模块之前，先来说关于[高性能RPC调用三个重要主题]([http://www.infoq.com/cn/articles/netty-high-performance])。
+在分布式应用中，不可避免的一个问题就是跨进程的通信，此问题基本都通过RPC调用来解决。RocketMQ的Producer、Consumer与Broker之间的通信无疑也是通过RPC实现的。在讲解RocketMQ的通信模块之前，先来说关于[高性能RPC调用三个重要主题]([http://www.infoq.com/cn/articles/netty-high-performance])。
 * 传输
 因为RPC的本质是进程间通信，采用什么样的IO通信模型在很大程度上决定了通信的性能。
 * 协议
@@ -23,11 +24,11 @@ categories: 学习积累
 
 协议指RPC调用在网络传输中约定的数据封装方式，通常包括三部分：**编解码**，**消息头**，**消息体**。常见的消息体编解码方式是**序列化**。消息头负责存储方便编码以及方便扩展的元信息，例如语言版本，响应码等等。
 * 线程
-当通信消息传输完毕之后，通过什么样的线程模型处理线程请求也很重要。常见的模型有Reactor单线程模型，Reactor多线程模型以及Reactor主从模型。虽然单路复用的思想是一个线程handle多个连接，尽量减少线程切换的开销。但是如果客户端请求量大，很可能单线程处理不过来请求导致请求积压响应变慢。因此Reactor多线程模型就是IO操作和非IO操作分开。非IO的线程称为工作线程，客户端的请求直接被丢到线程池中，客户端发送请求不会堵塞。
+当通信消息传输完毕之后，通过什么样的线程模型处理线程请求也很重要。常见的模型有Reactor单线程模型，Reactor多线程模型以及Reactor主从模型。虽然多路复用的思想是一个线程handle多个连接，尽量减少线程切换的开销。但是如果客户端请求量大，很可能单线程处理不过来请求导致请求积压响应变慢。因此Reactor多线程模型就是IO操作和非IO操作分开。非IO的线程称为工作线程，客户端的请求直接被丢到线程池中，客户端发送请求不会堵塞。
 
 接着我们来讲讲RocketMQ是怎么解决通信协议的“传输”、“协议”以及“线程”的。
 ## 传输
-简单来说，RocketMQ的remoting模块通过Netty实现了IO单路复用的Reactor通信模型。在RocketMQ启动NameServer的时候，会执行NameServer初始化以及服务端通信对象RemotingServer的启动操作`this.remotingServer.start();
+简单来说，RocketMQ的remoting模块通过Netty实现了IO多路复用的Reactor通信模型。在RocketMQ启动NameServer的时候，会执行NameServer初始化以及服务端通信对象RemotingServer的启动操作`this.remotingServer.start();
 `. start()方法会启动NettyRemotingServer的Netty服务端并初始化一个channel。
 ```java
    ServerBootstrap childHandler =

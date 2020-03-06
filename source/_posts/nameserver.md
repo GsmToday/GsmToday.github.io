@@ -21,14 +21,14 @@ NameServer是类似于Zookeeper的分布式服务治理可单独部署的模块�
 
 服务治理具体为服务注册和服务发现。它作为一个管理中心一样的存在，解耦provider和consumer，需要分布式强一致性的存储服务的IP地址以及端口。目前业界常见的产品为Zookeeper，Zookeeper使用Paxos保证强一致性。
 
-在同一个分布式集群中的进程或服务，互相感知并建立连接，这就是服务发现。服务发现最明显的优点就是零配置，不用使用硬编码的网络地址，<font color = "red">只需服务的名字，就能使用服务</font>。在现代体系架构中，单个服务实力的启动和销毁很常见，所以应该做到无需了解整个架构的部署拓扑，就能找到整个实例。复杂的服务发现组件要提供更多的功能，例如服务元数据存储，监控监控，多种查询和实时更新等。
+在同一个分布式集群中的进程或服务，互相感知并建立连接，这就是服务发现。服务发现最明显的优点就是零配置，不用使用硬编码的网络地址，<font color = "red">只需服务的名字，就能使用服务</font>。在现代体系架构中，单个服务实例的启动和销毁很常见，所以应该做到无需了解整个架构的部署拓扑，就能找到整个实例。复杂的服务发现组件要提供更多的功能，例如服务元数据存储，监控监控，多种查询和实时更新等。
 
 在服务治理之前，RPC调用使用点对点方式，完全通过人为进行配置操作决定，运维成本高且容易出错，且整个系统运行期间的服务稳定性也无法很好感知。因此需要设计出包含基本功能服务的自动注册，客户端的自动发现，变更下发的服务治理。
 
 ## NameServer作用
 当多Broker Master部署时，Master之间是不需要知道彼此的，这样的设计降低了Broker实现的复杂性。这样在分布式环境下，某台Master宕机或上线，不会对其他Master造成任何影响。那么怎样才能知道网络中有多少台Master和Slave？
 
-**NameServer作用1**: Broker在启动的时候会去NameServer注册，Nameserver会维护Broker的状态和地址。
+**NameServer作用1**: Broker在启动的时候会去NameServer注册，Nameserver会维护Broker的状态和地址, 以便Producer和Consumer能够获取正确的Broker信息，进行业务处理；
 
 **NameServer作用2**：Nameserver还维护了一份Topic和Topic对应队列的地址列表，broker每次发送心跳过来的时候都会把Topic信息带上。客户端依靠Nameserver决定去获取对应topic的路由信息，从而决定对那些Broker做连接。
 
@@ -58,6 +58,22 @@ RouteInfoManager 是NameServer核心类，它管理broker的路由信息，topic
 NameServer初始化步骤：
 
 <img src="nameserver_ini.png" width = "500" height = "400" align=center />
+
+## Nameserver与Broker/Producer/Consumer关系
+
+1. Nameserver互相独立，彼此没有通信关系，单台Nameserver挂掉不影响其他Nameserver。Nameserver不去连接别的机器，不会主动推消息。
+
+2. 单个Broker无论是Master还是Slave与所有的NameServer进行定时注册，以便告知NameServer自己还活着。
+Broker每隔30s向所有Nameserver发送心跳，Nameserver包含自己的topic配置信息。Nameserver每隔10秒，扫描所有还存活的Broker连接，如果某个连接的最后更新时间与当前时间差超过2分钟，则断开此连接。此外，Nameserver也会断开Broker下所有与Slave的连接，同时更新topic与队列的对应关系，但是不会通知生产者和消费者。
+
+3. Consumer随机与一个Nameserver建立长连接，如果该Nameserver断开，则从Nameserver列表查找下一个Nameserver进行连接。
+    Consumer主要从NameServer中根据topic查询Broker地址，查到就会缓存到客户端，并向提供topic服务的Broker master/slave建立长连接，且定时向Broker Master/Save发送心跳。
+
+    如果Broker宕机，则Nameserver会将其剔除，而Consumer端的定时任务每30秒执行一次,定时任务类：MQClientInstance.this.updateTopicRouteInfoFromNameServer，会将topic对应的broker地址拉取下来，此地址已经为slave地址了，故此时consumer会从slave上消费。 消费者与master和slave都建有连接，在不同场景有不同的消费规则。
+
+4. Producer随机与一个NameServer建立长连接，每隔30秒（此处时间可配置）从NameServer获取topic的最新队列情况，这就表示如果某个Broker Master宕机，Producer最多30秒才能感知，在这个期间，发往该Broker Master的消息将会失败。Producer会向提供topic服务的master建立长连接，且定时向Masterr发送心跳。生产者与所有的Master连接，但不能向Slave写入。 客户端是先从NameServer寻址的，得到可用Broker的IP和端口信息，然后自己去连接Broker。 
+
+
 ## 路由信息的管理（Topic & Broker）
 
 Broker启动时候/topic配置变更/每隔30s（Broker启动时候的定时任务），broker会发起register到namserver的动作，把broker
@@ -74,7 +90,6 @@ RegisterBrokerResult registerBrokerResult = this.brokerOuterAPI.registerBrokerAl
     this.filterServerManager.buildNewFilterServerList(),//
     oneway);
 ```
-
 ## 心跳检查
 
 NameServer启动初始化过程，会异步启动定时任务线程，定时跑2个任务，监听broker的存活情况。
@@ -104,7 +119,8 @@ this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 通过定时扫描操作实现了服务治理中，如果出现机器宕机，可以自动摘除挂掉的机器，仍然保证服务可用。
 
 ## 服务发现
-接收Producer和Consumer的请求，根据某个topic获取到对应的broker的路由信息，即实现服务发现功能
+服务发现主要做的事情：接收Producer和Consumer的请求，根据某个topic获取到对应的broker的路由信息。
+
 当Broker收到Producer发送的消息并判断
 ```
 RequestCode = GET_ROUTINEINFO_BY_TOPIC
@@ -146,9 +162,11 @@ RouteInfoMananger的topicQueueTable记录了topic名称与broker队列[broker名
 
 ## 快速问答
 - **NameServer怎么知道有多少broker机器？**
-RouteInfoManager 有一个brokerLiveInfo列表保存当前存货的broker机器，可以从这里get到。
+
+RouteInfoManager 有一个brokerLiveInfo列表保存当前存活的broker机器，可以从这里get到。
 
 - **为什么不用Zookeeper而自己开发了一个NameServer?**
+
 [引用自](http://blog.csdn.net/earthhour/article/details/78718064)首先，ZooKeeper可以提供Master选举功能，比如Kafka用来给每个分区选一个broker作为leader
 [推荐看此文](http://blog.csdn.net/chunlongyu/article/details/54018010)，但对于RocketMQ来说，**topic的数据在每个Master上是对等的，没有哪个Master上有topic上的全部数据**，所以这里选举leader没有意义；
 
