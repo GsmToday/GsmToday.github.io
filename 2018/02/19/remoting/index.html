@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟市面上太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。推荐Netty入门综述。 本文是RocketMQ源码分析系列之一，如有疑问或者技术探讨，可以email me,欢迎探讨.">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/dophin.png">
-<meta property="og:updated_time" content="2020-03-06T02:45:00.540Z">
+<meta property="og:updated_time" content="2020-03-06T09:17:41.649Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码分析1--Remoting">
 <meta name="twitter:description" content="本文试图以一种简易的语言让你了解到RocketMQ的通信协议模块是如何设计的（毕竟市面上太多程序员自己都很难看懂的技术文章了）。另外如果想要深入了解通信模块，你需要具备Netty的知识。推荐Netty入门综述。 本文是RocketMQ源码分析系列之一，如有疑问或者技术探讨，可以email me,欢迎探讨.">
@@ -175,7 +175,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-02-19T03:14:03.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-02-19</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-06T02:45:00.540Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-06T09:17:41.649Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-06</time>
                 
                 
                 <div class="level-item">
@@ -188,7 +188,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    19 分钟 读完 (大约 2814 个字)
+                    19 分钟 读完 (大约 2898 个字)
                 </span>
                 
                 
@@ -263,6 +263,18 @@ var _hmt = _hmt || [];
 <p><img src="/2018/02/19/remoting/response.png" width="600" height="400" alt="RocketMQ回应消息封装" align="center"><br>可以看出RemotingCommand当表示应答结果时候如果处理成功则code = 0。</p>
 <p>核心处理为invokeSyncImpl方法<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> RemotingCommand <span class="hljs-title">invokeSyncImpl</span><span class="hljs-params">(<span class="hljs-keyword">final</span> Channel channel, <span class="hljs-keyword">final</span> RemotingCommand request,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">       <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> timeoutMillis)</span></span></span><br><span class="line"><span class="hljs-function">       <span class="hljs-keyword">throws</span> InterruptedException, RemotingSendRequestException, RemotingTimeoutException </span>&#123;</span><br><span class="line">       <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> opaque = request.getOpaque();</span><br><span class="line"></span><br><span class="line">       <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">           <span class="hljs-keyword">final</span> ResponseFuture responseFuture = <span class="hljs-keyword">new</span> ResponseFuture(opaque, timeoutMillis, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>);</span><br><span class="line">           <span class="hljs-comment">// 客户端使用resonseTable,服务端使用processortable</span></span><br><span class="line">           <span class="hljs-keyword">this</span>.responseTable.put(opaque, responseFuture);</span><br><span class="line">           <span class="hljs-keyword">final</span> SocketAddress addr = channel.remoteAddress();</span><br><span class="line">           channel.writeAndFlush(request).addListener(<span class="hljs-keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">               <span class="hljs-meta">@Override</span></span><br><span class="line">               <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">operationComplete</span><span class="hljs-params">(ChannelFuture f)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                   <span class="hljs-keyword">if</span> (f.isSuccess()) &#123;</span><br><span class="line">                       responseFuture.setSendRequestOK(<span class="hljs-keyword">true</span>);</span><br><span class="line">                       <span class="hljs-keyword">return</span>;</span><br><span class="line">                   &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">                       responseFuture.setSendRequestOK(<span class="hljs-keyword">false</span>);</span><br><span class="line">                   &#125;</span><br><span class="line"></span><br><span class="line">                   responseTable.remove(opaque);</span><br><span class="line">                   responseFuture.setCause(f.cause());</span><br><span class="line">                   responseFuture.putResponse(<span class="hljs-keyword">null</span>);</span><br><span class="line">                   log.warn(<span class="hljs-string">"send a request command to channel &lt;"</span> + addr + <span class="hljs-string">"&gt; failed."</span>);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;);</span><br><span class="line"></span><br><span class="line">           RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);</span><br><span class="line">           <span class="hljs-keyword">if</span> (<span class="hljs-keyword">null</span> == responseCommand) &#123;</span><br><span class="line">               <span class="hljs-keyword">if</span> (responseFuture.isSendRequestOK()) &#123;</span><br><span class="line">                   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RemotingTimeoutException(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,</span><br><span class="line">                       responseFuture.getCause());</span><br><span class="line">               &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">                   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RemotingSendRequestException(RemotingHelper.parseSocketAddressAddr(addr), responseFuture.getCause());</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="hljs-keyword">return</span> responseCommand;</span><br><span class="line">       &#125; <span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">           <span class="hljs-keyword">this</span>.responseTable.remove(opaque);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
 <p>首先构造一个ResonseFuture对象，Netty发送请求(writeAndFlush)并设置监听回调响应.<br>代码流程图参照<a href="http://blog.csdn.net/quhongwei_zhanqiu/article/details/39153681" target="_blank" rel="noopener">下图</a><br><img src="/2018/02/19/remoting/invokeSync.png" width="600" height="400" align="center"></p>
+<hr>
+<p>总结系列文章：</p>
+<ol>
+<li><a href="/2018/02/19/remoting/" title="RocketMQ源码分析1--Remoting">RocketMQ源码分析1--Remoting</a></li>
+<li><a href="/2018/02/23/nameserver/" title="RocketMQ源码分析2--NameServer">RocketMQ源码分析2--NameServer</a></li>
+<li><a href="/2018/03/11/rocketmq-store/" title="RocketMQ源码分析3--Store数据存储">RocketMQ源码分析3--Store数据存储</a></li>
+<li><a href="/2018/03/26/rocketmq-broker/" title="RocketMQ源码分析4--Broker模块">RocketMQ源码分析4--Broker模块</a></li>
+<li><a href="/2018/03/31/client-consumer-md/" title="RocketMQ源码分析5--Client之Consumer模块">RocketMQ源码分析5--Client之Consumer模块</a></li>
+<li><a href="/2018/05/01/rocketmq-questions/" title="RocketMQ源码分析6--关于RocketMQ你想知道的Questions">RocketMQ源码分析6--关于RocketMQ你想知道的Questions</a>
+</li>
+</ol>
+<hr>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
 <li><a href="http://zqhxuyuan.github.io/2017/10/18/Midd-RocketMQ/#" target="_blank" rel="noopener">http://zqhxuyuan.github.io/2017/10/18/Midd-RocketMQ/#</a></li>
 </ol>
@@ -310,8 +322,8 @@ var _hmt = _hmt || [];
         
         
         <div class="level-end">
-            <a class="level level-item has-link-grey  article-nav-next" href="/2018/02/13/netty-summarize/">
-                <span class="level-item">Netty入门综述</span>
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/02/18/rocketmq-summary/">
+                <span class="level-item">RocketMQ学习系列</span>
                 <i class="level-item fas fa-chevron-right"></i>
             </a>
         </div>
@@ -386,7 +398,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        72
+                        73
                     </p>
                 </a>
             </div>

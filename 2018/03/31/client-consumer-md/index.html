@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文是RocketMQ源码分析系列之五，如有疑问或者技术探讨，可以email me,欢迎探讨.">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/cat2.jpeg">
-<meta property="og:updated_time" content="2020-01-06T10:52:35.772Z">
+<meta property="og:updated_time" content="2020-03-06T09:17:55.158Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码分析5--Client之Consumer模块">
 <meta name="twitter:description" content="本文是RocketMQ源码分析系列之五，如有疑问或者技术探讨，可以email me,欢迎探讨.">
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-03-31T07:38:39.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-03-31</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.772Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-06T09:17:55.158Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-06</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    13 分钟 读完 (大约 1962 个字)
+                    14 分钟 读完 (大约 2046 个字)
                 </span>
                 
                 
@@ -243,6 +243,18 @@ var _hmt = _hmt || [];
 <p>即使这样，依然存在延迟问题：假设40ms到80ms之间的50ms消息到来，消息就延迟了30ms，而且对于半个小时来一次的消息，这些开销就是白白浪费的。</p>
 <p>在RocketMQ里，有一种优化的做法——长轮询 Pull ，来平衡推拉模型各自的缺点。基本思路是：消费者如果尝试拉取失败，不是直接return,而是把连接挂在那里wait,服务端如果有新的消息到来，把连接notify起来，这也是不错的思路。但海量的长连接block对系统的开销还是不容小觑的，还是要合理的评估时间间隔，给wait加一个时间上限比较好。</p>
 <h2 id="启动Consumer"><a href="#启动Consumer" class="headerlink" title="启动Consumer"></a>启动Consumer</h2><p><img src="/2018/03/31/client-consumer-md/clientboot.png" width="800" height="600" align="center"></p>
+<hr>
+<p>总结系列文章：</p>
+<ol>
+<li><a href="/2018/02/19/remoting/" title="RocketMQ源码分析1--Remoting">RocketMQ源码分析1--Remoting</a></li>
+<li><a href="/2018/02/23/nameserver/" title="RocketMQ源码分析2--NameServer">RocketMQ源码分析2--NameServer</a></li>
+<li><a href="/2018/03/11/rocketmq-store/" title="RocketMQ源码分析3--Store数据存储">RocketMQ源码分析3--Store数据存储</a></li>
+<li><a href="/2018/03/26/rocketmq-broker/" title="RocketMQ源码分析4--Broker模块">RocketMQ源码分析4--Broker模块</a></li>
+<li><a href="/2018/03/31/client-consumer-md/" title="RocketMQ源码分析5--Client之Consumer模块">RocketMQ源码分析5--Client之Consumer模块</a></li>
+<li><a href="/2018/05/01/rocketmq-questions/" title="RocketMQ源码分析6--关于RocketMQ你想知道的Questions">RocketMQ源码分析6--关于RocketMQ你想知道的Questions</a>
+</li>
+</ol>
+<hr>
 <h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><ol>
 <li><a href="https://yq.aliyun.com/articles/66128?spm=a2c4e.11154837.601370.2.79df5db0SUbGbK" target="_blank" rel="noopener">RocketMQ客户端最佳实践</a></li>
 <li>OffsetStore</li>
@@ -367,7 +379,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        72
+                        73
                     </p>
                 </a>
             </div>

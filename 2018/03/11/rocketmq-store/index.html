@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文是RocketMQ源码分析系列之三，如有疑问或者技术探讨，可以email me,欢迎探讨.">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/mouse2.jpg">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.176Z">
+<meta property="og:updated_time" content="2020-03-06T08:21:39.595Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码分析3--Store数据存储">
 <meta name="twitter:description" content="本文是RocketMQ源码分析系列之三，如有疑问或者技术探讨，可以email me,欢迎探讨.">
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-03-11T06:56:03.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-03-11</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.176Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-06T08:21:39.595Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-06</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    27 分钟 读完 (大约 4075 个字)
+                    30 分钟 读完 (大约 4562 个字)
                 </span>
                 
                 
@@ -208,20 +208,25 @@ var _hmt = _hmt || [];
             <p>本文是<a href="https://gsmtoday.github.io/tags/RocketMQ/">RocketMQ源码分析系列</a>之三，如有疑问或者技术探讨，可以<a href="gsmuestc@163.com">email me</a>,欢迎探讨.</p>
 <a id="more"></a>
 <h1 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h1><p>关键词： CommitLog, ConsumeQueue, 内存映射文件</p>
-<p>一个产品的技术选型一般都要基于其使用场景，RocketMQ的数据存储也不例外。在数据存储方面，RocketMQ采用了将数据(所有topic的消息)只写在了一个唯一的文件(CommitLog)里面. 之所以这么设计，是有其历史原因的:RocketMQ的最初使用场景是为了支持淘宝双十一实时订单场景(大数据量，topic-partition多)，另外Rocket在设计上最初借鉴了Kafka并试图克服其在topic-partition增多时候的不足。</p>
+<p>一个产品的技术选型一般都要基于其使用场景，RocketMQ的数据存储也不例外。在数据存储方面，<font color="blue">RocketMQ采用了将数据(所有topic的消息)只写在了一个唯一的文件(CommitLog)里面, 实现顺序写随即读</font>. 之所以这么设计，是有其历史原因的:RocketMQ的最初使用场景是为了支持淘宝双十一实时订单场景, 面临的是大数据量，topic-partition多的场景。另外Rocket在设计上最初借鉴了Kafka并试图克服其在topic-partition增多时候的不足。</p>
 <p>先来看看Kafka是怎么做数据存储的。</p>
-<p>在Kafka的架构设计上，消息以topic分类，每个topic存储在多个partition上，一个partition对应一个单独的log文件上。消息不断追加到log的末尾（顺序写）。partition可以分布在不同的机器上，因此一个topic的消息可以水平扩展到多机器上。<br><img src="/2018/03/11/rocketmq-store/kafka-partition.png" alt="一个拥有四个partition的topic"><br><img src="/2018/03/11/rocketmq-store/kafka-log.png" width="600" height="300" alt="Kafka log" align="center"><br>当Producer想要写入消息时候，消息会根据其key的哈希值分派到对应的partition上，然后追加写到partition的log文件。但是从IO层面看，这种多topic-多partition方式，对于每个文件来说虽然是顺序IO，但是当并发读写多个partition，实际上是随机IO写到多个partition的。<a href="https://tech.meituan.com/about-desk-io.html" target="_blank" rel="noopener">由于磁盘是随机读写慢，顺序读写快</a>。因此，<a href="http://jm.taobao.org/2016/04/07/kafka-vs-rocketmq-topic-amout/" target="_blank" rel="noopener">实验证明</a>：topic数量增加到一定程度，Kafka性能急剧下降。</p>
+<p>在Kafka的架构设计上，消息以topic分类，每个topic存储在多个partition上，一个partition对应一个单独的log文件上。消息不断追加到log的末尾（顺序写）。partition可以分布在不同的机器上，因此一个topic的消息可以水平扩展到多机器上。<br><img src="/2018/03/11/rocketmq-store/kafka-partition.png" alt="一个拥有四个partition的topic"><br><img src="/2018/03/11/rocketmq-store/kafka-log.png" width="600" height="300" alt="Kafka log" align="center"><br>当Producer想要写入消息时候，消息会根据其key的哈希值分派到对应的partition上，然后追加写到partition的log文件。但是从IO层面看，这种多topic-多partition方式，对于每个文件来说虽然是顺序IO，但是当<strong>并发读写</strong>多个partition，实际上是<strong>随机IO</strong>读写到多个partition的。<a href="https://tech.meituan.com/about-desk-io.html" target="_blank" rel="noopener">由于磁盘是随机读写慢，顺序读写快</a>。因此，<a href="http://jm.taobao.org/2016/04/07/kafka-vs-rocketmq-topic-amout/" target="_blank" rel="noopener">实验证明</a>：topic数量增加到一定程度，Kafka性能急剧下降。</p>
 <p>为了解决这个问题，RocketMQ的消息是<strong>存储在一个单一的CommitLog文件里</strong>，从而避免是磁盘的随机IO。</p>
-<p>另外Kafka针对Producer和Consumer使用了同1份存储结构，而RocketMQ却为Producer和Consumer分别设计了不同的存储结构，Producer对应CommitLog, Consumer对应ConsumeQueue。RocketMQ把所有消息都存储在一个CommitLog里，然后再根据topic - queueId异步分发给ConsumeQueue。 ConsumeQueue是逻辑队列，并不真正存储消息的内容，仅仅存储消息在CommitLog的位移(offset)。之所以分成多个queue，是因为这样可以让多个消费者同时消费，而不需要上锁。</p>
+<p>另外Kafka针对Producer和Consumer使用了同1份存储结构，而RocketMQ却为Producer和Consumer分别设计了不同的存储结构，Producer对应CommitLog, Consumer对应ConsumeQueue。RocketMQ把所有消息都存储在一个CommitLog里，然后再根据topic - queueId异步分发给ConsumeQueue。 ConsumeQueue是逻辑队列，并不真正存储消息的内容，仅仅存储消息在CommitLog的位移(offset)。<font color="blue">之所以分成多个queue，是因为这样可以让多个消费者同时消费，而不需要上锁。</font></p>
 <p>对于消费者来说，ConsumeQueue其实是CommitLog的一个索引文件。Consumer消费消息的时候，要读2次：</p>
 <ol>
 <li>先读ConsumeQueue得到offset</li>
 <li>再根据offset从读CommitLog得到消息。</li>
 </ol>
-<p><img src="/2018/03/11/rocketmq-store/consumequeue.png" width="600" height="300" alt="RocketMQ数据逻辑存储" align="center"></p>
-<p>有关数据存储，可以看出通过将消息都追加写到一个CommitLog文件，实现了顺序写提高了磁盘IO性能。但是这里还有一个问题，Consumer在读消息的时候，实际上是一个随机读磁盘的过程。那么RocketMQ是怎么优化这一点的呢？</p>
-<p>对于CommitLog和ConsumeQueue源代码中都有一个成员MapedFileQueue – Consumer消费消息过程中使用了<strong>零拷贝（mmap+write）</strong>，<a href="https://www.cnblogs.com/huxiao-tee/p/4660352.html" target="_blank" rel="noopener">mmap</a>是一种内存映射文件的方法，即将一个文件或者其他对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中的一段虚拟地址的一一映射关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存。而系统会自动回写脏页面到对应的文件磁盘，即完成了对文件的操作而不比调用read,write等系统调用函数。相反，内核空间对区域的修改也直接反应到用户空间，从而实现不同进程间的文件共享。<a href="http://www.linuxjournal.com/article/6345" target="_blank" rel="noopener">有关零拷贝推荐此文</a>。</p>
-<p>通过使用零拷贝，解决了文件存储IO的瓶颈，从而实现了Broker的高吞吐量。</p>
+<p><img src="/2018/03/11/rocketmq-store/consumequeue.png" width="600" height="300" alt="RocketMQ数据逻辑存储" align="center"><br><img src="/2018/03/11/rocketmq-store/store-structure.png" width="600" height="300" alt="RocketMQ数据逻辑存储" align="center"></p>
+<p>有关数据存储，可以看出通过将消息都追加写到一个CommitLog文件，实现了顺序写提高了磁盘IO性能。但是这里还有一个问题，<font color="blue">Consumer在读消息的时候，实际上是一个随机读磁盘的过程。那么RocketMQ是怎么克服这一点的呢？</font></p>
+<ol>
+<li>更多靠的是预读取，就是一次加载了很多数据到内存，被读到的概率也很大。</li>
+<li>使用零拷贝，提升了消费消息时候从磁盘加载数据到内存的效率。</li>
+</ol>
+<p>关于零拷贝：</p>
+<p>对于CommitLog和ConsumeQueue源代码中都有一个成员MapedFileQueue – Consumer消费消息过程中使用了<strong>零拷贝（mmap+write）</strong>，<a href="https://www.cnblogs.com/huxiao-tee/p/4660352.html" target="_blank" rel="noopener">mmap</a>是一种内存映射文件的方法，即将一个文件或者其他对象映射到进程的地址空间，实现文件磁盘地址和进程虚拟地址空间中的一段虚拟地址的一一映射关系。实现这样的映射关系后，进程就可以采用指针的方式读写操作这一段内存。而系统会自动回写脏页面到对应的文件磁盘，即完成了对文件的操作而不用调用read,write等系统调用函数。相反，内核空间对区域的修改也直接反应到用户空间，从而实现不同进程间的文件共享。<a href="http://www.linuxjournal.com/article/6345" target="_blank" rel="noopener">有关零拷贝推荐此文</a>。<br>（ 0拷贝的作用就是减少到用户内存的一次拷贝，这里从磁盘加载到一块mmap的内存上，用户程序就可以直接操作了。从用户的角度来看 就是操作这块内存。操作磁盘 底层原理是mmap，也就是0拷贝。）</p>
+<p>RocketMQ 采用了 mmap+write 方式实现的零拷贝。通过使用零拷贝，提升了消费消息时候从磁盘加载数据到内存的效率。</p>
 <h1 id="Store模块数据核心文件"><a href="#Store模块数据核心文件" class="headerlink" title="Store模块数据核心文件"></a>Store模块数据核心文件</h1><p>RocketMQ的数据存储功能在源码中为Store模块，其结构如下图所示:<br><img src="/2018/03/11/rocketmq-store/store.png" width="600" height="300" alt="Store模块结构" align="center"><br>业务层均通过DefaultMessageStore类提供的方法作为统一入口访问底层文件。RocketMQ存储核心围绕以下六类文件：</p>
 <ul>
 <li>IndexFile: 由IndexService类提供服务</li>
@@ -257,6 +262,12 @@ var _hmt = _hmt || [];
 <p>构建IndexFile:<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitLogDispatcherBuildIndex</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">CommitLogDispatcher</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">dispatch</span><span class="hljs-params">(DispatchRequest request)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (DefaultMessageStore.<span class="hljs-keyword">this</span>.messageStoreConfig.isMessageIndexEnable()) &#123;</span><br><span class="line">            DefaultMessageStore.<span class="hljs-keyword">this</span>.indexService.buildIndex(request);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">buildIndex</span><span class="hljs-params">(DispatchRequest req)</span> </span>&#123;</span><br><span class="line">        IndexFile indexFile = retryGetAndCreateIndexFile();</span><br><span class="line">        <span class="hljs-keyword">if</span> (indexFile != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">            <span class="hljs-keyword">long</span> endPhyOffset = indexFile.getEndPhyOffset();</span><br><span class="line">            DispatchRequest msg = req;</span><br><span class="line">            String topic = msg.getTopic();</span><br><span class="line">            String keys = msg.getKeys();</span><br><span class="line">            <span class="hljs-keyword">if</span> (msg.getCommitLogOffset() &lt; endPhyOffset) &#123;</span><br><span class="line">                <span class="hljs-keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());</span><br><span class="line">            <span class="hljs-keyword">switch</span> (tranType) &#123;</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">                    <span class="hljs-keyword">break</span>;</span><br><span class="line">                <span class="hljs-keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">                    <span class="hljs-keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="hljs-keyword">if</span> (req.getUniqKey() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                indexFile = putKey(indexFile, msg, buildKey(topic, req.getUniqKey()));</span><br><span class="line">                <span class="hljs-keyword">if</span> (indexFile == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                    log.error(<span class="hljs-string">"putKey error commitlog &#123;&#125; uniqkey &#123;&#125;"</span>, req.getCommitLogOffset(), req.getUniqKey());</span><br><span class="line">                    <span class="hljs-keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="hljs-keyword">if</span> (keys != <span class="hljs-keyword">null</span> &amp;&amp; keys.length() &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">                String[] keyset = keys.split(MessageConst.KEY_SEPARATOR);</span><br><span class="line">                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; keyset.length; i++) &#123;</span><br><span class="line">                    String key = keyset[i];</span><br><span class="line">                    <span class="hljs-keyword">if</span> (key.length() &gt; <span class="hljs-number">0</span>) &#123;</span><br><span class="line">                        indexFile = putKey(indexFile, msg, buildKey(topic, key));</span><br><span class="line">                        <span class="hljs-keyword">if</span> (indexFile == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">                            log.error(<span class="hljs-string">"putKey error commitlog &#123;&#125; uniqkey &#123;&#125;"</span>, req.getCommitLogOffset(), req.getUniqKey());</span><br><span class="line">                            <span class="hljs-keyword">return</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">            log.error(<span class="hljs-string">"build index error, stop building index"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h1 id="数据存储功能"><a href="#数据存储功能" class="headerlink" title="数据存储功能"></a>数据存储功能</h1><p>消息队列在使用过程中都会面临着如何承载消息堆积并在合适的时机投递的问题。处理堆积的最佳方式就是<a href="https://tech.meituan.com/mq-design.html" target="_blank" rel="noopener">数据存储</a>。</p>
+<p>消息堆积分为以下两种情况：</p>
+<ol>
+<li>消息堆积在内存Buffer，一旦超过内存Buffer，可以根据一定的丢弃策略丢弃消息，如CORBA Notification规范中描述。适合能容忍丢弃消息业务，这种情况的堆积能力主要在于内存Buffer大小，而且消息堆积后，性能下降不会太大，因为内存中数据多少对于对外提供的访问能力影响有限。</li>
+<li>消息堆积持久化存储系统中，例如DB，KV存储，文件记录形式。当消息不能在内存 Cache 命中时，要不可避免的访问磁盘，会产生大量读 IO，读 IO 的吞吐量直接决定了 消息堆积后的访问能力。</li>
+</ol>
+<p>RocketMQ的具有亿级消息堆积能力：<br><img src="/2018/03/11/rocketmq-store/xiaoxiduiji.png" width="600" height="300" alt="" align="center"></p>
 <p>下图是RocketMQ数据的存储管理方式。所有Producer生产的消息，按照插入顺序写入一个CommitLog文件。CommitLog按照固定的大小被切割为多个小文件，每个文件MappedFile都通过内存映射的方式加载入内存。MappedFile随着消息的写入，不断生成，并放在MappedFileQueue队列的最后，每次消息写入都在最后一个MappedFile后追加，直到达到最大的文件大小，重新生成一个新的MappedFile。每个MappedFile名字表示文件中第一条消息在CommitLog中的物理偏移量。每条消息有固定的格式，在写入CommitLog的过程中，RocketMQ会启动一个异步线程，读取MappedFile，根据生产消息时指定的topic和ConsumeQueue id将每条消息在整个CommitLog中的物理偏移量，以及消息的大小和标签码，组织为一条CQUnit，写入对应ConsumeQueue。ConsumeQueue的组织方式与CommitLog类似，每个topic的每个ConsumeQueue独占一个文件夹，文件夹里同样按照MappedFileQueue的方式，组织所有CQStoreUnit。</p>
 <p><img src="/2018/03/11/rocketmq-store/data-store.png" width="600" height="300" alt="data store" align="center"></p>
 <p>从功能上讲，数据存储用于存储：</p>
@@ -284,7 +295,18 @@ var _hmt = _hmt || [];
 <p>当录入索引信息的时候，以topic#key为键，计算其哈希值，对哈希桶的总数取余，定位当前索引信息的哈希槽位。由于索引信息按序录入，所以当索引信息一到的时候，其存储位置就固定了，只需要在哈希槽位中记录其位置信息即可，即上图的indexCount。在发生哈希碰撞的时候，采用头插，以最新索引信息的indexCount覆盖哈希槽位的旧值，并把旧值记录在索引信息中。</p>
 <p>当以某个topic和key取对应消息的物理点位时，首先定位槽位，然后遍历碰撞的“链表”，取到所需要的信息即可。</p>
 <p>IndexFile文件内部的查找就是Hash查找的过程，那如何查找IndexFile呢？这就需要用到IndexFile头中的beginTimeStamp字段和endTimeStamp字段了，它们代表了当前索引信息中第一条和最后一条索引的更新时间。消费者查找时，出了topic和关键字信息，还需要指定时间段。索引组件根据请求的时间段，从后往前匹配。</p>
-<h2 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h2><h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<hr>
+<p>总结系列文章：</p>
+<ol>
+<li><a href="/2018/02/19/remoting/" title="RocketMQ源码分析1--Remoting">RocketMQ源码分析1--Remoting</a></li>
+<li><a href="/2018/02/23/nameserver/" title="RocketMQ源码分析2--NameServer">RocketMQ源码分析2--NameServer</a></li>
+<li><a href="/2018/03/11/rocketmq-store/" title="RocketMQ源码分析3--Store数据存储">RocketMQ源码分析3--Store数据存储</a></li>
+<li><a href="/2018/03/26/rocketmq-broker/" title="RocketMQ源码分析4--Broker模块">RocketMQ源码分析4--Broker模块</a></li>
+<li><a href="/2018/03/31/client-consumer-md/" title="RocketMQ源码分析5--Client之Consumer模块">RocketMQ源码分析5--Client之Consumer模块</a></li>
+<li><a href="/2018/05/01/rocketmq-questions/" title="RocketMQ源码分析6--关于RocketMQ你想知道的Questions">RocketMQ源码分析6--关于RocketMQ你想知道的Questions</a>
+</li>
+</ol>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
 <li><a href="http://blog.csdn.net/chunlongyu/article/details/54576649" target="_blank" rel="noopener">travi’s blog很精彩-1</a></li>
 <li><a href="http://blog.csdn.net/chunlongyu/article/details/54376920" target="_blank" rel="noopener">travi’s blog很精彩-2</a></li>
 <li><a href="http://www.dengshenyu.com/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/2017/11/06/kafka-Meet-Kafka.html" target="_blank" rel="noopener">Dengshenyu - Kafka系列</a></li>
@@ -411,7 +433,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        72
+                        73
                     </p>
                 </a>
             </div>
@@ -493,10 +515,6 @@ var _hmt = _hmt || [];
         <a class="is-flex" href="#索引">
         <span class="has-mr-6">3.3</span>
         <span>索引</span>
-        </a></li><li>
-        <a class="is-flex" href="#主从复制">
-        <span class="has-mr-6">3.4</span>
-        <span>主从复制</span>
         </a></li></ul></li><li>
         <a class="is-flex" href="#参考">
         <span class="has-mr-6">4</span>

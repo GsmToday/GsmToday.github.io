@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文是RocketMQ源码分析系列之四，如有疑问或者技术探讨，可以email me,欢迎探讨.">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/bird1.png">
-<meta property="og:updated_time" content="2020-01-06T10:52:36.168Z">
+<meta property="og:updated_time" content="2020-03-07T08:29:01.567Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码分析4--Broker模块">
 <meta name="twitter:description" content="本文是RocketMQ源码分析系列之四，如有疑问或者技术探讨，可以email me,欢迎探讨.">
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-03-26T07:48:57.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-03-26</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:36.168Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-07T08:29:01.567Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-07</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    17 分钟 读完 (大约 2513 个字)
+                    18 分钟 读完 (大约 2664 个字)
                 </span>
                 
                 
@@ -212,16 +212,23 @@ var _hmt = _hmt || [];
 <p>对于RocketMQ，Broker是逻辑概念。一台机器或者为Master或者为Slave的一个实例。<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">One Broker = One Master + n * Slaves</span><br></pre></td></tr></table></figure></p>
 <p>一个Master可以对应多个Slave, Master与Slave的对应关系通过指定相同的BrokerName关联起来，BrokerId=0的实例为Master,非0的实例为Slave。在横向扩展情况下，Master可以部署为多实例。</p>
 <p>每个Broker与NameServer集群中的所有节点建立长连接 - 每个Broker每隔30s向NameServer更新自身Topic和Broker路由信息.<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="hljs-keyword">new</span> Runnable() &#123;</span><br><span class="line">          <span class="hljs-meta">@Override</span></span><br><span class="line">          <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">              <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">                  BrokerController.<span class="hljs-keyword">this</span>.registerBrokerAll(<span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>);</span><br><span class="line">              &#125;</span><br><span class="line">              <span class="hljs-keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                  log.error(<span class="hljs-string">"registerBrokerAll Exception"</span>, e);</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;, <span class="hljs-number">1000</span> * <span class="hljs-number">10</span>, <span class="hljs-number">1000</span> * <span class="hljs-number">30</span>, TimeUnit.MILLISECONDS);</span><br></pre></td></tr></table></figure></p>
+<h2 id="Broker部署方式"><a href="#Broker部署方式" class="headerlink" title="Broker部署方式"></a>Broker部署方式</h2><p>RocketMQ的Broker有三种集群部署方式：</p>
+<ol>
+<li>单台Master部署；</li>
+<li>多台Master部署；</li>
+<li>多Master多Slave部署。<br><img src="/2018/03/26/rocketmq-broker/deploy.png" width="600" height="400" title="多Master多Slave部署" align="center"></li>
+</ol>
+<p>topic的数据再每个Master上是对等的，没有哪个Master上有的topic的全部数据。</p>
 <h2 id="start-启动"><a href="#start-启动" class="headerlink" title="start 启动"></a>start 启动</h2><p>Broker启动的时候主要启动一些辅助线程服务，例如CQ和CommitLog的刷盘线程服务，启动用于构建indexfile和CQ的服务的ReputService服务，启动BrokerOutAPI(Broker和其他模块通信类), 并创建消息发送线程池，消息拉取线程池，admin管理线程池和client管理线程池。以及把broker注册到NameServer等等。另外Broker启动的时候还将已经持久化到硬盘的topic,，consumerOffset， subscriptionGroup, consumerFilter到内存。</p>
 <p>另外Broker启动的时候还会注册Netty的处理器(BrokerController.initialize)，用于和NameServer之间通信的处理。注册Processor会为每个消息的注册码指定一个请求处理器。例如负责处理生产者发送消息时，NameServer与Broker通信的处理器<code>SendMessageProcessor</code>, 负责处理消费者消费消息时，NameServer与Broker通信的处理器<code>PullMessageProcessor</code>等等。</p>
 <p>参见代码：<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BrokerStartup</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Properties properties = <span class="hljs-keyword">null</span>;</span><br><span class="line">    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> CommandLine commandLine = <span class="hljs-keyword">null</span>;</span><br><span class="line">    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String configFile = <span class="hljs-keyword">null</span>;</span><br><span class="line">    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Logger log;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        start(createBrokerController(args));</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h2 id="消息的发送"><a href="#消息的发送" class="headerlink" title="消息的发送"></a>消息的发送</h2><p>当消息的生产者向Broker发送消息时候，实际上消息先到达NameServer, NameServer将消息发送给Broker进行消息的落地。</p>
 <p>这里引用<a href="https://kgyhkgyh.gitbooks.io/rocketmq/content/chapter2.html" target="_blank" rel="noopener">kyghkgyh</a>的broker接收消息的图：<br><img src="/2018/03/26/rocketmq-broker/broker-receive.png" width="600" height="400" align="center"></p>
 <p>Broker通过提供SendMessageProcessor与NameServer进行通信获取消息，并调用<a href="https://gsmtoday.github.io/2018/03/11/rocketmq-store/">store</a>模块提供的写commitLog的接口，将消息持久化到commitlog文件，最后落地到磁盘上。</p>
-<h2 id="Broker与Topic的关系"><a href="#Broker与Topic的关系" class="headerlink" title="Broker与Topic的关系"></a>Broker与Topic的关系</h2><p>对于消息来说，topic是消息的逻辑分类单元，queue是消息的物理存储单元。一个topic下可以有多个queue。<br>逻辑上：当生产者生产消息时候需要为消息指定topic，topic创建时需要指定1个或者多个broker。topic与broker是多对多的关系，一个topic分布在多个broker上，一个broker可以配置多个topic.<br>物理上：上缠着生产消息发送给broker时候需要指定发送到哪个queue上。默认情况生产者会轮询将消息发送到每个queue，顺序随机。</p>
+<h2 id="Broker与Topic的关系"><a href="#Broker与Topic的关系" class="headerlink" title="Broker与Topic的关系"></a>Broker与Topic的关系</h2><p>对于消息来说，topic是消息的逻辑分类单元，queue是消息的物理存储单元。一个topic下可以有多个queue。<br>逻辑上：当生产者生产消息时候需要为消息指定topic，topic创建时需要指定1个或者多个broker。topic与broker是多对多的关系，一个topic分布在多个broker上，一个broker可以配置多个topic.<br>物理上：生产者生产消息发送给broker时候需要指定发送到哪个queue上。默认情况生产者会轮询将消息发送到每个queue，顺序随机。</p>
 <p>NameServer就是通过broker与topic的映射关系来做路由。</p>
 <h2 id="消息的堆积"><a href="#消息的堆积" class="headerlink" title="消息的堆积"></a>消息的堆积</h2><p>MQ的一个很重要的一个功能是挡住并缓冲数据洪峰，削峰填谷，从而保证后端系统的稳定性。因此RocketMQ的broker端需要具备一定的消息堆积能力（官方数据是支持亿级消息堆积）。</p>
-<p>Broker在接收到消息后，会将其持久化到本地磁盘的文件中。之所以没有选择持久化到远程DB或者KV数据库，个人认为可以减少网络开销，还可以避免因为带宽原因可能影响到消息的发送和消费的TPS。Broker通过使用Linux的<strong>零拷贝技术</strong>保证了提高了文件高并发读写。具体实现为：Broker通过Java的MappedByteBuffer(CommitLog, CQ等的源码都使用到了MappedByteBuffer)使用<strong>mmap技术</strong>, 将文件直接映射到用户态的内存地址, Broker可以像操作内存一样操作文件 - 直接操作Linux操作系统的PageCache，这样就可以直接操作内存中的数据而不需要每次都通过IO去物理磁盘写文件。因此可以RocketMQ存储得以实现亿级消息堆积，并且保持了低写入延迟。</p>
+<p>Broker在接收到消息后，会将其。<font color="blue">持久化到本地磁盘的文件中</font>。之所以没有选择持久化到远程DB或者KV数据库，个人认为可以减少网络开销，还可以避免因为带宽原因可能影响到消息的发送和消费的TPS。Broker通过使用Linux的<strong>零拷贝技术</strong>保证了提高了文件高并发读写。具体实现为：Broker通过Java的MappedByteBuffer(CommitLog, CQ等的源码都使用到了MappedByteBuffer)使用<strong>mmap技术</strong>, 将文件直接映射到用户态的内存地址, Broker可以像操作内存一样操作文件 - 直接操作Linux操作系统的PageCache，这样就可以直接操作内存中的数据而不需要每次都通过IO去物理磁盘写文件。因此可以RocketMQ存储得以实现亿级消息堆积，并且保持了低写入延迟。</p>
 <h2 id="Broker响应Consumer请求-消息的接收"><a href="#Broker响应Consumer请求-消息的接收" class="headerlink" title="Broker响应Consumer请求 - 消息的接收"></a>Broker响应Consumer请求 - 消息的接收</h2><p><img src="/2018/03/26/rocketmq-broker/consumer1.png" align="center"><br>关于RocketMQ的两种消费模式Push与Pull，具体<a href="">参见</a>。</p>
 <p>RocketMQ在具体实现时，Push和Pull模式都是采用消费者主动Pull的方式 - Consumer长轮询从broker拉取消息。这样可以保证在消息不堆积情况下，消息到达Broker后，能立刻到达Consumer - Consumer先根据对应的Topic+queueId去ConsumeQueue拿到该消息在CommitLog中的offset, 接着通过offset到CommitLog中拿到具体消息。这样实现了消息的<strong>实时性</strong>不低于Push. </p>
 <p>BrokerController启动时候，会通过initialize()注册PullMessageProcessor来处理拉消息的请求。<br>BrokerControler<br><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerProcessor</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">     * PullMessageProcessor</span></span><br><span class="line"><span class="hljs-comment">     */</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.remotingServer.registerProcessor(RequestCode.PULL_MESSAGE, <span class="hljs-keyword">this</span>.pullMessageProcessor, <span class="hljs-keyword">this</span>.pullMessageExecutor);</span><br><span class="line">    <span class="hljs-keyword">this</span>.pullMessageProcessor.registerConsumeMessageHook(consumeMessageHookList);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
@@ -251,6 +258,18 @@ var _hmt = _hmt || [];
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> (BrokerRole.SLAVE == <span class="hljs-keyword">this</span>.messageStoreConfig.getBrokerRole()) &#123;</span><br><span class="line">               <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.messageStoreConfig.getHaMasterAddress() != <span class="hljs-keyword">null</span> &amp;&amp; <span class="hljs-keyword">this</span>.messageStoreConfig.getHaMasterAddress().length() &gt;= <span class="hljs-number">6</span>) &#123;</span><br><span class="line">                   <span class="hljs-keyword">this</span>.messageStore.updateHaMasterAddress(<span class="hljs-keyword">this</span>.messageStoreConfig.getHaMasterAddress());</span><br><span class="line">                   <span class="hljs-keyword">this</span>.updateMasterHAServerAddrPeriodically = <span class="hljs-keyword">false</span>;</span><br><span class="line">               &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">                   <span class="hljs-keyword">this</span>.updateMasterHAServerAddrPeriodically = <span class="hljs-keyword">true</span>;</span><br><span class="line">               &#125;</span><br><span class="line"></span><br><span class="line">               <span class="hljs-keyword">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="hljs-keyword">new</span> Runnable() &#123;</span><br><span class="line"></span><br><span class="line">                   <span class="hljs-meta">@Override</span></span><br><span class="line">                   <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                       <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">                           BrokerController.<span class="hljs-keyword">this</span>.slaveSynchronize.syncAll();</span><br><span class="line">                       &#125; <span class="hljs-keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                           log.error(<span class="hljs-string">"ScheduledTask syncAll slave exception"</span>, e);</span><br><span class="line">                       &#125;</span><br><span class="line">                   &#125;</span><br><span class="line">               &#125;, <span class="hljs-number">1000</span> * <span class="hljs-number">10</span>, <span class="hljs-number">1000</span> * <span class="hljs-number">60</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">           &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">               <span class="hljs-keyword">this</span>.scheduledExecutorService.scheduleAtFixedRate(<span class="hljs-keyword">new</span> Runnable() &#123;</span><br><span class="line"></span><br><span class="line">                   <span class="hljs-meta">@Override</span></span><br><span class="line">                   <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                       <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">                           BrokerController.<span class="hljs-keyword">this</span>.printMasterAndSlaveDiff();</span><br><span class="line">                       &#125; <span class="hljs-keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                           log.error(<span class="hljs-string">"schedule printMasterAndSlaveDiff error."</span>, e);</span><br><span class="line">                       &#125;</span><br><span class="line">                   &#125;</span><br><span class="line">               &#125;, <span class="hljs-number">1000</span> * <span class="hljs-number">10</span>, <span class="hljs-number">1000</span> * <span class="hljs-number">60</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">           &#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">syncAll</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">this</span>.syncTopicConfig(); <span class="hljs-comment">// Topic配置同步 - 同步topic.json文件</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.syncConsumerOffset(); <span class="hljs-comment">// 消费进度信息同步 - 同步consumerOffset.json文件</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.syncDelayOffset(); <span class="hljs-comment">// 延迟消费进度信息同步 - 同步delayOffset.json文件</span></span><br><span class="line">    <span class="hljs-keyword">this</span>.syncSubscriptionGroupConfig(); <span class="hljs-comment">// 订阅关系同步 - 同步subscriptionGroup.json文件</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><img src="/2018/03/26/rocketmq-broker/brokerha.png" align="center"></p>
+<hr>
+<p>总结系列文章：</p>
+<ol>
+<li><a href="/2018/02/19/remoting/" title="RocketMQ源码分析1--Remoting">RocketMQ源码分析1--Remoting</a></li>
+<li><a href="/2018/02/23/nameserver/" title="RocketMQ源码分析2--NameServer">RocketMQ源码分析2--NameServer</a></li>
+<li><a href="/2018/03/11/rocketmq-store/" title="RocketMQ源码分析3--Store数据存储">RocketMQ源码分析3--Store数据存储</a></li>
+<li><a href="/2018/03/26/rocketmq-broker/" title="RocketMQ源码分析4--Broker模块">RocketMQ源码分析4--Broker模块</a></li>
+<li><a href="/2018/03/31/client-consumer-md/" title="RocketMQ源码分析5--Client之Consumer模块">RocketMQ源码分析5--Client之Consumer模块</a></li>
+<li><a href="/2018/05/01/rocketmq-questions/" title="RocketMQ源码分析6--关于RocketMQ你想知道的Questions">RocketMQ源码分析6--关于RocketMQ你想知道的Questions</a>
+</li>
+</ol>
+<hr>
 <h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
 <li><a href="https://rocketmq.apache.org/docs/rmq-arc/" target="_blank" rel="noopener">https://rocketmq.apache.org/docs/rmq-arc/</a></li>
 <li>实际问题解决 -<a href="http://dbaplus.cn/news-21-1123-1.html" target="_blank" rel="noopener">http://dbaplus.cn/news-21-1123-1.html</a></li>
@@ -377,7 +396,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        72
+                        73
                     </p>
                 </a>
             </div>
@@ -420,40 +439,44 @@ var _hmt = _hmt || [];
                 目录
             </h3>
             <ul class="menu-list"><ul class="menu-list"><li>
-        <a class="is-flex" href="#start-启动">
+        <a class="is-flex" href="#Broker部署方式">
         <span class="has-mr-6">1.1</span>
+        <span>Broker部署方式</span>
+        </a></li><li>
+        <a class="is-flex" href="#start-启动">
+        <span class="has-mr-6">1.2</span>
         <span>start 启动</span>
         </a></li><li>
         <a class="is-flex" href="#消息的发送">
-        <span class="has-mr-6">1.2</span>
+        <span class="has-mr-6">1.3</span>
         <span>消息的发送</span>
         </a></li><li>
         <a class="is-flex" href="#Broker与Topic的关系">
-        <span class="has-mr-6">1.3</span>
+        <span class="has-mr-6">1.4</span>
         <span>Broker与Topic的关系</span>
         </a></li><li>
         <a class="is-flex" href="#消息的堆积">
-        <span class="has-mr-6">1.4</span>
+        <span class="has-mr-6">1.5</span>
         <span>消息的堆积</span>
         </a></li><li>
         <a class="is-flex" href="#Broker响应Consumer请求-消息的接收">
-        <span class="has-mr-6">1.5</span>
+        <span class="has-mr-6">1.6</span>
         <span>Broker响应Consumer请求 - 消息的接收</span>
         </a><ul class="menu-list"><li>
         <a class="is-flex" href="#Broker-消息过滤">
-        <span class="has-mr-6">1.5.1</span>
+        <span class="has-mr-6">1.6.1</span>
         <span>Broker 消息过滤</span>
         </a></li></ul></li><li>
         <a class="is-flex" href="#Broker-处理消息重复-：-At-least-Once-or-Exactly-Only-Once">
-        <span class="has-mr-6">1.6</span>
+        <span class="has-mr-6">1.7</span>
         <span>Broker 处理消息重复 ： At least Once or Exactly Only Once</span>
         </a></li><li>
         <a class="is-flex" href="#Broker-和Name-Server的心跳实现">
-        <span class="has-mr-6">1.7</span>
+        <span class="has-mr-6">1.8</span>
         <span>Broker 和Name Server的心跳实现</span>
         </a></li><li>
         <a class="is-flex" href="#Broker-的主从同步">
-        <span class="has-mr-6">1.8</span>
+        <span class="has-mr-6">1.9</span>
         <span>Broker 的主从同步</span>
         </a></li></ul><li>
         <a class="is-flex" href="#参考">
