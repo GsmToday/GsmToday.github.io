@@ -36,6 +36,14 @@ One Broker = One Master + n * Slaves
             }
         }, 1000 * 10, 1000 * 30, TimeUnit.MILLISECONDS);
 ```
+## Broker部署方式
+RocketMQ的Broker有三种集群部署方式：
+1. 单台Master部署；
+2. 多台Master部署；
+3. 多Master多Slave部署。
+<img src="deploy.png" width = "600" height = "400" title="多Master多Slave部署" align=center />
+ 
+topic的数据再每个Master上是对等的，没有哪个Master上有的topic的全部数据。
 
 ## start 启动
 Broker启动的时候主要启动一些辅助线程服务，例如CQ和CommitLog的刷盘线程服务，启动用于构建indexfile和CQ的服务的ReputService服务，启动BrokerOutAPI(Broker和其他模块通信类), 并创建消息发送线程池，消息拉取线程池，admin管理线程池和client管理线程池。以及把broker注册到NameServer等等。另外Broker启动的时候还将已经持久化到硬盘的topic,，consumerOffset， subscriptionGroup, consumerFilter到内存。
@@ -68,7 +76,7 @@ Broker通过提供SendMessageProcessor与NameServer进行通信获取消息，�
 ## Broker与Topic的关系
 对于消息来说，topic是消息的逻辑分类单元，queue是消息的物理存储单元。一个topic下可以有多个queue。 
 逻辑上：当生产者生产消息时候需要为消息指定topic，topic创建时需要指定1个或者多个broker。topic与broker是多对多的关系，一个topic分布在多个broker上，一个broker可以配置多个topic. 
-物理上：上缠着生产消息发送给broker时候需要指定发送到哪个queue上。默认情况生产者会轮询将消息发送到每个queue，顺序随机。
+物理上：生产者生产消息发送给broker时候需要指定发送到哪个queue上。默认情况生产者会轮询将消息发送到每个queue，顺序随机。
 
 NameServer就是通过broker与topic的映射关系来做路由。
 
@@ -76,7 +84,7 @@ NameServer就是通过broker与topic的映射关系来做路由。
 ## 消息的堆积
 MQ的一个很重要的一个功能是挡住并缓冲数据洪峰，削峰填谷，从而保证后端系统的稳定性。因此RocketMQ的broker端需要具备一定的消息堆积能力（官方数据是支持亿级消息堆积）。
 
-Broker在接收到消息后，会将其持久化到本地磁盘的文件中。之所以没有选择持久化到远程DB或者KV数据库，个人认为可以减少网络开销，还可以避免因为带宽原因可能影响到消息的发送和消费的TPS。Broker通过使用Linux的**零拷贝技术**保证了提高了文件高并发读写。具体实现为：Broker通过Java的MappedByteBuffer(CommitLog, CQ等的源码都使用到了MappedByteBuffer)使用**mmap技术**, 将文件直接映射到用户态的内存地址, Broker可以像操作内存一样操作文件 - 直接操作Linux操作系统的PageCache，这样就可以直接操作内存中的数据而不需要每次都通过IO去物理磁盘写文件。因此可以RocketMQ存储得以实现亿级消息堆积，并且保持了低写入延迟。
+Broker在接收到消息后，会将其。<font color = "blue">持久化到本地磁盘的文件中</font>。之所以没有选择持久化到远程DB或者KV数据库，个人认为可以减少网络开销，还可以避免因为带宽原因可能影响到消息的发送和消费的TPS。Broker通过使用Linux的**零拷贝技术**保证了提高了文件高并发读写。具体实现为：Broker通过Java的MappedByteBuffer(CommitLog, CQ等的源码都使用到了MappedByteBuffer)使用**mmap技术**, 将文件直接映射到用户态的内存地址, Broker可以像操作内存一样操作文件 - 直接操作Linux操作系统的PageCache，这样就可以直接操作内存中的数据而不需要每次都通过IO去物理磁盘写文件。因此可以RocketMQ存储得以实现亿级消息堆积，并且保持了低写入延迟。
 
 ## Broker响应Consumer请求 - 消息的接收
 <img src="consumer1.png" align=center />
@@ -212,6 +220,16 @@ BrokerController在启动的时候，会通过initialize()判断Broker的角色�
 ```
 
 <img src="brokerha.png" align=center />
+
+---
+总结系列文章：
+1. {% post_link remoting RocketMQ源码分析1--Remoting %}
+2. {% post_link nameserver RocketMQ源码分析2--NameServer %}
+3. {% post_link rocketmq-store RocketMQ源码分析3--Store数据存储 %}
+4. {% post_link rocketmq-broker RocketMQ源码分析4--Broker模块 %}
+5. {% post_link client-consumer-md RocketMQ源码分析5--Client之Consumer模块 %}
+6. {% post_link rocketmq-questions RocketMQ源码分析6--关于RocketMQ你想知道的Questions %}
+---
 
 # 参考
 1. https://rocketmq.apache.org/docs/rmq-arc/

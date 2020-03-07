@@ -49,7 +49,7 @@ Netty逻辑上将内存大小分为了tiny, small, normal, huge 几个单位。�
 ![Global](global.jpg)
 
 </div>
-
+f
 按照由繁到简的顺序（个人观点），上述组件的实现原理剖析可以依次参见：
 1. {% post_link poolarena Netty 是怎么做内存管理-PoolArena %}
 2. {% post_link poolchunk Netty 是怎么做内存管理--PoolChunk %}

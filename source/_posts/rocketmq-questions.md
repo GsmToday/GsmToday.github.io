@@ -9,15 +9,12 @@ categories: 学习积累
 ---
 既见树木，又见森林。
 <!-- more -->
-1.RocketMQ如何保证**严格的消息顺序**？
+<font color="blue"> 1.RocketMQ如何保证消息顺序？ </font>
+消息顺序是指消息消费时，能按照发送的顺序来消费。例如：一个订单产生了 3 条消息，分别是订单创建、订单付款、订单完成。消费时，要按照这个顺序消费才有意义。但同时订单之间又是可以并行消费的。
 
 消息顺序分为：普通顺序消息和严格顺序消息。
 
-普通顺序消息在正常情况下可以保证完全的顺序消息，但是一旦发生通信异常，Broker重启，由于队列总数发生变化，hash取模后定位的队列会变化，产生短暂的消息顺序不一致。如果业务能容忍集群在异常情况下（如某个Broker宕机或者重启）下，消息短暂的乱序，使用普通顺序方式比较合适。
-
-严格顺序消息在无论正常异常情况下都能保证顺序，但是牺牲了分布式Failover特性，即Broker集群中只要有一台机器不可用，整个集群都不可用，服务可用性大大降低。目前已知的应用只有数据库binlog同步强依赖严格顺序消息，其他应用绝大部分都可以容忍短暂乱序。推荐使用普通的顺序消息。
-
-**顺序消息**是RocketMQ功能特性上的一个卖点。在RocketMQ中，主要指的是局部顺序，即一类消息为满足顺序性，必须由Producer**单线程顺序发送，且发送到同一个队列**，这样Consumer就可以按照Produer发送的顺序去消费消息。
+在RocketMQ中，只保证普通顺序消费。普通顺序消费的实现：必须由Producer**单线程顺序发送，且发送到同一个队列**，这样Consumer就可以按照Produer发送的顺序去消费消息。
 
 从源码角度分析RocketMQ怎么实现发送顺序消息。
 
@@ -51,31 +48,34 @@ private SendResult send()  {
     }
 }
 ```
-
 ---
-2.RocketMQ保证消息不重复吗？
+<font color="blue"> 2.RocketMQ保证消息不重复吗？ </font>
+
+先说结论：RocketMQ不保证消息不重复，如果你的业务需要保证严格的不重复消息，需要业务端去重。
 
 MQ的消息不重复指无论是发送阶段还是消费消息阶段，都不允许发送重复的消息。先说结论，RocketMQ不能严格保证不重复，但是正常情况下很少会出现重复发送or消费。只有网络异常，consumer启停的是可能会出现。
 
-重复消息的本质是网络调用的不确定性。只要网络交换数据，就无法避免这个问题，所以只能绕过这个问题以姐姐。那么问题就变成了：如果消费端收到两条一样的消息，应该怎么处理？
+重复消息的本质是网络调用的不确定性。只要网络交换数据，就无法避免这个问题，所以只能绕过这个问题以解决。那么问题就变成了：如果消费端收到两条一样的消息，应该怎么处理？
 
-- 消费端自己处理：消费端处理消息的业务逻辑保持幂等
-- 保证每条消息都有唯一编号且保证消息处理成功与去重的日志同事出现 - 利用一张日志表来记录已经处理成功的消息的ID，如果新到的消息ID已经在日志表中，那么就不再处理这条消息。
-
-第1条解决方案，很明显应该在消费端实现，不属于消息系统要实现的功能。第2条可以消息系统实现，也可以业务端实现。正常情况下出现重复消息的概率其实很小，如果由消息系统来实现的话，肯定会对消息系统的吞吐量和高可用有影响，所以最好还是由业务端自己处理消息重复的问题，这也是RocketMQ不解决消息重复的问题的原因。
-
-RocketMQ不保证消息不重复，如果你的业务需要保证严格的不重复消息，需要你自己在业务端去重
+- 消费端自己处理：消费端处理消息的业务逻辑保持幂等（生产场景常见。例如在处理支付回调事件，先查询订单状态，如果发现用户订单的状态已经正常流转下去，就不再操作。 否则再触发一次订单基于当前支付事件的变更操作）
+- 保证每条消息都有唯一编号且保证消息处理成功与去重的日志同时出现 - 利用一张日志表来记录已经处理成功的消息的ID，如果新到的消息ID已经在日志表中，那么就不再处理这条消息。
 
 关于消息顺序&重复，更多推荐阅读：
 1. [travi's blog](https://blog.csdn.net/chunlongyu/article/details/53977819)
 2. [CHEN川‘s简书](https://www.jianshu.com/p/453c6e7ff81c)
+
+<font color="blue"> 2.2 如何保证消息队列的幂等性？</font>
+幂等性定义：一个请求，不管重复来多少次，结果是不会改变的。
+[参考](http://www.darylliu.cn/archives/43d339c7.html)
+
 ---
 
-3.RocketMQ为什么不采用Zookeeper而自己开发了NameServer?
+<font color="blue"> 3.RocketMQ为什么不采用Zookeeper而自己开发了NameServer? </font>
 
-首先，ZooKeeper可以提供Master/Slave选举功能，比如Kafka一个topic由多个partition，每个partition有1个master+多个slave，Kafka使用ZK给每个分区选一个机器作为Master。这里Master/Slave是动态的，Master挂了会有1个Slave切换成Master.
+首先，RocketMQ 没用到ZK典型的选举场景。因为Master都是对等的。
 
-但对于RocketMQ来说，不需要选举，Master/Slave各是一台机器，角色固定。当一个Master挂了，可以写到其他Master上，但是不会Slave切换成Master. 这种简化，使RocketMQ可以不依赖ZK就很好的管理了Topic和Queue以及物理机器的映射，也实现了高可用。
+ZooKeeper可以提供Master选举功能，比如Kafka用来给每个分区选一个broker作为leader
+[推荐看此文](http://blog.csdn.net/chunlongyu/article/details/54018010)，但对于RocketMQ来说，**topic的数据在每个Master上是对等的，没有哪个Master上有topic上的全部数据**，所以这里选举leader没有意义；
 
 其次，RockeqMQ集群中，需要有构件来处理一些通用数据，比如broker列表，broker刷新时间，虽然ZooKeeper也能存放数据，并有一致性保证，但处理数据之间的一些逻辑关系却比较麻烦，而且数据的逻辑解析操作得交给ZooKeeper客户端来做，如果有多种角色的客户端存在，自己解析多级数据确实是个麻烦事情；
 
@@ -83,20 +83,41 @@ RocketMQ不保证消息不重复，如果你的业务需要保证严格的不重
 
 ---
 
-4.RocketMQ怎么处理**亿级消息的堆积的**？在保证了堆积亿级消息后，怎么保持**写入低延迟**？
+<font color="blue">  4.RocketMQ怎么处理**亿级消息的堆积的**？在保证了堆积亿级消息后，怎么保持**写入低延迟**？</font>
 
 MQ的一个很重要的一个功能是挡住并缓冲数据洪峰，削峰填谷，从而保证后端系统的稳定性。因此RocketMQ的broker端需要具备一定的消息堆积能力（官方数据是支持亿级消息堆积）。
 
-Broker在接收到消息后，会将其持久化到本地磁盘的文件中。之所以没有选择持久化到远程DB或者KV数据库，个人认为可以减少网络开销，还可以避免因为带宽原因可能影响到消息的发送和消费的TPS。Broker通过使用Linux的**零拷贝技术**保证了提高了文件高并发读写。具体实现为：Broker通过Java的MappedByteBuffer(CommitLog, CQ等的源码都使用到了MappedByteBuffer)使用**mmap技术**, 将文件直接映射到用户态的内存地址, Broker可以像操作内存一样操作文件 - 直接操作Linux操作系统的PageCache，这样就可以直接操作内存中的数据而不需要每次都通过IO去物理磁盘写文件。因此可以RocketMQ存储得以实现亿级消息堆积，并且保持了低写入延迟。
+Broker在接收到消息后，会将其持久化到**本地磁盘**的文件中。
+
+之所以没有选择持久化到远程DB或者KV数据库，个人认为可以减少网络开销，还可以避免因为带宽原因可能影响到消息的发送和消费的TPS。Broker通过使用Linux的**零拷贝技术**保证了提高了文件高并发读写。具体实现为：Broker通过Java的MappedByteBuffer(CommitLog, CQ等的源码都使用到了MappedByteBuffer)使用**mmap技术**, 将**文件直接映射到用户态的内存地址, Broker可以像操作内存一样操作文件** - 直接操作Linux操作系统的PageCache，这样就可以直接操作内存中的数据而不需要每次都通过IO去物理磁盘写文件。因此可以RocketMQ存储得以实现亿级消息堆积，并且保持了低写入延迟。
 
 ---
-5.RocketMQ消息**订阅模式**是什么？
+<font color="blue"> 5.RocketMQ消息订阅模式是什么？</font>
 
 两种消息读取模式 ： Push or Pull。实际上，在RocketMQ中无论是Push还是Pull, **底层都是通过Consumer从Broker拉消息实现的**。为了做到能够实时接收消息，RocketMQ使用长轮询方式，保证消息实时性和Push方式一致。这种长轮询类似Web QQ收发消息机制。
 
+<font color="blue"> 5.1.作为消费端，消息的推和拉有什么区别 </font>
+Push最大的好处是实时, 有消息就立即发送。但是也有缺点：
+1. 在Broker端需要维护Consumer的状态，不利于Broker去支持大量的Consumer的场景。
+2. Consumer的消费速度是不一致的，由Broker进行推送难以处理不同的Consumer的状况。
+3. Broker难以处理Consumer无法消费的情况，Broker无法去定Consumer的故障是暂时的还是永久的。
+4. 大量的消息Push会加重Consumer的负载或者冲垮Consumer.
+
+Pull解决了上述问题，状态维护在Consumer，所以Consumer可以很容易的根据自身的负载状态来决定Broker获取消息的频率。但是丢失了实时性。为了保证实时性，可以把拉取消息的间隔设置的短一点，但这也带来了一个另外一个问题，在没有消息的时候时候会有大量pull请求浪费CPU。为了做到能够实时接收消息，RocketMQ使用**长轮询方式。**
+
+什么是长轮询方式？轮询是以固定间隔请求服务器，它不在乎这次请求是否能拉取到消息。而长轮询，在没有消息的时候，可以将请求阻塞在服务端延迟返回（会等待一会儿时间，然后将等待时间内的消息返回）。如果超时了，那么也返回空。有效的避免了无效的请求。
+
+- 在Broker一直有可读消息的情况下，长轮询方式就等价于执行间隔为0的轮询pull模式（每次收到Pull结果就发起下一次Pull请求）。
+- 在Broker没有可读消息的情况下，请求阻塞在Broker，在产生下一条消息或者请求超时之前响应请求给Consumer.
+
+可以说长轮询结合了Push和Pull各自的优势，在Pull的基础上保证了实时性，实现也不会非常复杂
+
+[RocketMQ长轮询源码实现](https://www.jianshu.com/p/c717cb26752e)
+[Push or Pull](https://www.cnblogs.com/hzmark/p/mq_push_pull.html)
+
 ---
 
-6.RocketMQ对于**负载均衡**有哪些设计？
+<font color="blue"> 6.RocketMQ对于负载均衡有哪些设计？</font>
 关于RocketMQ的负载均衡讨论，需要分为Broker端，Producer端，Consumer端三处来看是如何支持横向扩展和负载均衡的。
 
 - Broker端：
@@ -117,13 +138,36 @@ Producer端会通过轮询RoundRobin的方式写入消息到服务端中的某�
 
 ---
 
-7.RocketMQ是怎么做**消息失败重试机制**的？
+<font color="blue"> 7.RocketMQ是怎么做消息失败重试机制的？</font>
+消息重试分两种：Producer端重试和Consumer端重试。
 
-https://my.oschina.net/xinxingegeya/blog/1584617
+生产端的消息失败，这种消息失败重试可以手动设置发送失败重试次数。
+```java
+producer.setRetryTimesWhenSendFailed(3);
+```
+
+消费端的话，Consumer消息消费有两种状态：
+```java
+public enum ConsumeConcurrentlyStatus {
+    /**
+     * 成功 Success consumption
+     */
+    CONSUME_SUCCESS,
+    /**
+     * 消费失败&稍后重试 Failure consumption,later try to consume
+     */
+    RECONSUME_LATER;
+}
+```
+如果消息消费失败，只要返回ConsumeConcurrentlyStatus.RECONSUME_LATER，RocketMQ就会认为消息消费失败了，需要重新投递。
+
+为了保证消息肯定至少被消费成功一次（AT LEAST ONCE），RocketMQ会把这批消息重发会Broker，在延迟的某个事件点（默认10s，业务可设）再次投递。而如果一直这样重复消费都持续失败到一定次数（默认16次），就会投递到死信队列（DLQ-Dead Letter Queue）。应用可以监控死信队列来做人工干预。
+
+[参考](https://my.oschina.net/xinxingegeya/blog/1584617)
 
 ---
 
-8.RocketMQ是怎么设计事务机制的？
+<font color="blue"> 8.RocketMQ是怎么设计事务机制的？</font>
 
 分布式事务涉及到两阶段提交问题。RocketMQ通过offset方式实现分布式事务。RocketMQ把消息的发送分成了两个阶段：Prepare阶段和确认阶段。
 （1） 发送Prepared消息
@@ -134,12 +178,64 @@ https://my.oschina.net/xinxingegeya/blog/1584617
 [参考Travis‘s blog](https://blog.csdn.net/chunlongyu/article/details/53844393)
 
 ---
-9.RocketMQ是怎么“天然分布式的”？
+<font color="blue"> 9.RocketMQ是怎么“天然分布式的”？</font>
 
 producer, consumer, broker, nameserver都可以分布式，集群部署，消除单点故障。
 
 ---
-[推荐jaskey文章总结][http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/]
-https://www.jianshu.com/p/453c6e7ff81c
+<font color="blue"> 10. RocketMQ怎么保证消息不丢失的？</font>
+拆分为三个子问题：
+- Producer如何保证消息不丢失的？
+1. 生产阶段使用请求确认机制来保证消息的可靠传递。Broker收到消息后会给Producer发送一个确认响应。Producer收到响应后，完成了一次正常消息的发送。如果没有收到确认响应，Producer会自动重试。如果重试再失败，就会以返回值或者异常的方式告知用户。
 
-http://mp.weixin.qq.com/s/6PmcXJZVyWYZPssveeNkIw
+2. 采取事务消息的投递方式，并不能保证消息100%成功投递成功到了Brocker，但是如果消息发送ACK失败了的话，此消息会存储到CommitLog当中，但是对ConsumeQueue是不可见的。可以在日志中查看这条异常消息，严格意义上讲，也并没有完全丢失。
+
+3. RocketMQ 支持日志的索引，如果一条消息发送后超时，也可以通过查询日志API，来check是否在Brocker存储成功。
+
+- Broker如何保证消息不丢失的？
+
+1. 消息支持持久化到Commitlog里面，即使宕机后重启，未消费的消息也是可以加载出来的。
+
+2. 对于单个节点的Broker，在收到消息后将消息写入磁盘后再给Producer返回确认响应，这样机制宕机，由于消息已经写入磁盘就不回丢失，恢复后还可以继续消费。也就是
+同步刷盘、异步刷盘的策略。
+
+3. 如果是 Broker 是由多个节点组成的集群，需要将 Broker 集群配置成：至少将消息发送到 2 个以上的节点，再给客户端回复发送确认响应。这样当某个 Broker 宕机时，其他的 Broker 可以替代宕机的 Broker，也不会发生消息丢失。
+
+- Consumer如何保证消息不丢失的？
+
+1. Consumer自身维护一个持久化的offset（对应MessageQueue里面的min offset），标记已经成功消费或者已经成功发回到broker的消息下标
+
+2. 如果Consumer消费失败，那么它会把这个消息发回给Broker，发回成功后，再更新自己的offset
+
+3. 如果Consumer消费失败，发回给broker时，broker挂掉了，那么Consumer会定时重试这个操作
+
+4. 如果Consumer和broker一起挂了，消息也不会丢失，因为consumer 里面的offset是定时持久化的，重启之后，继续拉取offset之前的消息到本地
+
+<font color="blue"> 11. RocketMQ相关事务消息和一致性实现？</font>
+1.Producer在MQ上开启一个事务；
+2.Producer给MQ发送一个半消息；
+3.Producer执行本地事务，提交本地数据库事务；
+4.1Producer本地数据库事务如果成功，则提交事务消息；Consumer才可见这个半消息。
+4.2Producer本地数据库事务如果失败，则回滚事务消息。
+5.为了避免Producer发送提交事务消息失败。RocketMQ 增加了事务反查机制，如果Broker没有收到提交或者回滚请求，Broker会定期去Producer上反查这个事务对应的本地事务状态，然后根据反查结果决定提交还是回滚这个事务。
+
+半消息+反查。
+
+<font color="blue"> 12. RocketMQ生产消息为什么只写在一个文件里？</font>
+RocketMQ的消息是存储在一个单一的CommitLog文件里，从而避免在多topic多队列情况下磁盘的随机IO带来的性能消耗。
+
+<font color="blue"> 13. RocketMQ对延迟队列的实现</font>
+ RocketMQ发送延时消息时先把消息按照延迟时间段发送到指定的队列中(RocketMQ把每种延迟时间段的消息都存放到同一个队列中), 然后通过一个定时器进行轮询这些队列，查看消息是否到期，如果到期就把这个消息发送到指定topic的队列中，这样的好处是同一队列中的消息延时时间是一致的，还有一个好处是这个队列中的消息时按照消息到期时间进行递增排序的，说的简单直白就是队列中消息越靠前的到期时间越早。
+
+---
+总结系列文章：
+1. {% post_link remoting RocketMQ源码分析1--Remoting %}
+2. {% post_link nameserver RocketMQ源码分析2--NameServer %}
+3. {% post_link rocketmq-store RocketMQ源码分析3--Store数据存储 %}
+4. {% post_link rocketmq-broker RocketMQ源码分析4--Broker模块 %}
+5. {% post_link client-consumer-md RocketMQ源码分析5--Client之Consumer模块 %}
+6. {% post_link rocketmq-questions RocketMQ源码分析6--关于RocketMQ你想知道的Questions %}
+---
+[推荐jaskey文章总结][http://jaskey.github.io/blog/2016/12/19/rocketmq-rebalance/]
+[refer1](https://www.jianshu.com/p/453c6e7ff81c)
+[refer2](http://mp.weixin.qq.com/s/6PmcXJZVyWYZPssveeNkIw)
