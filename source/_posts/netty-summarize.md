@@ -88,7 +88,7 @@ Channel有四种状态：
 当Channel的状态发生变化后，就会触发对应的事件。这些事件会被转发给ChannelPipeline中的ChannelHandler，其可以随后对它们做出响应。
 <img src="channel-event.jpg" width = "300" height = "300" />
 
-`EventLoop`代表netty控制流，多线程处理，并发。EventLoop定义了Netty核心抽象，一旦Channel注册到了EventLoop, EventLoop就处理连接的生命周期中Channel的所有IO操作。 一个`EventLoopGroup`包含一个或者多个EventLoop，一个EventLoop在它的生命周期内只和一个Thread绑定。所有由Eventloop处理的IO事件都将在它专有的`Thread`上被处理。一个Channel在它的生命周期内只注册一个EventLoop，一个EventLoop可能会被分配给多个Channel. 
+`EventLoop`是Netty处理事件的核心机制，代表netty控制流，多线程处理。EventLoop定义了Netty核心抽象，一旦Channel注册到了EventLoop, EventLoop就处理连接的生命周期中Channel的所有IO操作。 一个`EventLoopGroup`包含一个或者多个EventLoop，一个EventLoop在它的生命周期内只和一个Thread绑定。所有由Eventloop处理的IO事件都将在它专有的`Thread`上被处理。一个Channel在它的生命周期内只注册一个EventLoop，一个EventLoop可能会被分配给多个Channel. 
 
 Netty内部使用回调处理事件。Future: 因为Netty所有的IO操作都是异步的，因此当一个异步过程调用发出后，调用方不会立刻获得结果。但是调用方还是想获得这个结果怎么办？ Netty提供了`ChannelFuture`接口，其`addListener()`方法注册一个`ChannelFutureListener`,以便在某个操作完成时（无论是否成功）得到通知.
 
