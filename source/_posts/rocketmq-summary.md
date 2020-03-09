@@ -38,3 +38,4 @@ RocketMQ 网络部署特点
 4. {% post_link rocketmq-broker RocketMQ源码分析4--Broker模块 %}
 5. {% post_link client-consumer-md RocketMQ源码分析5--Client之Consumer模块 %}
 6. {% post_link rocketmq-questions RocketMQ源码分析6--关于RocketMQ你想知道的Questions %}
+7. {% post_link rocketmqvskafka RocketMQ与Kafka的区别 %}
