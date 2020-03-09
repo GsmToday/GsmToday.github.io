@@ -16,7 +16,7 @@
 <meta property="og:description" content="既见树木，又见森林。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/lion.png">
-<meta property="og:updated_time" content="2020-03-07T12:22:56.767Z">
+<meta property="og:updated_time" content="2020-03-08T00:46:36.877Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RocketMQ源码分析6--关于RocketMQ你想知道的Questions">
 <meta name="twitter:description" content="既见树木，又见森林。">
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-05-01T02:34:51.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-05-01</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-07T12:22:56.767Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-07</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-08T00:46:36.877Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-08</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    31 分钟 读完 (大约 4680 个字)
+                    32 分钟 读完 (大约 4767 个字)
                 </span>
                 
                 
@@ -284,6 +284,7 @@ var _hmt = _hmt || [];
 <p><font color="blue"> 11. RocketMQ相关事务消息和一致性实现？</font><br>1.Producer在MQ上开启一个事务；<br>2.Producer给MQ发送一个半消息；<br>3.Producer执行本地事务，提交本地数据库事务；<br>4.1Producer本地数据库事务如果成功，则提交事务消息；Consumer才可见这个半消息。<br>4.2Producer本地数据库事务如果失败，则回滚事务消息。<br>5.为了避免Producer发送提交事务消息失败。RocketMQ 增加了事务反查机制，如果Broker没有收到提交或者回滚请求，Broker会定期去Producer上反查这个事务对应的本地事务状态，然后根据反查结果决定提交还是回滚这个事务。</p>
 <p>半消息+反查。</p>
 <p><font color="blue"> 12. RocketMQ生产消息为什么只写在一个文件里？</font><br>RocketMQ的消息是存储在一个单一的CommitLog文件里，从而避免在多topic多队列情况下磁盘的随机IO带来的性能消耗。</p>
+<p><font color="blue"> 12.1 随机读岂不是问题很大，怎么解决的。</font><br>没有很好解决。<br>1.更多靠的是预读取，就是一次加载了很多数据到内存，被读到的概率也很大。<br>2.使用零拷贝，提升了消费消息时候从磁盘加载数据到内存的效率。</p>
 <p><font color="blue"> 13. RocketMQ对延迟队列的实现</font><br> RocketMQ发送延时消息时先把消息按照延迟时间段发送到指定的队列中(RocketMQ把每种延迟时间段的消息都存放到同一个队列中), 然后通过一个定时器进行轮询这些队列，查看消息是否到期，如果到期就把这个消息发送到指定topic的队列中，这样的好处是同一队列中的消息延时时间是一致的，还有一个好处是这个队列中的消息时按照消息到期时间进行递增排序的，说的简单直白就是队列中消息越靠前的到期时间越早。</p>
 <hr>
 <p>总结系列文章：</p>
@@ -418,7 +419,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        73
+                        74
                     </p>
                 </a>
             </div>

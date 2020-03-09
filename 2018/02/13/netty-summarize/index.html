@@ -16,7 +16,7 @@
 <meta property="og:description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 Netty基本组件 Netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://gsmtoday.github.io/images/dog.jpg">
-<meta property="og:updated_time" content="2020-03-05T02:30:31.131Z">
+<meta property="og:updated_time" content="2020-03-08T13:55:51.392Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Netty入门综述">
 <meta name="twitter:description" content="本文是笔者自学Netty过程中总结出来的一个类似专题入门的综述文章，主要阐述以下几点关于Netty的问题:  IO模型发展历程 Netty基本组件 Netty线程模型  希望在探讨清楚这几个问题的同时可以让自己和读者(如果有的话..)入门。本文参照了很多业界人士的深刻见解，在文中都有标注，如读者有空可以直接读原文。">
@@ -179,7 +179,7 @@ var _hmt = _hmt || [];
             <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2018-02-13T06:31:51.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2018-02-13</time>
                 
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-05T02:30:31.131Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-05</time>
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-03-08T13:55:51.392Z"><i class="far fa-calendar-check">&nbsp;</i>2020-03-08</time>
                 
                 
                 <div class="level-item">
@@ -192,7 +192,7 @@ var _hmt = _hmt || [];
                     <i class="far fa-clock"></i>&nbsp;
                     
                     
-                    36 分钟 读完 (大约 5404 个字)
+                    36 分钟 读完 (大约 5413 个字)
                 </span>
                 
                 
@@ -254,7 +254,7 @@ var _hmt = _hmt || [];
 <h1 id="Netty-核心组件"><a href="#Netty-核心组件" class="headerlink" title="Netty 核心组件"></a>Netty 核心组件</h1><h2 id="Netty网络抽象代表：Channel-socket-EventLoop-ChannelFuture"><a href="#Netty网络抽象代表：Channel-socket-EventLoop-ChannelFuture" class="headerlink" title="Netty网络抽象代表：Channel(socket) + EventLoop + ChannelFuture"></a><font color="blue">Netty网络抽象代表：Channel(socket) + EventLoop + ChannelFuture<font></font></font></h2><p><code>Channel</code>是Java NIO的一个基本构造。简单的说，可以把Channel看做是传入或者传出数据的载体socket。因此Channel可以被打开，关闭，连接或者断开连接。Channel提供的API大大的降低了直接使用socket类的复杂性。<br><!-- <img src="" width = "500" height = "500" /> --></p>
 <p><img src="/2018/02/13/netty-summarize/netty-thread-model.png" alt=""></p>
 <p>Channel有四种状态：<br><img src="/2018/02/13/netty-summarize/channel-state.jpg" width="500" height="300"><br>当Channel的状态发生变化后，就会触发对应的事件。这些事件会被转发给ChannelPipeline中的ChannelHandler，其可以随后对它们做出响应。<br><img src="/2018/02/13/netty-summarize/channel-event.jpg" width="300" height="300"></p>
-<p><code>EventLoop</code>代表netty控制流，多线程处理，并发。EventLoop定义了Netty核心抽象，一旦Channel注册到了EventLoop, EventLoop就处理连接的生命周期中Channel的所有IO操作。 一个<code>EventLoopGroup</code>包含一个或者多个EventLoop，一个EventLoop在它的生命周期内只和一个Thread绑定。所有由Eventloop处理的IO事件都将在它专有的<code>Thread</code>上被处理。一个Channel在它的生命周期内只注册一个EventLoop，一个EventLoop可能会被分配给多个Channel. </p>
+<p><code>EventLoop</code>是Netty处理事件的核心机制，代表netty控制流，多线程处理。EventLoop定义了Netty核心抽象，一旦Channel注册到了EventLoop, EventLoop就处理连接的生命周期中Channel的所有IO操作。 一个<code>EventLoopGroup</code>包含一个或者多个EventLoop，一个EventLoop在它的生命周期内只和一个Thread绑定。所有由Eventloop处理的IO事件都将在它专有的<code>Thread</code>上被处理。一个Channel在它的生命周期内只注册一个EventLoop，一个EventLoop可能会被分配给多个Channel. </p>
 <p>Netty内部使用回调处理事件。Future: 因为Netty所有的IO操作都是异步的，因此当一个异步过程调用发出后，调用方不会立刻获得结果。但是调用方还是想获得这个结果怎么办？ Netty提供了<code>ChannelFuture</code>接口，其<code>addListener()</code>方法注册一个<code>ChannelFutureListener</code>,以便在某个操作完成时（无论是否成功）得到通知.</p>
 <h2 id="应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler"><a href="#应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler" class="headerlink" title="应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler"></a><font color="blue">应用业务逻辑组件：由责任链模式组织起来的Event和ChannelHandler<font></font></font></h2><p>Netty使用不同的事件<code>Event</code>通知我们状态的改变或者操作的状态，这使得我们可以基于已经发生的事件来触发适当的动作。例如IO连接的数据已经准备好，Netty会将这个时间通知工作线程。因为Netty是一个网络编程框架，因此Event是按照它们与IO数据流相关进行分类的。</p>
 <p>事件可能包括Inbound event:</p>
@@ -456,7 +456,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        73
+                        74
                     </p>
                 </a>
             </div>
