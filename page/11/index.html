@@ -154,6 +154,82 @@ var _hmt = _hmt || [];
                 <div class="column is-8-tablet is-8-desktop is-6-widescreen has-order-2 column-main">
     <div class="card">
     
+    <div class="card-image">
+        <a href="/2017/07/23/multithread/" class="image is-7by1">
+            <img class="thumbnail" src="/images/niu.jpg" alt="庖丁解牛-多服务器并发场景下乐观锁的实际应用">
+        </a>
+    </div>
+    
+    <div class="card-content article ">
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2017/07/23/multithread/"><i class="fas fa-angle-double-right"></i>庖丁解牛-多服务器并发场景下乐观锁的实际应用</a>
+            
+        </h1>
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2017-07-23T13:30:09.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-07-23</time>
+                
+                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.998Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
+                
+                
+                <div class="level-item">
+                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
+                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    <i class="far fa-clock"></i>&nbsp;
+                    
+                    
+                    5 分钟 读完 (大约 720 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <div class="content">
+            <p>庖丁解牛-多服务器并发场景下乐观锁的实际应用</p>
+<p>笔者面临的一个业务场景为：项目中多条业务线的实现都需要创建一个实例ID(instanceID)，实例ID的值为系统当前的实例ID最大值+1。这样就会面临着在同一时间下有多个用户更新实例ID，造成并发冲突的问题。</p>
+<p>笔者首先想到的解决方法是使用关键字<code>synchronized</code>来解决。但是组内同事提出光有<code>synchronized</code>是不够的，因为<code>synchronized</code>只能解决单台机器的JVM多线程并发问题，无法解决线上多台服务器分布式导致的并发问题。</p>
+        </div>
+        
+        
+        
+        <hr style="height:1px;margin:1rem 0"/>
+        <div class="level is-mobile is-flex">
+            <div class="level-start">
+                
+                <div class="level-item is-size-7 is-uppercase">
+                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
+                    <a class="has-link-grey -link" href="/tags/Java/">Java</a>,&nbsp;<a class="has-link-grey -link" href="/tags/并发编程/">并发编程</a>
+                </div>
+                
+            </div>
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2017/07/23/multithread/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+    <div class="card">
+    
     <div class="card-content article ">
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
@@ -503,82 +579,6 @@ var _hmt = _hmt || [];
 
 
 
-    <div class="card">
-    
-    <div class="card-image">
-        <a href="/2017/04/01/es-note1/" class="image is-7by1">
-            <img class="thumbnail" src="/images/eagle.jpg" alt="ElasticSearch系列学习-1">
-        </a>
-    </div>
-    
-    <div class="card-content article ">
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2017/04/01/es-note1/"><i class="fas fa-angle-double-right"></i>ElasticSearch系列学习-1</a>
-            
-        </h1>
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2017-04-01T13:36:38.000Z"><i class="far fa-calendar-alt">&nbsp;</i>2017-04-01</time>
-                
-                <time class="level-item has-text-grey is-hidden-mobile" datetime="2020-01-06T10:52:35.800Z"><i class="far fa-calendar-check">&nbsp;</i>2020-01-06</time>
-                
-                
-                <div class="level-item">
-                <i class="far fa-folder-open has-text-grey"></i>&nbsp;
-                <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    <i class="far fa-clock"></i>&nbsp;
-                    
-                    
-                    32 分钟 读完 (大约 4755 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <div class="content">
-            <p><em>今天是一个要上班的愚人节</em></p>
-<p>整理自<a href="http://elasticsearch.cn/book/elasticsearch_definitive_guide_2.x/distrib-multi-doc.html" target="_blank" rel="noopener">ES.cn</a>，并加入个人理解</p>
-<h2 id="What-is-Elastic-Search-exactly"><a href="#What-is-Elastic-Search-exactly" class="headerlink" title="What is Elastic Search exactly?"></a>What is Elastic Search exactly?</h2><p>ElasticSearch 是一个建立在全文搜索引擎Apache Lucene基础上的 <strong>实时分布式搜索引擎</strong>，而Lucene 是当今最先进，最高效的全功能开源搜索引擎框架。ElasticSearch降低了Lucene的学习和使用难度，用户可以使用ES统一的API即可进行全文检索，而不需了解Lucene背后原理。</p>
-        </div>
-        
-        
-        
-        <hr style="height:1px;margin:1rem 0"/>
-        <div class="level is-mobile is-flex">
-            <div class="level-start">
-                
-                <div class="level-item is-size-7 is-uppercase">
-                    <i class="fas fa-tags has-text-grey"></i>&nbsp;
-                    <a class="has-link-grey -link" href="/tags/ElasticSearch/">ElasticSearch</a>
-                </div>
-                
-            </div>
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2017/04/01/es-note1/#more"><i class="fas fa-book-reader has-text-grey"></i>&nbsp;&nbsp;阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-
 
     
 <div class="card card-transparent">
@@ -649,7 +649,7 @@ var _hmt = _hmt || [];
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        74
+                        75
                     </p>
                 </a>
             </div>
@@ -697,7 +697,7 @@ var _hmt = _hmt || [];
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/CPU/" style="font-size: 10px;">CPU</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/ElasticSearch/" style="font-size: 12.86px;">ElasticSearch</a> <a href="/tags/Flink/" style="font-size: 10px;">Flink</a> <a href="/tags/GO/" style="font-size: 10px;">GO</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Hive/" style="font-size: 11.43px;">Hive</a> <a href="/tags/JVM/" style="font-size: 12.86px;">JVM</a> <a href="/tags/Java/" style="font-size: 15.71px;">Java</a> <a href="/tags/Kafka/" style="font-size: 10px;">Kafka</a> <a href="/tags/My-SQL/" style="font-size: 10px;">My SQL</a> <a href="/tags/MySQL/" style="font-size: 20px;">MySQL</a> <a href="/tags/Netty/" style="font-size: 14.29px;">Netty</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/RocketMQ/" style="font-size: 18.57px;">RocketMQ</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/optimize/" style="font-size: 10px;">optimize</a> <a href="/tags/侣行/" style="font-size: 17.14px;">侣行</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/架构/" style="font-size: 10px;">架构</a> <a href="/tags/架构设计/" style="font-size: 10px;">架构设计</a> <a href="/tags/模型学习/" style="font-size: 10px;">模型学习</a> <a href="/tags/算法/" style="font-size: 10px;">算法</a> <a href="/tags/高可用/" style="font-size: 10px;">高可用</a>
+        <a href="/tags/CPU/" style="font-size: 10px;">CPU</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/ElasticSearch/" style="font-size: 12.86px;">ElasticSearch</a> <a href="/tags/Flink/" style="font-size: 10px;">Flink</a> <a href="/tags/GO/" style="font-size: 10px;">GO</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Hive/" style="font-size: 11.43px;">Hive</a> <a href="/tags/JVM/" style="font-size: 14.29px;">JVM</a> <a href="/tags/Java/" style="font-size: 15.71px;">Java</a> <a href="/tags/Kafka/" style="font-size: 10px;">Kafka</a> <a href="/tags/My-SQL/" style="font-size: 10px;">My SQL</a> <a href="/tags/MySQL/" style="font-size: 20px;">MySQL</a> <a href="/tags/Netty/" style="font-size: 14.29px;">Netty</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Redis/" style="font-size: 14.29px;">Redis</a> <a href="/tags/RocketMQ/" style="font-size: 18.57px;">RocketMQ</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/optimize/" style="font-size: 10px;">optimize</a> <a href="/tags/侣行/" style="font-size: 17.14px;">侣行</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/架构/" style="font-size: 10px;">架构</a> <a href="/tags/架构设计/" style="font-size: 10px;">架构设计</a> <a href="/tags/模型学习/" style="font-size: 10px;">模型学习</a> <a href="/tags/算法/" style="font-size: 10px;">算法</a> <a href="/tags/高可用/" style="font-size: 10px;">高可用</a>
     </div>
 </div>
 
@@ -710,6 +710,17 @@ var _hmt = _hmt || [];
             归档
         </h3>
         <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
         
         <li>
             <a class="level is-marginless" href="/archives/2020/01/">
@@ -1070,6 +1081,25 @@ var _hmt = _hmt || [];
         
         <article class="media">
             
+            <a href="/2020/03/19/jvm-serials/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/jvm-se.png" alt="YGC时间过长的JVM调优">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-19T09:37:42.000Z">2020-03-19</time></div>
+                    <a href="/2020/03/19/jvm-serials/" class="has-link-black-ter is-size-6">YGC时间过长的JVM调优</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
             <a href="/2020/01/10/jvm-xms/" class="media-left">
                 <p class="image is-64x64">
                     <img class="thumbnail" src="/images/thumbnail.svg" alt="JVM调优系列之处理内存报警">
@@ -1144,25 +1174,6 @@ var _hmt = _hmt || [];
             </div>
         </article>
         
-        <article class="media">
-            
-            <a href="/2019/12/03/temp-file-table/" class="media-left">
-                <p class="image is-64x64">
-                    <img class="thumbnail" src="/images/sorth.jpeg" alt="关于MySQL的临时表和临时文件">
-                </p>
-            </a>
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-03T06:34:34.000Z">2019-12-03</time></div>
-                    <a href="/2019/12/03/temp-file-table/" class="has-link-black-ter is-size-6">关于MySQL的临时表和临时文件</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1181,7 +1192,7 @@ var _hmt = _hmt || [];
                 <span class="level-item">业务实践</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">13</span>
+                <span class="level-item tag">14</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/学习积累/">
@@ -1241,6 +1252,25 @@ var _hmt = _hmt || [];
         
         <article class="media">
             
+            <a href="/2020/03/19/jvm-serials/" class="media-left">
+                <p class="image is-64x64">
+                    <img class="thumbnail" src="/images/jvm-se.png" alt="YGC时间过长的JVM调优">
+                </p>
+            </a>
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-03-19T09:37:42.000Z">2020-03-19</time></div>
+                    <a href="/2020/03/19/jvm-serials/" class="has-link-black-ter is-size-6">YGC时间过长的JVM调优</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/业务实践/">业务实践</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
             <a href="/2020/01/10/jvm-xms/" class="media-left">
                 <p class="image is-64x64">
                     <img class="thumbnail" src="/images/thumbnail.svg" alt="JVM调优系列之处理内存报警">
@@ -1315,25 +1345,6 @@ var _hmt = _hmt || [];
             </div>
         </article>
         
-        <article class="media">
-            
-            <a href="/2019/12/03/temp-file-table/" class="media-left">
-                <p class="image is-64x64">
-                    <img class="thumbnail" src="/images/sorth.jpeg" alt="关于MySQL的临时表和临时文件">
-                </p>
-            </a>
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-12-03T06:34:34.000Z">2019-12-03</time></div>
-                    <a href="/2019/12/03/temp-file-table/" class="has-link-black-ter is-size-6">关于MySQL的临时表和临时文件</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/学习积累/">学习积累</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1352,7 +1363,7 @@ var _hmt = _hmt || [];
                 <span class="level-item">业务实践</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">13</span>
+                <span class="level-item tag">14</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/学习积累/">
